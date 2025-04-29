@@ -39,6 +39,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
 
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::ECS"
+        "${PROJECT_PREFIX}::Game"
 )
 
 set_target_properties("${PROJECT_NAME}Lib" PROPERTIES CXX_STANDARD 23)

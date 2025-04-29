@@ -14,7 +14,6 @@ ____   ____     .__
     return logo;
 }
 
-
 int main(int argc, char** argv)
 {
     spdlog::set_level(spdlog::level::debug);
@@ -32,6 +31,18 @@ int main(int argc, char** argv)
     spdlog::info("Current working path: {}", std::filesystem::current_path().string());
 
     asio::io_context io_context;
+    
+    velora::EntityManager entity_manager;
+    velora::ComponentManager component_manager(entity_manager);
+
+    velora::Entity player = entity_manager.createEntity();
+    velora::Entity enemy = entity_manager.createEntity();
+
+    component_manager.addComponent<velora::game::PositionComponent>(player, {0.0f, 0.0f});
+    component_manager.addComponent<velora::game::HealthComponent>(player, {100});
+
+    component_manager.addComponent<velora::game::PositionComponent>(enemy, {10.0f, 5.0f});
+
 
     int return_value = 0;
     

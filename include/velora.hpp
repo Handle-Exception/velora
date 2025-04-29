@@ -7,6 +7,7 @@ using namespace std::chrono_literals;
 
 #include "native.hpp"
 #include "ecs.hpp"
+#include "game.hpp"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
