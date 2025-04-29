@@ -13,13 +13,15 @@ This project requires the following libraries:
 To configure the project using CMake, run the following command:
 
 ```sh
-cmake -S . -B build -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=install
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=install
 ```
 
-- `-S .`: Specifies the source directory.
-- `-B build`: Specifies the build directory.
-- `-DBUILD_TESTING=ON`: Enables tests.
-- `-DCMAKE_INSTALL_PREFIX=install`: Specifies install directory.
+- `-S .` : Specifies the source directory.
+- `-B build` : Specifies the build directory.
+- `-G "Visual Studio 17 2022"` : Use Visual Studio generator
+- `-A x64` : Sets the target architecture to 64-bit
+- `-DBUILD_TESTING=ON` : Enables tests.
+- `-DCMAKE_INSTALL_PREFIX=install` : Specifies install directory.
 
 ## 🛠️ Building the project (Debug Mode)
 

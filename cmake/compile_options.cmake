@@ -1,4 +1,9 @@
+message(STATUS "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
+
 if (MSVC)
+    message(STATUS "Configuring for MSVC compiler")
+    message(STATUS "MSVC version: ${MSVC_VERSION}")
+    
     add_compile_definitions(    
         _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
         _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
@@ -25,7 +30,7 @@ if (MSVC)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # Forces /MTd in Debug and /MT in Release
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "" FORCE)
 
 endif()
 

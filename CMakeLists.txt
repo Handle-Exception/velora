@@ -1,9 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-enable_language(CXX)
-
-include(cmake/compile_options.cmake)
-include(cmake/dependencies.cmake)
-include(cmake/add_module.cmake)
 
 set(PROJECT_NAME "Velora")
 set(PROJECT_PREFIX "Velora")
@@ -14,6 +9,10 @@ project("${PROJECT_NAME}"
     HOMEPAGE_URL "https://github.com/Handle-Exception/velora"
     LANGUAGES CXX
 )
+
+include(cmake/compile_options.cmake)
+include(cmake/dependencies.cmake)
+include(cmake/add_module.cmake)
 
 message(STATUS "Install directory ${CMAKE_INSTALL_PREFIX}")
 set(CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/include")
@@ -42,7 +41,6 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::Game"
 )
 
-set_target_properties("${PROJECT_NAME}Lib" PROPERTIES CXX_STANDARD 23)
 target_sources("${PROJECT_NAME}Lib" PUBLIC
     FILE_SET public_headers
     TYPE HEADERS
@@ -67,8 +65,6 @@ target_link_libraries("${PROJECT_NAME}"
     PRIVATE
         "${PROJECT_NAME}Lib"
 )
-
-set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 23)
 
 # executable install target
 install(TARGETS ${PROJECT_NAME}

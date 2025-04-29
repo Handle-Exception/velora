@@ -6,7 +6,6 @@ FetchContent_Declare(
     GIT_TAG         "v1.11.0"
 )
 FetchContent_MakeAvailable(spdlog)
-set_target_properties(spdlog PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 FetchContent_Declare(
     asio
