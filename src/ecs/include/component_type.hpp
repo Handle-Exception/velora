@@ -7,8 +7,16 @@
 
 namespace velora
 {
-    class ComponentTypeManager {
+    class ComponentTypeManager 
+    {
     public:
+        /**
+         * @brief Retrieves the type ID for a given component type.
+         * 
+         * @tparam Component The component type.
+         * 
+         * @return The unique type ID for the component.
+         */
         template<typename Component>
         static uint32_t getTypeID() {
             static uint32_t id = _COUNTER++;
@@ -17,5 +25,5 @@ namespace velora
 
     private:
         static inline uint32_t _COUNTER = 0;
-};
+    };
 }
