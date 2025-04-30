@@ -21,29 +21,18 @@ namespace velora::winapi
                 co_return WinapiWindow(io_context, process, window_handle);
             }
 
-        bool good() const{
-            return _window_handle != nullptr;
-        }
-        //
-        void show()
-        {
+            bool good() const;
+            //
+            void show();
+            //
+            void hide();
+            //
+            void close();
+            // 
+            void present()
+            {
 
-        }
-        //
-        void hide()
-        {
-
-        }
-        //
-        void close()
-        {
-
-        }
-        // 
-        void present()
-        {
-
-        }
+            }
         //
         const Resolution & getResolution() const
         {
@@ -51,20 +40,14 @@ namespace velora::winapi
             return res;
         }
         //
-        native::window_handle getHandle() const
-        {
-            return _window_handle;
-        }
+        native::window_handle getHandle() const;
         //
         native::device_context getDeviceContext() const
         {
             return native::device_context{};
         }
 
-        IProcess & getProcess()
-        {
-            return _process;
-        }
+        IProcess & getProcess();
         
         protected:
 

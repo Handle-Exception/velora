@@ -1,5 +1,49 @@
+cmake_minimum_required(VERSION 3.30)
+
 include(FetchContent)
 include(ExternalProject)
+
+message(STATUS "Fetching dependency `GLEW` ...")
+#set_property(GLOBAL PROPERTY EP_STEP_TARGETS download update patch configure build install test)
+#set_property(GLOBAL PROPERTY EP_CONFIGURE_HANDLED TRUE)
+ExternalProject_Add(glew_build
+    URL https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.tgz
+    URL_HASH SHA256=d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1
+    PREFIX ${CMAKE_BINARY_DIR}/_deps/glew
+    SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/glew/src
+    STAMP_DIR ${CMAKE_BINARY_DIR}/_deps/glew/stamp
+    LOG_DIR ${CMAKE_BINARY_DIR}/_deps/glew/log
+    DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/_deps/glew/download
+    CONFIGURE_COMMAND 
+        ${CMAKE_COMMAND} 
+            -S ${CMAKE_BINARY_DIR}/_deps/glew/src/build/cmake
+            -B ${CMAKE_BINARY_DIR}/_deps/glew/build
+            -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/_deps/glew/install 
+            -DBUILD_UTILS=OFF 
+            -DGLEW_STATIC=ON 
+            -DBUILD_SHARED_LIBS=OFF
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    
+    BUILD_COMMAND 
+        ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/_deps/glew/build --config Release
+    BUILD_ALWAYS TRUE
+    BINARY_DIR ${CMAKE_BINARY_DIR}/_deps/glew/build
+    
+    INSTALL_COMMAND 
+        ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR}/_deps/glew/build
+    
+    UPDATE_DISCONNECTED TRUE
+    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+)
+add_library(glew INTERFACE)
+target_compile_options(glew INTERFACE /wd4459)
+target_include_directories(glew INTERFACE "${CMAKE_BINARY_DIR}/_deps/glew/install/include")
+target_link_directories(glew INTERFACE "${CMAKE_BINARY_DIR}/_deps/glew/install/lib")
+target_link_libraries(glew INTERFACE libglew32 glu32 opengl32)
+add_dependencies(glew glew_build)
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/_deps/glew/install/include/ DESTINATION include)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/_deps/glew/install/lib/     DESTINATION lib)
 
 message(STATUS "Fetching dependency `spdlog` ...")
 FetchContent_Declare(
@@ -78,22 +122,6 @@ foreach(target
         endif()
     endif()
 endforeach()
-
-
-message(STATUS "Fetching dependency `GLEW` ...")
-ExternalProject_Add(glew_external
-    URL https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.tgz
-    URL_HASH SHA256=d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1
-    PREFIX ${CMAKE_BINARY_DIR}/_deps/glew-src
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -S build/cmake -B ${CMAKE_BINARY_DIR}/_deps/glew-subbuild -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/_deps/glew-build -DBUILD_UTILS=OFF -DGLEW_STATIC=ON -DBUILD_SHARED_LIBS=OFF
-    BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/_deps/glew-subbuild --config Release
-    BUILD_IN_SOURCE 1
-    INSTALL_COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR}/_deps/glew-subbuild
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE  # Ensure the timestamp is updated on extraction
-)
-find_package(glew REQUIRED NO_DEFAULT_PATH PATHS ${CMAKE_BINARY_DIR}/_deps/glew-build/lib/cmake/glew)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/_deps/glew-build/include/ DESTINATION include)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/_deps/glew-build/lib/     DESTINATION lib)
 
 
 if(BUILD_TESTING)

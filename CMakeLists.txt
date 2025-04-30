@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.30)
 
 set(PROJECT_NAME "Velora")
 set(PROJECT_PREFIX "Velora")
@@ -36,8 +36,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         spdlog::spdlog
         asio
         glm
-        GLEW::GLEW
-        Opengl32
+        glew
         protobuf::libprotobuf
 
         "${PROJECT_PREFIX}::Version"
@@ -53,6 +52,10 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::ECS"
         "${PROJECT_PREFIX}::Game"
 )
+add_dependencies("${PROJECT_NAME}Lib" glew_build)
+target_compile_definitions("${PROJECT_NAME}Lib" PUBLIC GLEW_STATIC)
+target_compile_definitions("${PROJECT_NAME}Lib" PUBLIC BUILD_UTILS=False)
+target_compile_definitions("${PROJECT_NAME}Lib" PUBLIC OpenGL_GL_PREFERENCE=GLVND)
 
 if(WIN32)
     target_link_libraries("${PROJECT_NAME}Lib"

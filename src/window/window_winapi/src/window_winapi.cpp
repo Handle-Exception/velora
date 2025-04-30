@@ -24,8 +24,38 @@ namespace velora::winapi
     {
         if(_window_handle == nullptr)return;
         
-        asio::co_spawn(_io_context, _process.unregisterWindow(_window_handle), asio::detached);
-        _window_handle = nullptr;
+        close();
         spdlog::debug("[window] Winapi window destroyed");
+    }
+
+    IProcess & WinapiWindow::getProcess()
+    {
+        return _process;
+    }
+
+    void WinapiWindow::show()
+    {
+        ShowWindowAsync(_window_handle, SW_SHOW);
+    }
+
+    void WinapiWindow::hide()
+    {
+        ShowWindowAsync(_window_handle, SW_HIDE);
+    }
+
+    native::window_handle WinapiWindow::getHandle() const
+    {
+        return _window_handle;
+    }
+
+    bool WinapiWindow::good() const
+    {
+        return _window_handle != nullptr;
+    }
+    
+    void WinapiWindow::close()
+    {
+        PostMessage(_window_handle, WM_CLOSE, 0, 0);
+        _window_handle = nullptr;
     }
 }
