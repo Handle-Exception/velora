@@ -3,7 +3,6 @@
 #include <utility>
 
 #include "process.hpp"
-#include "ecs.hpp"
 #include "version.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)

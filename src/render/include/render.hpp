@@ -2,6 +2,11 @@
 
 #include "type.hpp"
 
+#include "vertex.hpp"
+#include "vertex_buffer.hpp"
+
+#include "shader.hpp"
+
 namespace velora
 {
     class IRenderer : public type::Interface
@@ -31,6 +36,8 @@ namespace velora
          * @return asio::awaitable<void> 
          */
         virtual asio::awaitable<void> close() = 0;
+
+        virtual void render(IVertexBuffer &, IShader &, const glm::mat4 &) = 0;
     };
 
     template<class RendererImplType>
@@ -47,6 +54,10 @@ namespace velora
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
             inline asio::awaitable<void> close() override { co_return co_await dispatch::getImpl().close();}
             inline asio::awaitable<void> destroy() override { co_return co_await dispatch::getImpl().destroy();}
+
+            inline void render(IVertexBuffer & vb, IShader & s, const glm::mat4 & m) { 
+                return dispatch::getImpl().render(vb, s, std::move(m));};
+
     };
 
     template<class RendererImplType>

@@ -42,9 +42,6 @@ int main(int argc, char* argv[])
     // Create a process
     Process process = Process::construct<winapi::WinapiProcess>();
 
-    EntityManager entity_manager;
-    ComponentManager component_manager(entity_manager);
-
     // start external entry point
     std::promise<int> external_main_promise;
     auto external_main_future = external_main_promise.get_future();

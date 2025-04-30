@@ -10,7 +10,6 @@ add_module(NAME "Entry"
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Type"
         "${PROJECT_PREFIX}::Process"
-        "${PROJECT_PREFIX}::ECS"
 )
 
 if(WIN32)

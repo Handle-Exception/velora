@@ -2,7 +2,8 @@
 
 namespace velora::game
 {
-    struct HealthComponent {
+    struct HealthComponent 
+    {
         int health;
     };
 }
