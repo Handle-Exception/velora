@@ -31,6 +31,11 @@ namespace velora::winapi
         spdlog::debug(std::format("[winapi] [t:{}] WinapiProcess destructor called", std::this_thread::get_id()));
 
         join();
+
+        assert(_window_handles.empty() == true);
+        assert(_registered_classes.empty() == true);
+        assert(_oglctx_handles.empty() == true);
+        assert(_default_oglctx_handle == nullptr);
     }
     
     void WinapiProcess::join()
@@ -55,8 +60,9 @@ namespace velora::winapi
         }
         _default_oglctx_handle = nullptr;
 
-        while(_window_handles.empty() == false){
-            co_await unregisterWindow(*(_window_handles.begin()));
+        for(const auto & [window_handle, callbacks] : _window_handles)
+        {
+            PostMessage(window_handle, WM_CLOSE, 0, 0);
         }
 
         while(_registered_classes.empty() == false){
@@ -187,7 +193,7 @@ namespace velora::winapi
 
         ReleaseDC(window_handle, device_context);
 
-        _window_handles.emplace(window_handle);
+        _window_handles.try_emplace(window_handle, WindowCallbacks());
         co_return window_handle;
     }
 
@@ -210,6 +216,22 @@ namespace velora::winapi
         _window_handles.erase(window);
         co_return true;
     }
+
+    asio::awaitable<bool> WinapiProcess::setWindowCallbacks(native::window_handle window, WindowCallbacks callbacks)
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+
+        spdlog::debug(std::format("[winapi] [t:{}] setWindowCallbacks", std::this_thread::get_id()));
+
+        if(_window_handles.contains(window) == false){
+            spdlog::error(std::format("[winapi-class-manager] window {} not registered", window));
+            co_return false;
+        }
+
+        _window_handles[window] = std::move(callbacks);
+        co_return true;
+    }
+
 
     bool WinapiProcess::initOpenGL()
     {
@@ -406,8 +428,16 @@ namespace velora::winapi
             return DefWindowProc(window, message, wparam, lparam);
         }
 
+        auto window_callbacks = _window_handles.at(window);
+
         switch (message)
         {
+        case WM_CREATE:
+        {
+            spdlog::debug(std::format("[winapi-procedure] WM_CREATE received for window {}", window));
+            return DefWindowProc(window, message, wparam, lparam);
+        }
+
         //WM_CLOSE is sent to the window when it is being closed - when its "X" button is clicked, 
         //or "Close" is chosen from the window's menu,
         // or Alt-F4 is pressed while the window has focus, etc.
@@ -431,7 +461,13 @@ namespace velora::winapi
         case WM_NCDESTROY :
         {
             spdlog::debug(std::format("[winapi-procedure] WM_NCDESTROY received, for window {}", window));
-            return DefWindowProc(window, message, wparam, lparam);
+            auto handling_result =  DefWindowProc(window, message, wparam, lparam);
+            if(window_callbacks.onDestroy != nullptr)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onDestroy(), asio::detached);
+            }
+            asio::co_spawn(_io_context, unregisterWindow(window), asio::detached);
+            return handling_result;
         }
 
         case WM_PAINT :
@@ -442,7 +478,12 @@ namespace velora::winapi
         case WM_SIZE:
         {
             spdlog::debug(std::format("[winapi-procedure] WM_SIZE received, for window {}", window));
-            return DefWindowProc(window, message, wparam, lparam);
+            auto handling_result = DefWindowProc(window, message, wparam, lparam);
+            if(window_callbacks.onResize != nullptr)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onResize(), asio::detached);
+            }
+            return handling_result;
         }
 
         case WM_KEYDOWN: 
@@ -479,7 +520,12 @@ namespace velora::winapi
 
             spdlog::debug(std::format("[winapi-procedure] WM_KEYDOWN received"));
 
-            return DefWindowProc(window, message, wparam, lparam);
+            auto handling_result = DefWindowProc(window, message, wparam, lparam);
+            if(window_callbacks.onKeyPress != nullptr)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onKeyPress(), asio::detached);
+            }
+            return handling_result;
         }
 
         default:
@@ -502,21 +548,6 @@ namespace velora::winapi
             {
                 switch(msgcontainer.message)
                 {
-                    case WM_CREATE:
-                    {
-                        spdlog::debug(std::format("[winapi-procedure] Input thread received WM_CREATE"));
-                        break;
-                    }
-                    case WM_CLOSE:
-                    {
-                        spdlog::debug(std::format("[winapi-procedure] Input thread  WM_CLOSE"));
-                        break; 
-                    }
-                    case WM_DESTROY:
-                    {
-                        spdlog::debug(std::format("[winapi-procedure] Input thread received WM_DESTROY"));
-                        break; 
-                    }
                     case WM_QUIT: 
                     {
                         spdlog::debug(std::format("[winapi-procedure] [t:{}]Input thread received WM_QUIT", std::this_thread::get_id()));

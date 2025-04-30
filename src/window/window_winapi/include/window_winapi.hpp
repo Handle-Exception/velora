@@ -3,6 +3,7 @@
 #include "native.hpp"
 #include "resolution.hpp"
 #include "process.hpp"
+#include "events.hpp"
 
 #include <asio.hpp>
 
@@ -15,7 +16,11 @@ namespace velora::winapi
 
             WinapiWindow(WinapiWindow && other);
 
-            static asio::awaitable<WinapiWindow> asyncConstructor(asio::io_context & io_context, IProcess & process, std::string name, Resolution resolution)
+            static asio::awaitable<WinapiWindow> asyncConstructor(asio::io_context & io_context,
+                IProcess & process,
+                std::string name,
+                Resolution resolution
+                )
             {
                 auto window_handle = co_await process.registerWindow(std::move(name), std::move(resolution));
                 co_return WinapiWindow(io_context, process, window_handle);
@@ -23,11 +28,14 @@ namespace velora::winapi
 
             bool good() const;
             //
-            void show();
+            asio::awaitable<void> show();
             //
-            void hide();
+            asio::awaitable<void> hide();
             //
-            void close();
+            asio::awaitable<void> close();
+            
+            asio::awaitable<void> destroy();
+
             // 
             void present()
             {

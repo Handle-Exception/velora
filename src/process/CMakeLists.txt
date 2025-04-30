@@ -6,6 +6,7 @@ add_module(NAME "Process"
 
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Type"
+        "${PROJECT_PREFIX}::Event"
 )
 
 if(WIN32)

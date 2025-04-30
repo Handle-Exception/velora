@@ -33,14 +33,18 @@ namespace velora::winapi
         return _process;
     }
 
-    void WinapiWindow::show()
+    asio::awaitable<void> WinapiWindow::show()
     {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         ShowWindowAsync(_window_handle, SW_SHOW);
+        co_return;
     }
 
-    void WinapiWindow::hide()
+    asio::awaitable<void> WinapiWindow::hide()
     {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         ShowWindowAsync(_window_handle, SW_HIDE);
+        co_return;
     }
 
     native::window_handle WinapiWindow::getHandle() const
@@ -53,9 +57,20 @@ namespace velora::winapi
         return _window_handle != nullptr;
     }
     
-    void WinapiWindow::close()
+    asio::awaitable<void> WinapiWindow::close()
     {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+
         PostMessage(_window_handle, WM_CLOSE, 0, 0);
-        _window_handle = nullptr;
+        co_await destroy();
+        co_return;
     }
+
+    asio::awaitable<void> WinapiWindow::destroy()
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        _window_handle = nullptr;
+        co_return;
+    }
+
 }

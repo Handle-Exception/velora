@@ -19,11 +19,13 @@ namespace velora
         //
         virtual bool good() const = 0;
         //
-        virtual void show() = 0;
+        virtual asio::awaitable<void> show() = 0;
         //
-        virtual void hide() = 0;
+        virtual asio::awaitable<void> hide() = 0;
         //
-        virtual void close() = 0;
+        virtual asio::awaitable<void> close() = 0;
+        //
+        virtual asio::awaitable<void> destroy() = 0;
         // 
         virtual void present() = 0;
         //
@@ -48,9 +50,10 @@ namespace velora
             inline ~WindowDispatcher() = default;
 
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
-            constexpr inline void show() override {return dispatch::getImpl().show();}
-            constexpr inline void hide() override {return dispatch::getImpl().hide();}
-            constexpr inline void close() override {return dispatch::getImpl().close();}
+            inline asio::awaitable<void> show() override {co_return co_await dispatch::getImpl().show();}
+            inline asio::awaitable<void> hide() override {co_return co_await dispatch::getImpl().hide();}
+            inline asio::awaitable<void> close() override {co_return co_await dispatch::getImpl().close();}
+            inline asio::awaitable<void> destroy() override {co_return co_await dispatch::getImpl().destroy();}
             constexpr inline void present() override {return dispatch::getImpl().present();}
             constexpr inline native::window_handle getHandle() const override { return dispatch::getImpl().getHandle();}
             constexpr inline native::device_context getDeviceContext() const override { return dispatch::getImpl().getDeviceContext();};

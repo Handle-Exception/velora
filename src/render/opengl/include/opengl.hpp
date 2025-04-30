@@ -17,8 +17,6 @@ namespace velora::opengl
             ~OpenGLRenderer();
             OpenGLRenderer(OpenGLRenderer && other);
 
-
-
             static asio::awaitable<OpenGLRenderer> asyncConstructor(asio::io_context & io_context, IWindow & window, int major_version, int minor_version)
             {
                 auto window_handle = window.getHandle();

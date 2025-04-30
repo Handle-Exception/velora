@@ -9,6 +9,7 @@ add_module(PARENT "Process" NAME "ProcessWinapi"
         absl::hash
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Resolution"
+        "${PROJECT_PREFIX}::Event"
 )
 
 add_dependencies("ProcessWinapi" glew_build)

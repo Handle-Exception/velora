@@ -7,6 +7,7 @@ add_module(PARENT "Window" NAME "WindowWinapi"
 
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Type"
+        "${PROJECT_PREFIX}::Event"
         "${PROJECT_PREFIX}::Resolution"
         "${PROJECT_PREFIX}::Process"
 )

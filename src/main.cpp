@@ -2,12 +2,6 @@
 
 namespace velora
 {
-    // asio::awaitable<Renderer> constructRenderer(asio::io_context & io_context, IProcess & process, IWindow & window, int minor_version, int major_version)
-    // {
-    //     auto oglctx_handle = co_await process.registerOGLContext(window.getHandle(), minor_version, major_version);
-    //     co_return Renderer::construct<opengl::OpenGLRenderer>(io_context, oglctx_handle);
-    // }
-
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
         auto main_strand = asio::make_strand(io_context);
@@ -20,7 +14,22 @@ namespace velora
             spdlog::error("Failed to create window");
             co_return -1;
         }
-        ShowWindow(window->getHandle(), SW_SHOW);
+
+        co_await process.setWindowCallbacks(window->getHandle(), 
+            WindowCallbacks{.executor = main_strand,
+                .onDestroy = [&window]() -> asio::awaitable<void>
+                {
+                    spdlog::info(std::format("WindowCallbacks Destroyed {}", std::this_thread::get_id()));
+                    co_await window->destroy();
+                    co_return;
+                }, 
+                .onKeyPress = [&window]() -> asio::awaitable<void>
+                {
+                    spdlog::info(std::format("WindowCallbacks Key pressed {}", std::this_thread::get_id()));
+                    co_return;
+                }
+            });
+
 
         auto renderer = co_await Renderer::construct<opengl::OpenGLRenderer>(asio::use_awaitable, io_context, *window, 4, 0);
         if (renderer->good() == false)
@@ -30,18 +39,19 @@ namespace velora
         }
 
         co_await asio::dispatch(asio::bind_executor(main_strand, asio::use_awaitable));
-
+        co_await window->show();
 
         int return_value = 0;
+        asio::steady_timer timer(main_strand);
 
-
-        int i = 1000;
-        while(i-- > 0)
+        while (window->good()) 
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            timer.expires_after(std::chrono::seconds(1));
+            co_await timer.async_wait(asio::use_awaitable);
         }
 
-        
+        if(window->good())co_await window->close();
+
         spdlog::debug("Velora main finished with code {}", return_value);
         co_return return_value;
     }
