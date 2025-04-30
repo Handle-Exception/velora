@@ -7,10 +7,9 @@ add_module(NAME "Process"
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Type"
         "${PROJECT_PREFIX}::Event"
+        "${PROJECT_PREFIX}::Resolution"
 )
 
 if(WIN32)
     add_subdirectory(process_winapi)
-    target_link_libraries("Process" PUBLIC "${PROJECT_PREFIX}::Process::ProcessWinapi")
-    target_link_libraries("Process" INTERFACE "${PROJECT_PREFIX}::Process::ProcessWinapi")
 endif()

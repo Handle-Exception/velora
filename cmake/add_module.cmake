@@ -1,6 +1,6 @@
 function(add_module)
     set(options)
-    set(oneValueArgs PARENT NAME)
+    set(oneValueArgs NAME)
     set(multiValueArgs DEPENDENCIES)
     cmake_parse_arguments(add_module "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -19,13 +19,9 @@ function(add_module)
         BASE_DIRS include
         FILES  ${INCLUDE_SOURCES}
     )
-    if(NOT add_module_PARENT)
-        message(STATUS "Configuring module ${add_module_NAME}")
-        add_library("${PROJECT_PREFIX}::${add_module_NAME}" ALIAS "${add_module_NAME}")
-    else()
-        message(STATUS "Configuring module ${add_module_PARENT}::${add_module_NAME}")
-        add_library("${PROJECT_PREFIX}::${add_module_PARENT}::${add_module_NAME}" ALIAS "${add_module_NAME}")
-    endif()
+
+    message(STATUS "Configuring module ${add_module_NAME}")
+    add_library("${PROJECT_PREFIX}::${add_module_NAME}" ALIAS "${add_module_NAME}")
 
     target_include_directories("${add_module_NAME}"     
         PUBLIC 

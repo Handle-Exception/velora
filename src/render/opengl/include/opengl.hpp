@@ -7,36 +7,26 @@
 #include <spdlog/spdlog.h>
 #include <asio.hpp>
 
+#include "opengl_debug.hpp"
+#include "opengl_vertex_buffer.hpp"
+#include "opengl_shader.hpp"
+
 namespace velora::opengl
 {
-    bool logOpenGLState();
-
     class OpenGLRenderer
     {
         public:
             ~OpenGLRenderer();
             OpenGLRenderer(OpenGLRenderer && other);
 
-            static asio::awaitable<OpenGLRenderer> asyncConstructor(asio::io_context & io_context, IWindow & window, int major_version, int minor_version)
-            {
-                auto window_handle = window.getHandle();
-                auto & process = window.getProcess();
+            static asio::awaitable<OpenGLRenderer> asyncConstructor(asio::io_context & io_context, IWindow & window, int major_version, int minor_version);
 
-                native::opengl_context_handle oglctx_handle = co_await process.registerOGLContext(window_handle, major_version, minor_version);
+            bool good() const;
 
-                co_return OpenGLRenderer(io_context, window, oglctx_handle);
-            }
+            asio::awaitable<void> destroy();
 
-            bool good() const
-            {
-                return _oglctx_handle != nullptr;
-            }
 
-            //
-            void close()
-            {
-
-            }
+            asio::awaitable<void> close();
 
         protected:
             OpenGLRenderer(asio::io_context & io_context, IWindow & window, native::opengl_context_handle oglctx_handle);

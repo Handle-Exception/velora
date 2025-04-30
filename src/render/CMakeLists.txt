@@ -6,8 +6,6 @@ add_module(NAME "Render"
 
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Type"
-        
 )
 
 add_subdirectory(opengl)
-target_link_libraries("Render" PUBLIC "${PROJECT_PREFIX}::Render::OpenGL")

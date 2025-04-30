@@ -5,10 +5,6 @@
 #include "resolution.hpp"
 #include "process.hpp"
 
-#ifdef WIN32
-#include "window_winapi.hpp"
-#endif
-
 namespace velora
 {
     class IWindow : public type::Interface

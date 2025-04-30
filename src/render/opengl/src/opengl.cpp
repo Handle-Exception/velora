@@ -2,42 +2,14 @@
 
 namespace velora::opengl
 {
-    bool logOpenGLState()
+    asio::awaitable<OpenGLRenderer> OpenGLRenderer::asyncConstructor(asio::io_context & io_context, IWindow & window, int major_version, int minor_version)
     {
-        switch(glGetError())
-        {
-            case GL_INVALID_VALUE:
-            spdlog::error(std::format("[opengl] Invalid opengl object"));
-            return false;
+        auto window_handle = window.getHandle();
+        auto & process = window.getProcess();
 
-            case GL_INVALID_OPERATION:
-            spdlog::error(std::format("[opengl] Invalid operation"));
-            return false;
+        native::opengl_context_handle oglctx_handle = co_await process.registerOGLContext(window_handle, major_version, minor_version);
 
-            case GL_INVALID_FRAMEBUFFER_OPERATION:
-            spdlog::error(std::format("[opengl] The framebuffer object is not complete"));
-            return false;
-
-            case GL_OUT_OF_MEMORY:
-            spdlog::error(std::format("[opengl] OpenGL is out of memory"));
-            return false;
-
-            case GL_STACK_UNDERFLOW:
-            spdlog::error(std::format("[opengl] An attempt has been made to perform an operation that would cause an internal stack to underflow"));
-            return false;
-
-            case GL_STACK_OVERFLOW:
-            spdlog::error(std::format("[opengl] An attempt has been made to perform an operation that would cause an internal stack to overflow"));
-            return false;
-
-            case GL_NO_ERROR:
-            spdlog::debug(std::format("[opengl] OpenGL OK state"));
-            return true;
-
-            default:
-            spdlog::warn(std::format("[opengl] Unidentified OpenGL problem"));
-            return false;
-        }
+        co_return OpenGLRenderer(io_context, window, oglctx_handle);
     }
 
     OpenGLRenderer::OpenGLRenderer(asio::io_context & io_context, IWindow & window, native::opengl_context_handle oglctx_handle)
@@ -67,5 +39,25 @@ namespace velora::opengl
         asio::co_spawn(_io_context, _window.getProcess().unregisterOGLContext(_oglctx_handle), asio::detached);
         _oglctx_handle = nullptr;
         spdlog::debug("[render] OpenGL renderer destroyed");
+    }
+
+    bool OpenGLRenderer::good() const
+    {
+        return _oglctx_handle != nullptr;
+    }
+
+    asio::awaitable<void> OpenGLRenderer::destroy()
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        _oglctx_handle = nullptr;
+        co_return;
+    }
+
+    asio::awaitable<void> OpenGLRenderer::close()
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        co_await _window.getProcess().unregisterOGLContext(_oglctx_handle);
+        co_await destroy();
+        co_return;
     }
 }

@@ -11,5 +11,8 @@ add_module(NAME "Entry"
         "${PROJECT_PREFIX}::Type"
         "${PROJECT_PREFIX}::Process"
         "${PROJECT_PREFIX}::ECS"
-
 )
+
+if(WIN32)
+    target_link_libraries("Entry" PUBLIC "${PROJECT_PREFIX}::ProcessWinapi")
+endif()

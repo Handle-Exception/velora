@@ -12,5 +12,4 @@ add_module(NAME "Window"
 
 if(WIN32)
     add_subdirectory(window_winapi)
-    target_link_libraries("Window" PUBLIC "${PROJECT_PREFIX}::Window::WindowWinapi")
 endif()

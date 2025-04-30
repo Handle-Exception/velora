@@ -2,21 +2,35 @@
 
 #include "type.hpp"
 
-#include "opengl.hpp"
-
 namespace velora
 {
     class IRenderer : public type::Interface
     {
     public:
-        // dtor
         virtual ~IRenderer() = default;
 
-        //
+        /**
+         * @brief Check if renderer is properly initialized
+         * 
+         * @return `true` if renderer is properly initialized
+         */
         virtual bool good() const = 0;
 
-        //
-        virtual void close() = 0;
+        /**
+         * @brief Destroy renderer
+         * called when process is already notified
+         * 
+         * @return asio::awaitable<void> 
+         */
+        virtual asio::awaitable<void> destroy() = 0;
+        
+        /**
+         * @brief Close the renderer
+         * notifies process
+         * 
+         * @return asio::awaitable<void> 
+         */
+        virtual asio::awaitable<void> close() = 0;
     };
 
     template<class RendererImplType>
@@ -31,7 +45,8 @@ namespace velora
             inline ~RendererDispatcher() = default;
 
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
-            constexpr inline void close() override { return dispatch::getImpl().close();}
+            inline asio::awaitable<void> close() override { co_return co_await dispatch::getImpl().close();}
+            inline asio::awaitable<void> destroy() override { co_return co_await dispatch::getImpl().destroy();}
     };
 
     template<class RendererImplType>

@@ -5,6 +5,6 @@ add_subdirectory(movement)
 
 add_module(NAME "Game"
     DEPENDENCIES
-        "${PROJECT_PREFIX}::Game::Health"
-        "${PROJECT_PREFIX}::Game::Movement"
+        "${PROJECT_PREFIX}::HealthComponent"
+        "${PROJECT_PREFIX}::MovementComponent"
 )

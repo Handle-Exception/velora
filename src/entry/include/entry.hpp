@@ -6,6 +6,10 @@
 #include "ecs.hpp"
 #include "version.hpp"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include "process_winapi.hpp"
+#endif
+
 #include <google/protobuf/descriptor.h>
 
 #include <asio.hpp>

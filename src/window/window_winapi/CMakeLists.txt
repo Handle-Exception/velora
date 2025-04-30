@@ -1,6 +1,6 @@
 include("${PROJECT_SOURCE_DIR}/cmake/add_module.cmake")
 
-add_module(PARENT "Window" NAME "WindowWinapi"
+add_module(NAME "WindowWinapi"
     DEPENDENCIES
         asio
         spdlog::spdlog

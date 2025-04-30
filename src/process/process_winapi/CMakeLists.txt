@@ -1,6 +1,6 @@
 include("${PROJECT_SOURCE_DIR}/cmake/add_module.cmake")
 
-add_module(PARENT "Process" NAME "ProcessWinapi"
+add_module(NAME "ProcessWinapi"
     DEPENDENCIES
         glew
         ws2_32

@@ -16,6 +16,13 @@ using namespace std::chrono_literals;
 #include "ecs.hpp"
 #include "game.hpp"
 
+#ifdef WIN32
+#include "process_winapi.hpp"
+#include "window_winapi.hpp"
+#endif
+
+#include "opengl.hpp"
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 

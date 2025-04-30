@@ -3,10 +3,7 @@
 #include "type.hpp"
 #include "native.hpp"
 #include "events.hpp"
-
-#ifdef WIN32
-#include "process_winapi.hpp"
-#endif
+#include "resolution.hpp"
 
 #include <asio.hpp>
 

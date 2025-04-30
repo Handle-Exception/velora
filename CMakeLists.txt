@@ -48,7 +48,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::Process"
         "${PROJECT_PREFIX}::Window"
         "${PROJECT_PREFIX}::Render"
-        "${PROJECT_PREFIX}::Render::OpenGL"
+        "${PROJECT_PREFIX}::RenderOpenGL"
         "${PROJECT_PREFIX}::Network"
         "${PROJECT_PREFIX}::ECS"
         "${PROJECT_PREFIX}::Game"
@@ -60,9 +60,9 @@ target_compile_definitions("${PROJECT_NAME}Lib" PUBLIC OpenGL_GL_PREFERENCE=GLVN
 
 if(WIN32)
     target_link_libraries("${PROJECT_NAME}Lib"
-        PRIVATE
-        "${PROJECT_PREFIX}::Process::ProcessWinapi"
-        "${PROJECT_PREFIX}::Window::WindowWinapi"
+        PUBLIC
+            "${PROJECT_PREFIX}::ProcessWinapi"
+            "${PROJECT_PREFIX}::WindowWinapi"
     )
 endif()
 

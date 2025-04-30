@@ -481,39 +481,39 @@ namespace velora::winapi
             auto handling_result = DefWindowProc(window, message, wparam, lparam);
             if(window_callbacks.onResize != nullptr)
             {
-                asio::co_spawn(window_callbacks.executor, window_callbacks.onResize(), asio::detached);
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onResize((int)LOWORD(lparam), (int)HIWORD(lparam)), asio::detached);
             }
             return handling_result;
         }
 
         case WM_KEYDOWN: 
         {
-            //event::WindowEvents::KeyDown ev;
+            int key = 0;
             switch(wparam)
             {
                 case VK_ESCAPE : 
                 {
-                    //ev.key = 0x1B;
+                    key = 0x1B;
                     break;
                 }
                 case VK_LEFT : 
                 {
-                    //ev.key = 0x25;
+                    key = 0x25;
                     break;
                 }
                 case VK_RIGHT : 
                 {
-                    //ev.key = 0x27;
+                    key = 0x27;
                     break;
                 }
                 case VK_UP : 
                 {
-                    //ev.key = 0x26;
+                    key = 0x26;
                     break;
                 }
                 case VK_DOWN : 
                 {
-                    //ev.key = 0x28;
+                    key = 0x28;
                     break;
                 }
             }
@@ -523,7 +523,7 @@ namespace velora::winapi
             auto handling_result = DefWindowProc(window, message, wparam, lparam);
             if(window_callbacks.onKeyPress != nullptr)
             {
-                asio::co_spawn(window_callbacks.executor, window_callbacks.onKeyPress(), asio::detached);
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onKeyPress(key), asio::detached);
             }
             return handling_result;
         }
