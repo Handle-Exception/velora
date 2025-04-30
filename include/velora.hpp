@@ -6,6 +6,12 @@ using namespace std::chrono_literals;
 #include <String>
 
 #include "native.hpp"
+#include "entry.hpp"
+#include "type.hpp"
+#include "resolution.hpp"
+#include "process.hpp"
+#include "window.hpp"
+#include "render.hpp"
 #include "ecs.hpp"
 #include "game.hpp"
 
@@ -16,12 +22,10 @@ using namespace std::chrono_literals;
 #include <asio/experimental/awaitable_operators.hpp>
 using namespace asio::experimental::awaitable_operators;
 
+#include <glm/glm.hpp>
+
+#include <absl/hash/hash.h>
 
 namespace velora
 {
-    const short int MAJOR_VERSION = 0;
-    const short int MINOR_VERSION = 0;
-    const short int PATCH_VERSION = 1;
-
-    const short int DEFAULT_PORT = 5555;
 }

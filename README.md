@@ -6,6 +6,7 @@ This project requires the following libraries:
 
 - [**Asio**](https://think-async.com/Asio/)
 - [**spdlog**](https://github.com/gabime/spdlog)
+- [**GLM**](https://github.com/g-truc/glm)
 - [**Protobuf**](https://protobuf.dev/)
 
 ## ⚙️ Configuring the project

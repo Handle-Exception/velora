@@ -35,11 +35,32 @@ target_link_libraries("${PROJECT_NAME}Lib"
     PUBLIC
         spdlog::spdlog
         asio
+        glm
+        GLEW::GLEW
+        Opengl32
+        protobuf::libprotobuf
 
+        "${PROJECT_PREFIX}::Version"
         "${PROJECT_PREFIX}::Native"
+        "${PROJECT_PREFIX}::Type"
+        "${PROJECT_PREFIX}::Entry"
+        "${PROJECT_PREFIX}::Resolution"
+        "${PROJECT_PREFIX}::Process"
+        "${PROJECT_PREFIX}::Window"
+        "${PROJECT_PREFIX}::Render"
+        "${PROJECT_PREFIX}::Render::OpenGL"
+        "${PROJECT_PREFIX}::Network"
         "${PROJECT_PREFIX}::ECS"
         "${PROJECT_PREFIX}::Game"
 )
+
+if(WIN32)
+    target_link_libraries("${PROJECT_NAME}Lib"
+        PRIVATE
+        "${PROJECT_PREFIX}::Process::ProcessWinapi"
+        "${PROJECT_PREFIX}::Window::WindowWinapi"
+    )
+endif()
 
 target_sources("${PROJECT_NAME}Lib" PUBLIC
     FILE_SET public_headers

@@ -1,6 +1,4 @@
-#include "windows/windows.h"
-
-#include <spdlog/spdlog.h>
+#include "windows/windows.hpp"
 
 namespace velora::native{
     void spawnProcess(const std::string& command)

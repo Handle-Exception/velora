@@ -1,5 +1,5 @@
 #if defined(WIN32)
-#include "windows/windows.h"
+#include "windows/windows.hpp"
 #elif defined(UNIX)
 #include "unix/unix.h"
 #elif defined(__APPLE__)

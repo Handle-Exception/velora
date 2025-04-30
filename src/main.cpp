@@ -1,61 +1,48 @@
 #include "velora.hpp"
 
-const std::string & getAsciiLogo()
+namespace velora
 {
-    static const std::string logo = R"(
-____   ____     .__                       
-\   \ /   /____ |  |   ________________   
- \   Y   // __ \|  |  /  _ \_  __ \__  \  
-  \     /\  ___/|  |_(  <_> )  | \// __ \_
-   \___/  \___  >____/\____/|__|  (____  /
-              \/                       \/              
-    )";
-    
-    return logo;
-}
+    // asio::awaitable<Renderer> constructRenderer(asio::io_context & io_context, IProcess & process, IWindow & window, int minor_version, int major_version)
+    // {
+    //     auto oglctx_handle = co_await process.registerOGLContext(window.getHandle(), minor_version, major_version);
+    //     co_return Renderer::construct<opengl::OpenGLRenderer>(io_context, oglctx_handle);
+    // }
 
-int main(int argc, char** argv)
-{
-    spdlog::set_level(spdlog::level::debug);
-
-    spdlog::info("{}", getAsciiLogo());
-
-    spdlog::info("Version: {}.{}.{}\n", velora::MAJOR_VERSION, velora::MINOR_VERSION, velora::PATCH_VERSION);
-
-    spdlog::info("Velora started with {} arguments", argc);
-    for(int i = 0; i < argc; ++i)
+    asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
-        spdlog::info("Argument at [{}] = {}", i, argv[i]);
+        auto main_strand = asio::make_strand(io_context);
+
+        spdlog::debug(std::format("[t:{}] Velora main started", std::this_thread::get_id()));
+
+        auto window = co_await Window::construct<winapi::WinapiWindow>(asio::use_awaitable, io_context, process, "Velora", Resolution{256, 512});
+        if (window->good() == false)
+        {
+            spdlog::error("Failed to create window");
+            co_return -1;
+        }
+        ShowWindow(window->getHandle(), SW_SHOW);
+
+        auto renderer = co_await Renderer::construct<opengl::OpenGLRenderer>(asio::use_awaitable, io_context, *window, 4, 0);
+        if (renderer->good() == false)
+        {
+            spdlog::error("Failed to create renderer");
+            co_return -1;
+        }
+
+        co_await asio::dispatch(asio::bind_executor(main_strand, asio::use_awaitable));
+
+
+        int return_value = 0;
+
+
+        int i = 1000;
+        while(i-- > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        
+        spdlog::debug("Velora main finished with code {}", return_value);
+        co_return return_value;
     }
-
-    spdlog::info("Current working path: {}", std::filesystem::current_path().string());
-
-    asio::io_context io_context;
-    
-    velora::EntityManager entity_manager;
-    velora::ComponentManager component_manager(entity_manager);
-
-    velora::Entity player = entity_manager.createEntity();
-    velora::Entity enemy = entity_manager.createEntity();
-
-    component_manager.addComponent<velora::game::PositionComponent>(player, {0.0f, 0.0f});
-    component_manager.addComponent<velora::game::HealthComponent>(player, {100});
-
-    component_manager.addComponent<velora::game::PositionComponent>(enemy, {10.0f, 5.0f});
-
-
-    int return_value = 0;
-    
-    try
-    {
-        io_context.run();
-    }
-    catch(std::exception & e)
-    {
-        spdlog::error("Error: {}", e.what());
-    }
-    
-    spdlog::debug("Program finished");
-
-    return return_value;
 }
