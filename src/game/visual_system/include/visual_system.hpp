@@ -4,37 +4,52 @@
 
 #include "visual_component.hpp"
 
+#include "transform_component.hpp"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+
 namespace velora::game
 {
     class VisualSystem
     {
         public:
-            VisualSystem(ComponentManager& components, EntityManager& entities, IRenderer & renderer)
-            :   _components(components),
-                _entities(entities),
-                _renderer(renderer)
+            VisualSystem(IRenderer & renderer)
+            : _renderer(renderer)
             {}
 
-            void render(Entity entity) 
+            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
             {
-                auto* visual_component = _components.getComponent<VisualComponent>(entity);
-                if (!visual_component) return;
-
-                //_renderer.render(*visual_component);
-            }
-
-            void renderAll()
-            {
-                uint32_t position_bit = ComponentTypeManager::getTypeID<VisualComponent>();
                 VisualComponent * visual_component = nullptr;
 
-                for (const auto& [entity, mask] : _entities.getAllEntities())
+                for (const auto& [entity, mask] : entities.getAllEntities())
                 {
-                    if (mask.test(position_bit) == false) continue;
-                    visual_component = _components.getComponent<VisualComponent>(entity);
+                    if (mask.test(_POSITION_BIT) == false) continue;
+                    visual_component = components.getComponent<VisualComponent>(entity);
                     assert(visual_component != nullptr);
+                    
+                    // if not visible, skip
+                    if(visual_component->visible == false) continue;
 
+                    // if also has a transform component
+                    // update transform matrix
+                    static const uint32_t TRANSFORM_BIT = ComponentTypeManager::getTypeID<TransformComponent>();
+
+                    if(mask.test(TRANSFORM_BIT))
+                    {
+                        auto* transform_component = components.getComponent<TransformComponent>(entity);
+                        assert(transform_component != nullptr);
+                        visual_component->model_matrix = glm::translate(glm::mat4(1.0f), transform_component->position)
+                                                        * glm::toMat4(transform_component->rotation)
+                                                        * glm::scale(glm::mat4(1.0f), transform_component->scale);
+                    }
+
+                    // render
+                    //co_await_renderer.render(*visual_component);
                 }
+                co_return;
             }
 
             inline constexpr std::string_view getName() const { return "VisualSystem"; }
@@ -45,14 +60,9 @@ namespace velora::game
                 return std::views::all(deps);
             }
 
-            asio::awaitable<void> run()
-            {
-                co_return;
-            }
-
         private:
-            ComponentManager& _components;
-            EntityManager& _entities;
+            static const uint32_t _POSITION_BIT;
+
             IRenderer & _renderer;
     };
 }

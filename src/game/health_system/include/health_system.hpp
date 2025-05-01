@@ -9,9 +9,7 @@ namespace velora::game
     class HealthSystem 
     {
     public:
-        HealthSystem(ComponentManager& components, EntityManager& entities);
-
-        void damage(Entity entity, int amount);
+        HealthSystem();
 
         inline constexpr std::string_view getName() const { return "HealthSystem"; }
 
@@ -21,14 +19,12 @@ namespace velora::game
             return std::views::all(deps);
         }
 
-        asio::awaitable<void> run()
+        asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
         {
             co_return;
         }
 
     private:
 
-        ComponentManager& _components;
-        EntityManager& _entities;
     };
 }

@@ -88,8 +88,9 @@ namespace velora
                 getOrCreateStorage<Component>()->add(entity, component);
 
                 // Update entity mask
-                uint32_t typeID = ComponentTypeManager::getTypeID<Component>();
-                _entity_manager.addComponentBit(entity, typeID);
+                uint32_t type_ID = ComponentTypeManager::getTypeID<Component>();
+                assert(type_ID < MAX_COMPONENT_TYPES);
+                _entity_manager.addComponentBit(entity, type_ID);
             }
 
             /**

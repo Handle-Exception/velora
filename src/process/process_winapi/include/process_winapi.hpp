@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <optional>
 
 #include "native.hpp"
 #include "resolution.hpp"
@@ -55,7 +56,7 @@ namespace velora::winapi
 
             asio::awaitable<bool> unregisterWindow(native::window_handle window);
 
-            asio::awaitable<bool> setWindowCallbacks(native::window_handle window, WindowCallbacks callbacks);
+            asio::awaitable<bool> setWindowCallbacks(native::window_handle window, WindowCallbacks && callbacks);
 
             asio::awaitable<native::opengl_context_handle> registerOGLContext(native::window_handle window_handle, unsigned int major_version, unsigned int minor_version);
 
@@ -75,7 +76,7 @@ namespace velora::winapi
             asio::strand<asio::io_context::executor_type> _strand;
 
             absl::flat_hash_map<std::string, const WNDCLASSEX> _registered_classes;
-            absl::flat_hash_map<native::window_handle, WindowCallbacks> _window_handles;
+            absl::flat_hash_map<native::window_handle, std::optional<WindowCallbacks>> _window_handles;
 
             native::opengl_context_handle _default_oglctx_handle;
             absl::flat_hash_set<native::opengl_context_handle> _oglctx_handles;

@@ -2,18 +2,8 @@
 
 namespace velora::game
 {
-    TransformSystem::TransformSystem(ComponentManager& components, EntityManager& entities)
-    :   _components(components),
-        _entities(entities)
+    const uint32_t TransformSystem::_POSITION_BIT = ComponentTypeManager::getTypeID<TransformComponent>();
+
+    TransformSystem::TransformSystem()
     {}
-
-    void TransformSystem::move(Entity entity, float dx, float dy, float dz) 
-    {
-        auto* transform_component = _components.getComponent<TransformComponent>(entity);
-        if(!transform_component) return;
-
-        transform_component->position.x += dx;
-        transform_component->position.y += dy;
-        transform_component->position.z += dz;
-    }
 }

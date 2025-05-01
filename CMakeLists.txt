@@ -57,7 +57,9 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::TransformSystem"
         "${PROJECT_PREFIX}::VisualSystem"
         "${PROJECT_PREFIX}::HealthSystem"
+        "${PROJECT_PREFIX}::InputSystem"
         "${PROJECT_PREFIX}::World"
+        "${PROJECT_PREFIX}::Level"
         "${PROJECT_PREFIX}::Game"
 )
 add_dependencies("${PROJECT_NAME}Lib" glew_build)

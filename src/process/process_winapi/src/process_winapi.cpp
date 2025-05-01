@@ -193,7 +193,7 @@ namespace velora::winapi
 
         ReleaseDC(window_handle, device_context);
 
-        _window_handles.try_emplace(window_handle, WindowCallbacks());
+        _window_handles.try_emplace(window_handle, std::nullopt);
         co_return window_handle;
     }
 
@@ -217,7 +217,7 @@ namespace velora::winapi
         co_return true;
     }
 
-    asio::awaitable<bool> WinapiProcess::setWindowCallbacks(native::window_handle window, WindowCallbacks callbacks)
+    asio::awaitable<bool> WinapiProcess::setWindowCallbacks(native::window_handle window, WindowCallbacks && callbacks)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
 
@@ -228,7 +228,7 @@ namespace velora::winapi
             co_return false;
         }
 
-        _window_handles[window] = std::move(callbacks);
+        _window_handles.at(window) = std::move(callbacks);
         co_return true;
     }
 
@@ -428,7 +428,13 @@ namespace velora::winapi
             return DefWindowProc(window, message, wparam, lparam);
         }
 
-        auto window_callbacks = _window_handles.at(window);
+        auto & window_callbacks_result = _window_handles.at(window);
+        if(window_callbacks_result.has_value() == false)
+        {
+            spdlog::warn(std::format("[winapi-procedure] window {} has no callbacks", window));
+            return DefWindowProc(window, message, wparam, lparam);
+        }
+        auto & window_callbacks = window_callbacks_result.value();
 
         switch (message)
         {

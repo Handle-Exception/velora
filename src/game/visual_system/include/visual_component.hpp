@@ -8,8 +8,8 @@ namespace velora::game
 {
     struct VisualComponent
     {
-        IVertexBuffer & vertex_buffer;
-        IShader & shader;
+        //IVertexBuffer & vertex_buffer;
+        //IShader & shader;
 
         glm::mat4 model_matrix{1.0f};
 

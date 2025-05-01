@@ -1,10 +1,10 @@
 include("${PROJECT_SOURCE_DIR}/cmake/add_module.cmake")
 
-add_module(NAME "VisualSystem"
+add_module(NAME "Level"
     DEPENDENCIES
-        glm
+        spdlog::spdlog
+        absl::hash
+        absl::flat_hash_map
         "${PROJECT_PREFIX}::ECS"
         "${PROJECT_PREFIX}::Render"
-
-        "${PROJECT_PREFIX}::TransformSystem"
 )

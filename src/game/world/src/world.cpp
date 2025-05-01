@@ -2,14 +2,13 @@
 
 namespace velora::game
 {
-    World::World(IRenderer &  renderer)
-    :   _renderer(renderer),
-        _entities(),
-        _components(_entities)
+    World::World(asio::io_context & io_context, IRenderer &  renderer)
+    :   _io_context(io_context),
+        _renderer(renderer)
     {
-        _systems.emplace_back(System::construct<TransformSystem>(_components, _entities));
-        _systems.emplace_back(System::construct<VisualSystem>(_components, _entities, _renderer));
-        _systems.emplace_back(System::construct<HealthSystem>(_components, _entities));
+        _systems.emplace_back(System::construct<TransformSystem>());
+        _systems.emplace_back(System::construct<VisualSystem>( _renderer));
+        _systems.emplace_back(System::construct<HealthSystem>());
 
         _layers = topologicalSortLayers(_systems);
 

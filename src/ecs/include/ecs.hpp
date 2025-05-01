@@ -18,7 +18,7 @@ namespace velora
             virtual ~ISystem() = default;
 
             virtual std::string_view getName() const = 0;
-            virtual asio::awaitable<void> run() = 0;
+            virtual asio::awaitable<void> run(ComponentManager& components, EntityManager& entities) = 0;
             virtual std::ranges::ref_view<std::vector<std::string>> getDependencies() const = 0;
     };
 
@@ -34,7 +34,8 @@ namespace velora
             inline ~SystemDispatcher() = default;
 
             constexpr inline std::string_view getName() const override { return dispatch::getImpl().getName();}
-            inline asio::awaitable<void> run() override { co_return co_await dispatch::getImpl().run();}
+            inline asio::awaitable<void> run(ComponentManager& components, EntityManager& entities) override { 
+                co_return co_await dispatch::getImpl().run(components, entities);}
             constexpr inline std::ranges::ref_view<std::vector<std::string>> getDependencies() const override { 
                 return dispatch::getImpl().getDependencies();}
     };
@@ -59,5 +60,11 @@ namespace velora
             {}                                                          
     };
 
+
+    /**
+     * @brief Performs a layered topological sort 
+     * where each layer contains systems whose dependencies were satisfied in previous layers. 
+     * This lets us safely execute each layer in parallel
+     */
     std::vector<std::vector<ISystem*>> topologicalSortLayers(const std::vector<System> & systems);
 }

@@ -9,6 +9,9 @@
 #include "health_component.hpp"
 #include "health_system.hpp"
 
+#include "input_component.hpp"
+#include "input_system.hpp"
+
 #include "world.hpp"
 
 namespace velora::game
