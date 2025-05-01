@@ -14,6 +14,7 @@
 
 #include <GL/glew.h>
 #include <GL/wglew.h>
+#include "opengl_core.hpp"
 
 namespace velora::winapi
 {
@@ -86,11 +87,3 @@ namespace velora::winapi
 
     };
 }
-
-template <>
-struct std::formatter<const GLubyte *> : std::formatter<std::string> {
-  auto format(const GLubyte * ogl_str, format_context& ctx) const {
-    return formatter<string>::format(
-      std::format("{}", (std::stringstream{} << ogl_str).str()), ctx);
-  }
-};

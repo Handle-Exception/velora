@@ -13,6 +13,8 @@ namespace velora
         //
         virtual ~IVertexBuffer() = default;
 
+        virtual std::size_t ID() const = 0;
+
         virtual bool good() const = 0;
         //
         virtual std::size_t numberOfElements() const = 0;
@@ -32,6 +34,8 @@ namespace velora
             template<class... Args>                                                                             
             inline VertexBufferDispatcher(Args && ... args) : dispatch(std::forward<Args>(args)...){} 
             inline ~VertexBufferDispatcher() = default;
+
+            constexpr inline std::size_t ID() const override { return dispatch::getImpl().ID();}
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
             constexpr inline std::size_t numberOfElements() const override { return dispatch::getImpl().numberOfElements();}
             constexpr inline bool enable() const override { return dispatch::getImpl().enable();}
@@ -57,4 +61,13 @@ namespace velora
             : Implementation(std::move(impl))
             {}                                                          
     };
+
+    template <typename H>
+    constexpr inline H AbslHashValue(H h, const VertexBuffer & vb) {
+        return H::combine(std::move(h), vb->ID());
+    }
+
+    constexpr inline bool operator==(const VertexBuffer & lhs, const VertexBuffer & rhs){
+        return lhs->ID() == rhs->ID();
+    }
 }

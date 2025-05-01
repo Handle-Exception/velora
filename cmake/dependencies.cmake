@@ -18,6 +18,7 @@ ExternalProject_Add(glew_build
         ${CMAKE_COMMAND} 
             -S ${CMAKE_BINARY_DIR}/_deps/glew/src/build/cmake
             -B ${CMAKE_BINARY_DIR}/_deps/glew/build
+            -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"
             -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/_deps/glew/install 
             -DBUILD_UTILS=OFF 
             -DGLEW_STATIC=ON 

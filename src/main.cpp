@@ -35,7 +35,7 @@ namespace velora
                 {
                     spdlog::info(std::format("WindowCallbacks Destroyed [{}]", std::this_thread::get_id()));
                     co_await renderer->close(); // so we notify process to close the renderer
-                    co_await window->destroy(); // and destroy window object
+                    co_await window->close(); // and destroy window object
                     co_return;
                 },
                 .onResize = [&window](int width, int height) -> asio::awaitable<void>
@@ -52,6 +52,20 @@ namespace velora
                     co_return;
                 }
             });
+
+        auto id_res = co_await renderer->constructVertexBuffer({0,1,2}, {Vertex{{0,0,0}, {1,0,0}, {0,1}}});
+
+        if(!id_res)
+        {
+            spdlog::error("Failed to create vertex buffer");
+            co_return -1;
+        }
+
+        if((co_await renderer->eraseVertexBuffer(id_res.value())) == false)
+        {
+            spdlog::error("Failed to erase vertex buffer");
+            co_return -1;
+        }
 
         co_await window->show();
 
@@ -94,6 +108,7 @@ namespace velora
         world.getCurrentLevel().addComponent(*player_entity, game::TransformComponent{.position = {0, 0, 0}});
         world.getCurrentLevel().addComponent(*player_entity, game::HealthComponent{.health = 100});
         world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent{});
+        world.getCurrentLevel().addComponent(*player_entity, game::InputComponent{});
 
         auto player_transform_component =  world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
         if(player_transform_component == nullptr)
@@ -107,11 +122,21 @@ namespace velora
         player_transform_component->scale = {1, 1, 1};
 
 
+        auto input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
+        auto transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
+
         while (window->good()) 
         {
+
+            if(input_component->action == 38)
+            {
+                spdlog::info("Player pressed action 38");
+                transform_component->position.y += 0.1f;
+                spdlog::info(std::format("Player position: {} {} {}", transform_component->position.x, transform_component->position.y, transform_component->position.z));
+            }
+
+
             // clear window
-            // update world state
-            co_await world.update();
             
             // swap buffers
             //co_await renderer->present();
@@ -119,6 +144,8 @@ namespace velora
             //co_await window->present();
             // apply input
             co_await world.getCurrentLevel().runSystem(input_system);
+            // update world state
+            co_await world.update();
         }
 
         if(renderer->good())co_await renderer->close();

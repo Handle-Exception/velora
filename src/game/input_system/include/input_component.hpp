@@ -6,6 +6,6 @@ namespace velora::game
 {
     struct InputComponent 
     {
-
+        int action;
     };
 }

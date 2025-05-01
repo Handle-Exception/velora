@@ -11,6 +11,8 @@ add_module(NAME "ProcessWinapi"
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Resolution"
         "${PROJECT_PREFIX}::Event"
+
+        "${PROJECT_PREFIX}::OpenGLCore"
 )
 
 add_dependencies("ProcessWinapi" glew_build)

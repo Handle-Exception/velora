@@ -1,5 +1,7 @@
 include("${PROJECT_SOURCE_DIR}/cmake/add_module.cmake")
 
+add_subdirectory(opengl_core)
+
 add_module(NAME "RenderOpenGL"
     DEPENDENCIES
         spdlog::spdlog
@@ -14,6 +16,8 @@ add_module(NAME "RenderOpenGL"
         "${PROJECT_PREFIX}::Process"
         "${PROJECT_PREFIX}::Window"
         "${PROJECT_PREFIX}::Render"
+
+        "${PROJECT_PREFIX}::OpenGLCore"
 )
 
 add_dependencies("RenderOpenGL" glew_build)

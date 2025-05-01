@@ -20,14 +20,6 @@ namespace velora
          * @return `true` if renderer is properly initialized
          */
         virtual bool good() const = 0;
-
-        /**
-         * @brief Destroy renderer
-         * called when process is already notified
-         * 
-         * @return asio::awaitable<void> 
-         */
-        virtual asio::awaitable<void> destroy() = 0;
         
         /**
          * @brief Close the renderer
@@ -38,6 +30,10 @@ namespace velora
         virtual asio::awaitable<void> close() = 0;
 
         virtual void render(IVertexBuffer &, IShader &, const glm::mat4 &) = 0;
+
+        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) = 0;
+        
+        virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0; 
     };
 
     template<class RendererImplType>
@@ -53,10 +49,16 @@ namespace velora
 
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
             inline asio::awaitable<void> close() override { co_return co_await dispatch::getImpl().close();}
-            inline asio::awaitable<void> destroy() override { co_return co_await dispatch::getImpl().destroy();}
 
             inline void render(IVertexBuffer & vb, IShader & s, const glm::mat4 & m) { 
                 return dispatch::getImpl().render(vb, s, std::move(m));};
+
+            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) { 
+                co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(indices), std::move(vertices));};
+        
+            inline asio::awaitable<bool> eraseVertexBuffer(std::size_t id){
+                co_return co_await dispatch::getImpl().eraseVertexBuffer(std::move(id));
+            }
 
     };
 

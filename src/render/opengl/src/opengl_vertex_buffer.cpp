@@ -2,7 +2,7 @@
 
 namespace velora::opengl
 {
-    OpenGLVertexBuffer::OpenGLVertexBuffer(std::vector<GLuint> indices, std::vector<Vertex> vertices)
+    OpenGLVertexBuffer::OpenGLVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices)
     :   _indices(std::move(indices)),
         _vertices(std::move(vertices)),
         _VAO(0),
@@ -50,9 +50,19 @@ namespace velora::opengl
         removeBuffers();
     }
 
+    std::size_t OpenGLVertexBuffer::ID() const
+    {
+        return _VAO;
+    }
+
     bool OpenGLVertexBuffer::good() const 
     {
         return _VAO != 0 && _VBO != 0 && _EBO != 0;
+    }
+
+    std::size_t OpenGLVertexBuffer::numberOfElements() const
+    {
+        return _indices.size();
     }
 
     bool OpenGLVertexBuffer::removeBuffers()
@@ -168,8 +178,6 @@ namespace velora::opengl
                 disable();
                 return false;
             }
-
-            logOpenGLState();
         }
 
         // check if need of bind VBO
@@ -190,8 +198,6 @@ namespace velora::opengl
                 disable();
                 return false;
             }
-
-            logOpenGLState();
         }
 
         // check if need of bind EBO
@@ -212,16 +218,16 @@ namespace velora::opengl
                 disable();
                 return false;
             }
-
-            logOpenGLState();
         }
+
+        logOpenGLState();
 
         return true;
     }
 
     bool OpenGLVertexBuffer::setGPUAttributes()
     {
-        spdlog::debug("Setting vertex attribute [{}] to be {} x float",1, 3);
+        spdlog::debug("Setting vertex attribute [{}] to be {} x float",0, 3);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
         glEnableVertexAttribArray(0);
 
@@ -243,8 +249,6 @@ namespace velora::opengl
             spdlog::error("Cannot enable OpenGL VertexBuffer");
             return false;
         }
-
-        logOpenGLState();
 
         // copy indices array 
         spdlog::debug(std::format("Sending {} bytes, from {} address to GPU GL_ELEMENT_ARRAY_BUFFER", 

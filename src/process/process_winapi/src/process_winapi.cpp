@@ -431,7 +431,6 @@ namespace velora::winapi
         auto & window_callbacks_result = _window_handles.at(window);
         if(window_callbacks_result.has_value() == false)
         {
-            spdlog::warn(std::format("[winapi-procedure] window {} has no callbacks", window));
             return DefWindowProc(window, message, wparam, lparam);
         }
         auto & window_callbacks = window_callbacks_result.value();
@@ -449,31 +448,21 @@ namespace velora::winapi
         // or Alt-F4 is pressed while the window has focus, etc.
         case WM_CLOSE:
         {
-            spdlog::debug(std::format("[winapi-procedure] WM_CLOSE received for window {}", window));
-            return DefWindowProc(window, message, wparam, lparam);
-        }
-
-        //WM_DESTROY is sent to the window when it starts to be destroyed. 
-        //In this stage, in opposition to WM_CLOSE, you cannot stop the process, you can only make any necessary cleanup. 
-        //When you catch WM_DESTROY, none of its child windows have been destroyed yet.
-        case WM_DESTROY:
-        {
-            spdlog::debug(std::format("[winapi-procedure] WM_DESTROY received, for window {}", window));
-            return DefWindowProc(window, message, wparam, lparam);
-        }
-
-        //The WM_NCDESTROY is the last message your window will receive, 
-        //and it is therefore the best place to do “final cleanup”
-        case WM_NCDESTROY :
-        {
-            spdlog::debug(std::format("[winapi-procedure] WM_NCDESTROY received, for window {}", window));
-            auto handling_result =  DefWindowProc(window, message, wparam, lparam);
+            spdlog::debug(std::format("[winapi-procedure] WM_CLOSE received, for window {}", window));
             if(window_callbacks.onDestroy != nullptr)
             {
+                // spawn onDestroy callback on window_callbacks executor
+                // it will handle the window destruction
                 asio::co_spawn(window_callbacks.executor, window_callbacks.onDestroy(), asio::detached);
             }
-            asio::co_spawn(_io_context, unregisterWindow(window), asio::detached);
-            return handling_result;
+            else
+            {
+                // if no callback is set, destroy window synchronously
+                _window_handles.at(window) = std::nullopt;
+                return DefWindowProc(window, message, wparam, lparam); 
+            } 
+
+            return 0;
         }
 
         case WM_PAINT :

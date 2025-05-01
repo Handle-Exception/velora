@@ -34,8 +34,6 @@ namespace velora::winapi
             //
             asio::awaitable<void> close();
             
-            asio::awaitable<void> destroy();
-
             // 
             void present()
             {
@@ -49,11 +47,11 @@ namespace velora::winapi
         }
         //
         native::window_handle getHandle() const;
+        
         //
-        native::device_context getDeviceContext() const
-        {
-            return native::device_context{};
-        }
+        native::device_context acquireDeviceContext();
+
+        bool releaseDeviceContext(native::device_context device_context);
 
         IProcess & getProcess();
         

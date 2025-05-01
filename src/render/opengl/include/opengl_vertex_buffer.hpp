@@ -12,11 +12,13 @@ namespace velora::opengl
     class OpenGLVertexBuffer
     {
         public:
-            OpenGLVertexBuffer(std::vector<GLuint> indices, std::vector<Vertex> vertices);
+            OpenGLVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices);
             
             ~OpenGLVertexBuffer();
 
             OpenGLVertexBuffer(OpenGLVertexBuffer && other);
+
+            std::size_t ID() const;
 
             bool good() const;
 

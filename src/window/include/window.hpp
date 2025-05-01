@@ -20,8 +20,6 @@ namespace velora
         virtual asio::awaitable<void> hide() = 0;
         //
         virtual asio::awaitable<void> close() = 0;
-        //
-        virtual asio::awaitable<void> destroy() = 0;
         // 
         virtual void present() = 0;
         //
@@ -29,7 +27,10 @@ namespace velora
         //
         virtual native::window_handle getHandle() const = 0;
         //
-        virtual native::device_context getDeviceContext() const = 0;
+        virtual native::device_context acquireDeviceContext() = 0;
+
+        virtual bool releaseDeviceContext(native::device_context device_context) = 0;
+
 
         virtual IProcess & getProcess() = 0;
     };
@@ -49,10 +50,14 @@ namespace velora
             inline asio::awaitable<void> show() override {co_return co_await dispatch::getImpl().show();}
             inline asio::awaitable<void> hide() override {co_return co_await dispatch::getImpl().hide();}
             inline asio::awaitable<void> close() override {co_return co_await dispatch::getImpl().close();}
-            inline asio::awaitable<void> destroy() override {co_return co_await dispatch::getImpl().destroy();}
             constexpr inline void present() override {return dispatch::getImpl().present();}
             constexpr inline native::window_handle getHandle() const override { return dispatch::getImpl().getHandle();}
-            constexpr inline native::device_context getDeviceContext() const override { return dispatch::getImpl().getDeviceContext();};
+
+            constexpr inline native::device_context acquireDeviceContext() override { 
+                return dispatch::getImpl().acquireDeviceContext();};
+            constexpr inline bool releaseDeviceContext(native::device_context device_context) override { 
+                return dispatch::getImpl().releaseDeviceContext(std::move(device_context));};
+
             constexpr inline const Resolution & getResolution() const override {return dispatch::getImpl().getResolution();}
             constexpr inline IProcess & getProcess() override {return dispatch::getImpl().getProcess();}
 

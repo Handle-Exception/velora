@@ -22,10 +22,7 @@ namespace velora::winapi
 
     WinapiWindow::~WinapiWindow()
     {
-        if(_window_handle == nullptr)return;
-        
-        close();
-        spdlog::debug("[window] Winapi window destroyed");
+        assert(_window_handle == nullptr && "Winapi window should be closed before destruction" );
     }
 
     IProcess & WinapiWindow::getProcess()
@@ -60,17 +57,27 @@ namespace velora::winapi
     asio::awaitable<void> WinapiWindow::close()
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-
-        PostMessage(_window_handle, WM_CLOSE, 0, 0);
-        co_await destroy();
+        
+        auto handle = _window_handle;
+        _window_handle = nullptr;
+        co_await _process.unregisterWindow(handle);
         co_return;
     }
 
-    asio::awaitable<void> WinapiWindow::destroy()
+    native::device_context WinapiWindow::acquireDeviceContext()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        _window_handle = nullptr;
-        co_return;
+        return GetDC(_window_handle);
+    }
+
+    bool WinapiWindow::releaseDeviceContext(native::device_context device_context)
+    {
+        if(device_context == NULL)
+        {
+            spdlog::error("Wrong device context");
+            return false;
+        }
+        ReleaseDC(_window_handle, device_context);
+        return true;
     }
 
 }

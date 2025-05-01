@@ -30,6 +30,18 @@ namespace velora::game
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
             {
                 co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+                // clear actions for entites
+                for(auto & [entity, mask] : entities.getAllEntities())
+                {
+                    if(mask.test(_POSITION_BIT) == false) continue;
+
+                    auto* input_component = components.getComponent<InputComponent>(entity);
+                    assert(input_component != nullptr);
+
+                    // clear action for entity
+                    input_component->action = 0;
+                }
+
                 if(_inputs.empty()) co_return;
                 // apply inputs to instances of InputComponent
                 int action = _inputs.front();
@@ -40,8 +52,10 @@ namespace velora::game
 
                     auto* input_component = components.getComponent<InputComponent>(entity);
                     assert(input_component != nullptr);
-
-                    //input_component->action = action; ???
+                    
+                    // store current action for this system pass in component of given entity
+                    // ??? tu w sumie nie jestem pewien czy to dobry plan
+                    input_component->action = action;
                 }
                 co_return;
             }

@@ -15,7 +15,7 @@ namespace velora
         //
         virtual bool enable() const = 0;
         //
-        virtual void disable() const = 0;
+        virtual bool disable() const = 0;
     };
 
     template<class ShaderImplType>
@@ -30,7 +30,7 @@ namespace velora
             inline ~ShaderDispatcher() = default;
 
             constexpr inline bool enable() const override { return dispatch::getImpl().enable();}
-            constexpr inline void disable() const override { return dispatch::getImpl().disable();}
+            constexpr inline bool disable() const override { return dispatch::getImpl().disable();}
     };
 
     template<class ShaderImplType>
