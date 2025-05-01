@@ -12,10 +12,12 @@ namespace velora
         public:
         //
         virtual ~IShader() {};
+
+        virtual std::size_t ID() const = 0;
         //
-        virtual bool enable() const = 0;
+        virtual bool enable() = 0;
         //
-        virtual bool disable() const = 0;
+        virtual bool disable() = 0;
     };
 
     template<class ShaderImplType>
@@ -29,8 +31,10 @@ namespace velora
             inline ShaderDispatcher(Args && ... args) : dispatch(std::forward<Args>(args)...){} 
             inline ~ShaderDispatcher() = default;
 
-            constexpr inline bool enable() const override { return dispatch::getImpl().enable();}
-            constexpr inline bool disable() const override { return dispatch::getImpl().disable();}
+            constexpr inline std::size_t ID() const override { return dispatch::getImpl().ID();}
+
+            constexpr inline bool enable() override { return dispatch::getImpl().enable();}
+            constexpr inline bool disable() override { return dispatch::getImpl().disable();}
     };
 
     template<class ShaderImplType>
@@ -52,4 +56,13 @@ namespace velora
             : Implementation(std::move(impl))
             {}                                                          
     };
+
+    template <typename H>
+    constexpr inline H AbslHashValue(H h, const Shader & shader) {
+        return H::combine(std::move(h), shader->ID());
+    }
+
+    constexpr inline bool operator==(const Shader & lhs, const Shader & rhs){
+        return lhs->ID() == rhs->ID();
+    }
 }

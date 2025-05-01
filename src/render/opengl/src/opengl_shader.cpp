@@ -2,6 +2,97 @@
 
 namespace velora::opengl
 {
+    OpenGLShader::Stage::Stage(GLuint linked_shader_ID, GLenum stage_type, const std::vector<const char *> & code)
+    :   _linked_shader_ID(linked_shader_ID),
+        _stage_type(stage_type),
+        _stage_ID(0)
+    {
+        if(_linked_shader_ID == 0)
+        {
+            spdlog::error("Cannot build OpenGL shader stage - linked shader not specified");
+            return;
+        }
+
+        if(_stage_type == GL_INVALID_ENUM)
+        {
+            spdlog::error("opengl-shader", "Cannot build OpenGL shader stage - stage type not specified.");
+            return;
+        }
+
+        if(code.empty())
+        {
+            spdlog::error("opengl-shader", "Cannot build OpenGL shader stage - empty source code");
+            return;
+        }
+        
+        // allocate new stage ID
+        _stage_ID = glCreateShader(_stage_type);
+
+        std::vector<int> lengths;
+        lengths.reserve(code.size());
+        for (const auto &c : code)
+        {
+            lengths.push_back(static_cast<int>(strlen(c)));
+        }
+
+        glShaderSource(_stage_ID, code.size(), code.data(), lengths.data());
+        glCompileShader(_stage_ID);
+        glGetShaderiv(_stage_ID, GL_COMPILE_STATUS, &_result);
+        if (_result == GL_FALSE)
+        {
+            GLchar errors_log[_MAX_LOG_LENGTH];
+            glGetShaderInfoLog(_stage_ID, _MAX_LOG_LENGTH, nullptr, errors_log);
+            spdlog::error(std::format("OpenGL Shader stage[{}] compilation failed.\n{}", _stage_ID, errors_log));
+            return;
+        }
+        spdlog::debug(std::format("OpenGL shader stage[{}] compiled successfully", _stage_ID));
+        glAttachShader(_linked_shader_ID, _stage_ID);
+    }
+
+    OpenGLShader::Stage::Stage(Stage && other)
+    :   _result(std::move(other._result)),
+        _stage_type(std::move(other._stage_type)),
+        _stage_ID(std::move(other._stage_ID)),
+        _linked_shader_ID(std::move(other._linked_shader_ID))
+    {
+        other._result = 0; 
+        other._stage_ID = 0;
+        other._linked_shader_ID = 0;
+        other._stage_type = GL_INVALID_ENUM;
+    }
+
+    OpenGLShader::Stage & OpenGLShader::Stage::operator=(Stage && other)
+    {
+        if(this == &other){return *this;}
+        _result = std::move(other._result);
+        _stage_type = std::move(other._stage_type);
+        _stage_ID = std::move(other._stage_ID);
+        _linked_shader_ID = std::move(other._linked_shader_ID);
+
+        other._result = 0; 
+        other._stage_ID = 0;
+        other._linked_shader_ID = 0;
+        other._stage_type = GL_INVALID_ENUM;
+
+        return *this;
+    }
+
+    OpenGLShader::Stage::~Stage()
+    {
+        if(_stage_ID == 0){return;}
+        if(_linked_shader_ID != 0)
+        {
+            spdlog::debug(std::format("Detaching OpenGL shader stage[{}] from program[{}]", _stage_ID, _linked_shader_ID));
+            glDetachShader(_linked_shader_ID, _stage_ID);
+            _linked_shader_ID = 0;
+        }
+        spdlog::debug(std::format("Deleting OpenGL shader stage[{}]", _stage_ID));
+        glDeleteShader(_stage_ID);
+        _stage_ID = 0; 
+    }
+
+
+
     OpenGLShader::OpenGLShader()
     :   _shader_program_ID{0}
     {
@@ -15,12 +106,69 @@ namespace velora::opengl
         logOpenGLState();
     }
 
+    OpenGLShader::OpenGLShader(std::vector<const char *> vertex_code)
+    :   OpenGLShader()
+    {
+        spdlog::debug(std::format("Compiling OpenGL shader[{}] : [Vertex Stage] ", _shader_program_ID));
+        
+        _vertex_stage = Stage(_shader_program_ID, GL_VERTEX_SHADER, vertex_code);
+        
+        if(linkProgram() == false)
+        {
+            spdlog::error(std::format("OpenGL shader[{}] linking failed", _shader_program_ID));
+            return;
+        }
+
+        if(validateProgram() == false)
+        {
+            spdlog::error(std::format( "OpenGL shader[{}] did not pass validation", _shader_program_ID));
+            return; 
+        }
+    }
+
+    OpenGLShader::OpenGLShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code)
+    :   OpenGLShader()
+    {
+        spdlog::debug(std::format("Compiling OpenGL shader[{}] : [Vertex Stage] ", _shader_program_ID));
+        
+        _vertex_stage = Stage(_shader_program_ID, GL_VERTEX_SHADER, vertex_code);
+        _fragment_stage = Stage(_shader_program_ID, GL_FRAGMENT_SHADER, fragment_code);
+        
+        if(linkProgram() == false)
+        {
+            spdlog::error(std::format("OpenGL shader[{}] linking failed", _shader_program_ID));
+            return;
+        }
+
+        if(validateProgram() == false)
+        {
+            spdlog::error(std::format( "OpenGL shader[{}] did not pass validation", _shader_program_ID));
+            return; 
+        }
+    }
+
     OpenGLShader::OpenGLShader(OpenGLShader && other)
     :   _shader_program_ID{std::move(other._shader_program_ID)},
         _vertex_stage{std::move(other._vertex_stage)},
         _fragment_stage{std::move(other._fragment_stage)}
     {
         other._shader_program_ID = 0;
+    }
+
+    OpenGLShader::~OpenGLShader()
+    {
+        if(_shader_program_ID == 0)return;
+
+        disable();
+
+        // clearing stages data
+        if(_vertex_stage.has_value())_vertex_stage.reset();
+        if(_fragment_stage.has_value())_fragment_stage.reset();
+
+        glDeleteProgram(_shader_program_ID);
+        spdlog::info(std::format("OpenGL shader[{}] destroyed", _shader_program_ID));
+
+        _shader_program_ID = 0;
     }
 
     bool OpenGLShader::generateProgramID()
@@ -35,20 +183,9 @@ namespace velora::opengl
         return true;
     }
 
-    void OpenGLShader::clear()
+    std::size_t OpenGLShader::ID() const
     {
-        if(_shader_program_ID == 0)return;
-
-        disable();
-        //RemoveUBO();
-        // clearing stages data
-        //if(_fragment_stage.has_value())_fragment_stage.value()->Clear();
-        //if(_fragmentStage.has_value())_fragmentStage.value()->Clear();
-
-        glDeleteProgram(_shader_program_ID);
-        spdlog::info(std::format("OpenGL shader[{}] destroyed", _shader_program_ID));
-
-        _shader_program_ID = 0;
+        return _shader_program_ID;
     }
 
     bool OpenGLShader::enable()
@@ -61,7 +198,6 @@ namespace velora::opengl
         }
         
         glUseProgram(_shader_program_ID);
-        logOpenGLState();
 
         glGetIntegerv(GL_CURRENT_PROGRAM, &currently_used_shader);
         if(currently_used_shader != _shader_program_ID){
@@ -78,41 +214,11 @@ namespace velora::opengl
         glGetIntegerv(GL_CURRENT_PROGRAM, &currently_used_shader);
         if(currently_used_shader != _shader_program_ID)
         {
-            spdlog::warn(std::format("OpenGL shader[{}] is not currently used by opengl rendering state", _shader_program_ID));
+            spdlog::debug(std::format("OpenGL shader[{}] is not currently used by opengl rendering state", _shader_program_ID));
             return false;
         }
         glUseProgram(0);
         return true;
-    }
-
-    bool OpenGLShader::compile(std::string vertex_code)
-    {
-        spdlog::debug(std::format("Compiling OpenGL shader[{}] : [Vertex Stage] ", _shader_program_ID));
-        //_vertex_stage = OpenGLShaderVertexStage(_logger, _shaderProgram);
-       // const shader::UBOConfig uboConfig = vertexCode.UBOConfig();
-        //(*_vertex_stage)->Build(vertexCode);
-        
-        //return finishCompilation(uboConfig);
-        return false;
-    }
-
-    bool OpenGLShader::compile(std::string vertex_code, std::string fragment_code)
-    {
-        spdlog::debug(std::format("Compiling OpenGL shader[{}] : [Vertex Stage], [Fragment Stage]", _shader_program_ID));
-
-        //_vertexStage = OpenGLShaderVertexStage(_logger, _shaderProgram);
-        //_fragmentStage = OpenGLShaderFragmentStage(_logger, _shaderProgram);
-        
-        //shader::UBOConfig uboConfigVert = vertexCode.UBOConfig();
-        //shader::UBOConfig uboConfigFrag = fragmentCode.UBOConfig();
-
-        //(*_vertexStage)->Build(vertexCode);
-        //(*_fragmentStage)->Build(fragmentCode);
-
-        //uboConfigVert.merge(uboConfigFrag);
-
-        //return FinishCompilation(uboConfigVert);
-        return false;
     }
 
     bool OpenGLShader::linkProgram()
@@ -122,12 +228,13 @@ namespace velora::opengl
         logOpenGLState();
 
 		glGetProgramiv(_shader_program_ID, GL_LINK_STATUS, &result);
-		if (result == GL_FALSE)
+		if (result == GL_FALSE) // FAILS
         {
 		    spdlog::error(std::format("OpenGL shader[{}] linking failed", _shader_program_ID));
 
-            GLchar errors_log[1024];
-		    glGetProgramInfoLog(_shader_program_ID, 1024, nullptr, errors_log);
+
+            GLchar errors_log[_MAX_LOG_LENGTH];
+		    glGetProgramInfoLog(_shader_program_ID, _MAX_LOG_LENGTH, nullptr, errors_log);
             spdlog::error(errors_log);
             return false;
         }
@@ -146,8 +253,8 @@ namespace velora::opengl
         {
             spdlog::error(std::format("OpenGL shader[{}] did not pass validation", _shader_program_ID));
 
-            GLchar errors_log[1024];
-            glGetProgramInfoLog(_shader_program_ID, 1024, nullptr, errors_log);
+            GLchar errors_log[_MAX_LOG_LENGTH];
+            glGetProgramInfoLog(_shader_program_ID, _MAX_LOG_LENGTH, nullptr, errors_log);
             spdlog::error(errors_log);
             return false;
         }

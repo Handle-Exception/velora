@@ -18,22 +18,22 @@ namespace velora::opengl
     {
     public:
         //ctor
-        OpenGLShader();
+        OpenGLShader(std::vector<const char *> vertex_code);
+
+        OpenGLShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code);
+
         //move ctor
         OpenGLShader(OpenGLShader && other);
         //dtor
-        virtual ~OpenGLShader();
+        ~OpenGLShader();
+
+        std::size_t ID() const;
+
         // Bind shader in opengl rendering state
         bool enable();
         //  Unbind and stops shader in opengl rendering state
         bool disable();
         // Removes all contained objects 
-        void clear();
-        //Try to compile OpenGL shader program
-        bool compile(std::string vertex_code);
-        //Try to compile OpenGL shader program
-        bool compile(std::string vertex_code, std::string fragment_code);
-        //
         //shader::Inputs & In();
         // push variables / samplers state into gpu
         //void Push(const texture::TexturePool &);
@@ -41,19 +41,32 @@ namespace velora::opengl
         //std::size_t ID() const {return _shaderProgram;}
 
     protected:
+        OpenGLShader();
+
+
         struct Location
         {
             std::string name;
             std::size_t id;
         };
 
-        struct Stage
+        class Stage
         {
-            GLchar errors_log[1024];
-            GLint result = 0;
-            GLenum stage_type = GL_INVALID_ENUM;
-            GLuint stage_ID = 0;
-            GLuint linked_shader_ID = 0;
+            public:
+                Stage(GLuint linked_shader_ID, GLenum stage_type, const std::vector<const char *> & code);
+                Stage(Stage && other);
+                Stage & operator=(Stage && other);
+                Stage(const Stage & other) = delete;
+                Stage & operator=(const Stage & other) = delete;
+                ~Stage();
+
+            private:
+                constexpr static const unsigned int _MAX_LOG_LENGTH = 1024;
+
+                GLint _result = 0;
+                GLenum _stage_type = GL_INVALID_ENUM;
+                GLuint _stage_ID = 0;
+                GLuint _linked_shader_ID = 0;
         };
 
         //
@@ -71,8 +84,6 @@ namespace velora::opengl
         // performs validity check
         bool validateProgram() const;
         //
-        //bool finishCompilation(const shader::UBOConfig & uboConfig);
-        //
         //void fetchInputs(const shader::UBOConfig & uboConfig);
         //
         //void fetchUniforms(const data::SetContainer<GLint> & uniformsInBlocks);
@@ -81,11 +92,14 @@ namespace velora::opengl
         //
 
     private:
+        constexpr static const unsigned int _MAX_LOG_LENGTH = 4096;
+
+
         GLuint _shader_program_ID;
 
         std::optional<Stage> _vertex_stage;    
         std::optional<Stage> _fragment_stage;
-
+        
         //renderer::shader::Inputs _inputs;
     };
 }

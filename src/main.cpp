@@ -53,19 +53,43 @@ namespace velora
                 }
             });
 
-        auto id_res = co_await renderer->constructVertexBuffer({0,1,2}, {Vertex{{0,0,0}, {1,0,0}, {0,1}}});
+        auto vb_id = co_await renderer->constructVertexBuffer(
+            {
+                0, 1, 2, // first triangle (bottom-left → top-right)
+                2, 3, 0  // second triangle (top-right → top-left)
+            },
+            {
+                Vertex{{-0.5f, -0.5f, 0.0f}, {1, 0, 0}, {0.0f, 0.0f}}, // 0: bottom-left
+                Vertex{{ 0.5f, -0.5f, 0.0f}, {0, 1, 0}, {1.0f, 0.0f}}, // 1: bottom-right
+                Vertex{{ 0.5f,  0.5f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}}, // 2: top-right
+                Vertex{{-0.5f,  0.5f, 0.0f}, {1, 1, 0}, {0.0f, 1.0f}}, // 3: top-left
+            }
+        );
 
-        if(!id_res)
+        if(!vb_id)
         {
             spdlog::error("Failed to create vertex buffer");
             co_return -1;
         }
 
-        if((co_await renderer->eraseVertexBuffer(id_res.value())) == false)
+
+        auto sh_id = co_await renderer->constructShader(
+            {
+                "#version 330 core\n",
+                "layout(location = 0) in vec3 aPos;\n",
+                "void main()\n",
+                "{\n",
+                "    gl_Position = vec4(aPos, 1.0);\n",
+                "}\n"
+            }
+        );
+
+        if(!sh_id)
         {
-            spdlog::error("Failed to erase vertex buffer");
+            spdlog::error("Failed to create Shader");
             co_return -1;
         }
+
 
         co_await window->show();
 
@@ -137,13 +161,18 @@ namespace velora
 
 
             // clear window
+            co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});
             
+            co_await renderer->render(*vb_id, *sh_id);
+
             // swap buffers
-            //co_await renderer->present();
+            co_await renderer->present(); 
             // update window
             //co_await window->present();
+            
             // apply input
             co_await world.getCurrentLevel().runSystem(input_system);
+            
             // update world state
             co_await world.update();
         }

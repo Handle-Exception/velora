@@ -220,8 +220,6 @@ namespace velora::opengl
             }
         }
 
-        logOpenGLState();
-
         return true;
     }
 
