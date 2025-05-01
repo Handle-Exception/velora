@@ -84,45 +84,45 @@ set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
 set(ABSL_USE_SYSTEM_INCLUDES ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(abseil)
 
-
-message(STATUS "Fetching dependency `protobuf` ...")
-FetchContent_Declare(
-    protobuf
-    GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
-    GIT_TAG        "v30.2"
-)
-set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
-set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
-set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "" FORCE)
-set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-FetchContent_MakeAvailable(protobuf)
-
-# Disable warnings for all protobuf targets
-foreach(target
-    utf8_range
-    utf8_validity
-    abseil
-    abseil::hash
-    libprotobuf
-    libprotoc
-    libprotobuf-lite
-    protoc-gen-upb
-    libupb
-    protoc
-)
-    if(TARGET ${target})
-        target_compile_options(${target} PRIVATE /wd4267 /wd4244 /wd4251 /wd4275)
-
-        if(MSVC)
-            target_compile_options(${target} PRIVATE /W0)
-        else()
-            target_compile_options(${target} PRIVATE -w)
+if(USE_PROTOBUF)
+    message(STATUS "Fetching dependency `protobuf` ...")
+    FetchContent_Declare(
+        protobuf
+        GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
+        GIT_TAG        "v30.2"
+    )
+    set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
+    set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
+    set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "" FORCE)
+    set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    
+    FetchContent_MakeAvailable(protobuf)
+    
+    # Disable warnings for all protobuf targets
+    foreach(target
+        utf8_range
+        utf8_validity
+        abseil
+        abseil::hash
+        libprotobuf
+        libprotoc
+        libprotobuf-lite
+        protoc-gen-upb
+        libupb
+        protoc
+    )
+        if(TARGET ${target})
+            target_compile_options(${target} PRIVATE /wd4267 /wd4244 /wd4251 /wd4275)
+    
+            if(MSVC)
+                target_compile_options(${target} PRIVATE /W0)
+            else()
+                target_compile_options(${target} PRIVATE -w)
+            endif()
         endif()
-    endif()
-endforeach()
-
+    endforeach()
+endif()
 
 if(BUILD_TESTING)
     message(STATUS "Fetching dependency `GTest` ...")

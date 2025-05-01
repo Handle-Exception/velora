@@ -4,7 +4,7 @@
 
 namespace velora::game
 {
-    struct PositionComponent 
+    struct TransformComponent 
     {
         glm::vec3 position;
     };

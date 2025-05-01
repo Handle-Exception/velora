@@ -10,6 +10,10 @@ project("${PROJECT_NAME}"
     LANGUAGES CXX
 )
 
+option(USE_PROTOBUF "Use protobuf" OFF)
+option(BUILD_TESTING "Build tests" OFF)
+
+
 include(cmake/compile_options.cmake)
 include(cmake/dependencies.cmake)
 include(cmake/add_module.cmake)
@@ -37,7 +41,6 @@ target_link_libraries("${PROJECT_NAME}Lib"
         asio
         glm
         glew
-        protobuf::libprotobuf
 
         "${PROJECT_PREFIX}::Version"
         "${PROJECT_PREFIX}::Native"
@@ -47,10 +50,14 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::Resolution"
         "${PROJECT_PREFIX}::Process"
         "${PROJECT_PREFIX}::Window"
-        "${PROJECT_PREFIX}::Render"
         "${PROJECT_PREFIX}::RenderOpenGL"
+        "${PROJECT_PREFIX}::Render"
         "${PROJECT_PREFIX}::Network"
         "${PROJECT_PREFIX}::ECS"
+        "${PROJECT_PREFIX}::TransformSystem"
+        "${PROJECT_PREFIX}::VisualSystem"
+        "${PROJECT_PREFIX}::HealthSystem"
+        "${PROJECT_PREFIX}::World"
         "${PROJECT_PREFIX}::Game"
 )
 add_dependencies("${PROJECT_NAME}Lib" glew_build)
@@ -63,6 +70,13 @@ if(WIN32)
         PUBLIC
             "${PROJECT_PREFIX}::ProcessWinapi"
             "${PROJECT_PREFIX}::WindowWinapi"
+    )
+endif()
+
+if(${protobuf_FOUND})
+    target_link_libraries("${PROJECT_NAME}Lib"
+        PUBLIC
+            protobuf::libprotobuf
     )
 endif()
 

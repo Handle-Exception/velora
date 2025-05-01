@@ -7,6 +7,7 @@ add_module(NAME "ProcessWinapi"
         spdlog::spdlog
         asio
         absl::hash
+        absl::flat_hash_map
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Resolution"
         "${PROJECT_PREFIX}::Event"

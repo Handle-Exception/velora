@@ -9,7 +9,7 @@ namespace velora::game
     class VisualSystem
     {
         public:
-            VisualSystem(ComponentManager& components, EntityManager& entities, Renderer & renderer)
+            VisualSystem(ComponentManager& components, EntityManager& entities, IRenderer & renderer)
             :   _components(components),
                 _entities(entities),
                 _renderer(renderer)
@@ -27,7 +27,7 @@ namespace velora::game
             {
                 uint32_t position_bit = ComponentTypeManager::getTypeID<VisualComponent>();
                 VisualComponent * visual_component = nullptr;
-                
+
                 for (const auto& [entity, mask] : _entities.getAllEntities())
                 {
                     if (mask.test(position_bit) == false) continue;
@@ -36,9 +36,23 @@ namespace velora::game
 
                 }
             }
+
+            inline constexpr std::string_view getName() const { return "VisualSystem"; }
+        
+            std::ranges::ref_view<std::vector<std::string>> getDependencies() const 
+            {
+                static std::vector<std::string> deps{"PositionSystem"};
+                return std::views::all(deps);
+            }
+
+            asio::awaitable<void> run()
+            {
+                co_return;
+            }
+
         private:
             ComponentManager& _components;
             EntityManager& _entities;
-            Renderer & _renderer;
+            IRenderer & _renderer;
     };
 }

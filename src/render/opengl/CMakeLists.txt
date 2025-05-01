@@ -7,6 +7,7 @@ add_module(NAME "RenderOpenGL"
         asio
         glm
         absl::hash
+        absl::flat_hash_map
 
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Type"

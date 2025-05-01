@@ -4,11 +4,13 @@ namespace velora
 {
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
+        // create system objects
+
         auto main_strand = asio::make_strand(io_context);
 
         spdlog::debug(std::format("[t:{}] Velora main started", std::this_thread::get_id()));
 
-        auto window = co_await Window::construct<winapi::WinapiWindow>(asio::use_awaitable, io_context, process, "Velora", Resolution{256, 512});
+        auto window = co_await Window::construct<winapi::WinapiWindow>(asio::use_awaitable, io_context, process, "Velora", Resolution{512, 256});
         if (window->good() == false)
         {
             spdlog::error("Failed to create window");
@@ -21,6 +23,29 @@ namespace velora
             spdlog::error("Failed to create renderer");
             co_return -1;
         }
+
+        // Create game subsystems
+        game::World world(*renderer);
+
+        // create level in world in which we will spawn entities
+        // level is divided in chunks which is basically octree
+        // level should have init, update and shutdown methods
+
+        // then update all subsystems
+        // input is handled in other thread
+        // it calls callbacks in main_strand
+        // 
+        // callbacks are connected to controller component
+        // controller component stores actions
+        // then eg. Transform component uses actions to move entity
+        // eg. Shoot component uses actions to fire bullet ect.
+        //
+        // then Visual Component uses Transform component to calculate matrices and draw entity
+        // then Physics component uses Transform component to move entity
+
+
+
+
 
         co_await process.setWindowCallbacks(window->getHandle(), 
             WindowCallbacks{.executor = main_strand,

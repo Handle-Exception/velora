@@ -9,7 +9,9 @@
 #include "process_winapi.hpp"
 #endif
 
+#ifdef GOOGLE_PROTOBUF_VERSION
 #include <google/protobuf/descriptor.h>
+#endif
 
 #include <asio.hpp>
 

@@ -18,10 +18,14 @@ ____   ____     .__
 
 int main(int argc, char* argv[])
 {
+    #ifdef GOOGLE_PROTOBUF_VERSION
     GOOGLE_PROTOBUF_VERIFY_VERSION;
+    #endif
 
-    const unsigned hardwareCores = std::thread::hardware_concurrency();
-    const unsigned usedCores = 4;
+    const unsigned hardware_cores = std::thread::hardware_concurrency();
+    const unsigned used_cores = 4;
+
+    assert(used_cores <= hardware_cores);
 
     spdlog::set_level(spdlog::level::debug);
 
@@ -37,7 +41,7 @@ int main(int argc, char* argv[])
 
     spdlog::info("Current working path: {}", std::filesystem::current_path().string());
 
-    asio::io_context io_context;
+    asio::io_context io_context(used_cores);
 
     // Create a process
     Process process = Process::construct<winapi::WinapiProcess>();
@@ -72,9 +76,11 @@ int main(int argc, char* argv[])
 
     process->join();
 
-    google::protobuf::ShutdownProtobufLibrary();
-
     spdlog::debug("Program finished with code {}", return_value);
+
+    #ifdef GOOGLE_PROTOBUF_VERSION
+    google::protobuf::ShutdownProtobufLibrary();
+    #endif
 
     return return_value;
 }
