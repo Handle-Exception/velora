@@ -37,8 +37,9 @@ namespace velora::opengl
             asio::awaitable<void> close();
 
             asio::awaitable<void> clearScreen(glm::vec4 color);
-            asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, glm::mat4 model_matrix);
+            asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs);
             asio::awaitable<void> present();
+            asio::awaitable<void> updateViewport(Resolution resolution);
 
             asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices);
             
@@ -49,10 +50,11 @@ namespace velora::opengl
 
             asio::awaitable<bool> eraseShader(std::size_t id);
 
-
         protected:
             OpenGLRenderer(asio::io_context & io_context, IWindow & window, native::opengl_context_handle oglctx_handle);
 
+
+            void assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs);
 
         private:
             IWindow & _window;

@@ -49,9 +49,9 @@ namespace velora::opengl
     asio::awaitable<void> OpenGLRenderer::close()
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        auto handle = _oglctx_handle;
 
         if(_oglctx_handle == nullptr)co_return;
+
 
         native::device_context device_context = _window.acquireDeviceContext();
         // bind context
@@ -67,6 +67,7 @@ namespace velora::opengl
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(device_context);
         
+        auto handle = _oglctx_handle;
         _oglctx_handle = nullptr;
 
         co_await _window.getProcess().unregisterOGLContext(handle);
@@ -210,6 +211,40 @@ namespace velora::opengl
         co_return true;
     }
 
+    void OpenGLRenderer::assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs)
+    {
+        for(const auto & [name, val] : shader_inputs.in_int)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+        for(const auto & [name, val] : shader_inputs.in_float)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+
+        for(const auto & [name, val] : shader_inputs.in_vec2f)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+        for(const auto & [name, val] : shader_inputs.in_vec3f)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+
+        for(const auto & [name, val] : shader_inputs.in_mat2f)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+        for(const auto & [name, val] : shader_inputs.in_mat3f)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+        for(const auto & [name, val] : shader_inputs.in_mat4f)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+    }
+
     asio::awaitable<void> OpenGLRenderer::clearScreen(glm::vec4 color)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
@@ -228,9 +263,11 @@ namespace velora::opengl
         // unbind context
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(device_context);
+
+        co_return;
     }
 
-    asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, glm::mat4 model_matrix)
+    asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
 
@@ -264,11 +301,15 @@ namespace velora::opengl
             co_return;
         }
 
+        assignShaderInputs(shader_ID, shader_inputs);
+
         glDrawElements(GL_TRIANGLES, vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
 
         // unbind context
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(device_context);
+
+        co_return;
     }
 
     asio::awaitable<void> OpenGLRenderer::present()
@@ -284,11 +325,33 @@ namespace velora::opengl
 
         glFinish();
         SwapBuffers(device_context);
-        RedrawWindow(_window.getHandle(), NULL, NULL, RDW_INTERNALPAINT);
 
         // unbind context
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(device_context);
+
+        co_return co_await _window.present();
+    }
+
+    asio::awaitable<void> OpenGLRenderer::updateViewport(Resolution resolution)
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        
+        // bind context
+        native::device_context device_context = _window.acquireDeviceContext();
+        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
+        {
+            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            co_return;
+        }
+
+        glViewport(0, 0, (GLsizei)resolution.getWidth(), (GLsizei)resolution.getHeight());
+        
+        // unbind context
+        wglMakeCurrent(0, 0);
+        _window.releaseDeviceContext(device_context);
+
+        co_return;
     }
 
 }

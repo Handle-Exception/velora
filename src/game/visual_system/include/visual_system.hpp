@@ -27,6 +27,7 @@ namespace velora::game
                 for (const auto& [entity, mask] : entities.getAllEntities())
                 {
                     if (mask.test(_POSITION_BIT) == false) continue;
+
                     visual_component = components.getComponent<VisualComponent>(entity);
                     assert(visual_component != nullptr);
                     
@@ -47,7 +48,10 @@ namespace velora::game
                     }
 
                     // render
-                    //co_await_renderer.render(*visual_component);
+                    co_await _renderer.render(visual_component->vertex_buffer_ID, visual_component->shader_ID, 
+                        ShaderInputs{
+                            .in_mat4f = {{"uModel", visual_component->model_matrix}}
+                        });
                 }
                 co_return;
             }

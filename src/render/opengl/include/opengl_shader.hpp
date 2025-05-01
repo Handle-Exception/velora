@@ -2,7 +2,10 @@
 
 #include <string>
 #include <optional>
+#include <utility>
 
+#include <absl/container/flat_hash_map.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <spdlog/spdlog.h>
 #include <GL/glew.h>
 
@@ -19,36 +22,28 @@ namespace velora::opengl
     public:
         //ctor
         OpenGLShader(std::vector<const char *> vertex_code);
-
         OpenGLShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code);
-
-        //move ctor
         OpenGLShader(OpenGLShader && other);
-        //dtor
         ~OpenGLShader();
 
         std::size_t ID() const;
 
-        // Bind shader in opengl rendering state
         bool enable();
-        //  Unbind and stops shader in opengl rendering state
         bool disable();
-        // Removes all contained objects 
-        //shader::Inputs & In();
-        // push variables / samplers state into gpu
-        //void Push(const texture::TexturePool &);
 
-        //std::size_t ID() const {return _shaderProgram;}
+        void setUniform(const std::string & name, int value);
+        void setUniform(const std::string & name, float value);
+
+        void setUniform(const std::string & name, glm::vec2 value);
+        void setUniform(const std::string & name, glm::vec3 value);
+        void setUniform(const std::string & name, glm::vec4 value);
+
+        void setUniform(const std::string & name, glm::mat2 value);
+        void setUniform(const std::string & name, glm::mat3 value);
+        void setUniform(const std::string & name, glm::mat4 value);
 
     protected:
         OpenGLShader();
-
-
-        struct Location
-        {
-            std::string name;
-            std::size_t id;
-        };
 
         class Stage
         {
@@ -69,37 +64,23 @@ namespace velora::opengl
                 GLuint _linked_shader_ID = 0;
         };
 
-        //
         bool generateProgramID();
 
-        // Careful, slow function. Returns variable location, given its name
-        // or empty optional when cannot find variable
-        std::optional<std::size_t> location(const std::string & name);
-
-        // relatively fast function
-        Location locateVariable(const GLSLVariable & variable_data) const;
-
-        // perform linking stage
         bool linkProgram();
-        // performs validity check
         bool validateProgram() const;
-        //
-        //void fetchInputs(const shader::UBOConfig & uboConfig);
-        //
-        //void fetchUniforms(const data::SetContainer<GLint> & uniformsInBlocks);
-        //
-        //data::SetContainer<GLint> FetchUBOs(const shader::UBOConfig & uboConfig);
-        //
+
+        void fetchAttributes();
+        void fetchUniforms();
 
     private:
         constexpr static const unsigned int _MAX_LOG_LENGTH = 4096;
 
-
         GLuint _shader_program_ID;
 
-        std::optional<Stage> _vertex_stage;    
+        std::optional<Stage> _vertex_stage;
         std::optional<Stage> _fragment_stage;
         
-        //renderer::shader::Inputs _inputs;
+        absl::flat_hash_map<std::string, std::pair<GLint, GLSLVariable>> _uniforms;
+        absl::flat_hash_map<std::string, std::pair<GLint, GLSLVariable>> _attributes;
     };
 }

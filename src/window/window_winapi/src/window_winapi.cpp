@@ -54,12 +54,21 @@ namespace velora::winapi
         return _window_handle != nullptr;
     }
     
+    asio::awaitable<void> WinapiWindow::present()
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        RedrawWindow(_window_handle, NULL, NULL, RDW_INTERNALPAINT);
+        co_return;
+    }
+
     asio::awaitable<void> WinapiWindow::close()
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        
+        if(_window_handle == nullptr)co_return;
+
         auto handle = _window_handle;
         _window_handle = nullptr;
+
         co_await _process.unregisterWindow(handle);
         co_return;
     }

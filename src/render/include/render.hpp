@@ -2,6 +2,8 @@
 
 #include "type.hpp"
 
+#include "resolution.hpp"
+
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 
@@ -30,8 +32,9 @@ namespace velora
         virtual asio::awaitable<void> close() = 0;
 
         virtual asio::awaitable<void> clearScreen(glm::vec4 color) = 0;
-        virtual asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, glm::mat4 model_matrix = glm::mat4(1.0)) = 0;
+        virtual asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs = ShaderInputs{}) = 0;
         virtual asio::awaitable<void> present() = 0;
+        virtual asio::awaitable<void> updateViewport(Resolution resolution) = 0;
 
         virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) = 0;
         
@@ -57,38 +60,41 @@ namespace velora
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
             inline asio::awaitable<void> close() override { co_return co_await dispatch::getImpl().close();}
 
-            inline asio::awaitable<void> clearScreen(glm::vec4 color) { 
+            inline asio::awaitable<void> clearScreen(glm::vec4 color) override { 
                 co_return co_await dispatch::getImpl().clearScreen(std::move(color));
             };
 
-            inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, glm::mat4 model_matrix) { 
-                co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID), std::move(model_matrix));
+            inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs) override { 
+                co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID), std::move(shader_inputs));
             };
 
-            inline asio::awaitable<void> present() { 
+            inline asio::awaitable<void> present() override { 
                 co_return co_await dispatch::getImpl().present();
             };
 
-            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) { 
+            inline asio::awaitable<void> updateViewport(Resolution resolution) override { 
+                co_return co_await dispatch::getImpl().updateViewport(std::move(resolution));
+            };
+
+            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) override{ 
                 co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(indices), std::move(vertices));
             };
         
-            inline asio::awaitable<bool> eraseVertexBuffer(std::size_t id){
+            inline asio::awaitable<bool> eraseVertexBuffer(std::size_t id) override {
                 co_return co_await dispatch::getImpl().eraseVertexBuffer(std::move(id));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code) { 
+            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code) override { 
                 co_return co_await dispatch::getImpl().constructShader(std::move(vertex_code));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) { 
+            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) override { 
                 co_return co_await dispatch::getImpl().constructShader(std::move(vertex_code), std::move(fragment_code));
             }
 
-            inline asio::awaitable<bool> eraseShader(std::size_t id){
+            inline asio::awaitable<bool> eraseShader(std::size_t id) override {
                 co_return co_await dispatch::getImpl().eraseShader(std::move(id));
             }
-
     };
 
     template<class RendererImplType>

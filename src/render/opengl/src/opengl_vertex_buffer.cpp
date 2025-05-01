@@ -48,6 +48,8 @@ namespace velora::opengl
         _vertices.clear();
         _indices.clear();
         removeBuffers();
+
+        spdlog::info("OpenGL vertex buffer destroyed");
     }
 
     std::size_t OpenGLVertexBuffer::ID() const

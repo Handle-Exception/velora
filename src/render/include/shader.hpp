@@ -5,8 +5,26 @@
 #include <string>
 #include <utility>
 
+#include <glm/glm.hpp>
+#include <absl/container/flat_hash_map.h>
+
+
 namespace velora
 {
+    struct ShaderInputs
+    {
+        absl::flat_hash_map<std::string, int> in_int;
+        absl::flat_hash_map<std::string, float> in_float;
+
+        absl::flat_hash_map<std::string, glm::vec2> in_vec2f;
+        absl::flat_hash_map<std::string, glm::vec2> in_vec3f;
+
+        absl::flat_hash_map<std::string, glm::mat2> in_mat2f;
+        absl::flat_hash_map<std::string, glm::mat3> in_mat3f;
+        absl::flat_hash_map<std::string, glm::mat4> in_mat4f;
+    };
+
+
     class IShader : public type::Interface
     {
         public:
@@ -18,6 +36,17 @@ namespace velora
         virtual bool enable() = 0;
         //
         virtual bool disable() = 0;
+
+        virtual void setUniform(const std::string & name, int value) = 0;
+        virtual void setUniform(const std::string & name, float value)= 0;
+
+        virtual void setUniform(const std::string & name, glm::vec2 value)= 0;
+        virtual void setUniform(const std::string & name, glm::vec3 value)= 0;
+        virtual void setUniform(const std::string & name, glm::vec4 value)= 0;
+
+        virtual void setUniform(const std::string & name, glm::mat2 value)= 0;
+        virtual void setUniform(const std::string & name, glm::mat3 value)= 0;
+        virtual void setUniform(const std::string & name, glm::mat4 value)= 0;
     };
 
     template<class ShaderImplType>
@@ -35,6 +64,17 @@ namespace velora
 
             constexpr inline bool enable() override { return dispatch::getImpl().enable();}
             constexpr inline bool disable() override { return dispatch::getImpl().disable();}
+
+            constexpr inline void setUniform(const std::string & name, int value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+            constexpr inline void setUniform(const std::string & name, float value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+
+            constexpr inline void setUniform(const std::string & name, glm::vec2 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+            constexpr inline void setUniform(const std::string & name, glm::vec3 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+            constexpr inline void setUniform(const std::string & name, glm::vec4 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+
+            constexpr inline void setUniform(const std::string & name, glm::mat2 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+            constexpr inline void setUniform(const std::string & name, glm::mat3 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+            constexpr inline void setUniform(const std::string & name, glm::mat4 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
     };
 
     template<class ShaderImplType>

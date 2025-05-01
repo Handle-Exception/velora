@@ -124,6 +124,9 @@ namespace velora::opengl
             spdlog::error(std::format( "OpenGL shader[{}] did not pass validation", _shader_program_ID));
             return; 
         }
+
+        fetchAttributes();
+        fetchUniforms();
     }
 
     OpenGLShader::OpenGLShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code)
@@ -145,6 +148,9 @@ namespace velora::opengl
             spdlog::error(std::format( "OpenGL shader[{}] did not pass validation", _shader_program_ID));
             return; 
         }
+
+        fetchAttributes();
+        fetchUniforms();
     }
 
     OpenGLShader::OpenGLShader(OpenGLShader && other)
@@ -261,5 +267,136 @@ namespace velora::opengl
         
         return true;
     }
+
+    void OpenGLShader::fetchAttributes()
+    {
+        GLint attributes_count = 0;
+        glGetProgramiv(_shader_program_ID, GL_ACTIVE_ATTRIBUTES, &attributes_count);
+
+        for (GLint i = 0; i < attributes_count; ++i)
+        {
+            GLSLVariable var;
+            glGetActiveAttrib(
+                _shader_program_ID,              // program
+                i,                       // uniform index
+                GLSLVariable::buffer_size,  // max length of name buffer
+                &var.length,             // actual name length
+                &var.size,               // array size (e.g. [4] is size 4)
+                &var.type,               // type: GL_FLOAT, GL_FLOAT_VEC3, etc.
+                var.name                 // output name
+            );
+            GLint location = glGetAttribLocation(_shader_program_ID, var.name);
+
+            _attributes[var.name] = std::make_pair(std::move(location), std::move(var));
+
+            spdlog::debug("Attribute [{}]: name={}, type=0x{:X}, size={}", i, var.name, var.type, var.size);
+        }
+    }
+    
+    void OpenGLShader::fetchUniforms()
+    {
+        GLint uniform_count = 0;
+        glGetProgramiv(_shader_program_ID, GL_ACTIVE_UNIFORMS, &uniform_count);
+
+        for (GLint i = 0; i < uniform_count; ++i)
+        {
+            GLSLVariable var;
+            glGetActiveUniform(
+                _shader_program_ID,              // program
+                i,                       // uniform index
+                GLSLVariable::buffer_size,  // max length of name buffer
+                &var.length,             // actual name length
+                &var.size,               // array size (e.g. [4] is size 4)
+                &var.type,               // type: GL_FLOAT, GL_FLOAT_VEC3, etc.
+                var.name                 // output name
+            );
+            GLint location = glGetUniformLocation(_shader_program_ID, var.name);
+
+            _uniforms[var.name] = std::make_pair(std::move(location), std::move(var));
+
+            spdlog::debug("Uniform [{}]: name={}, type=0x{:X}, size={}", i, var.name, var.type, var.size);
+        }
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, int value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniform1i(_uniforms.at(name).first, value);
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, float value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniform1f(_uniforms.at(name).first, value);
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, glm::vec2 value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniform2fv(_uniforms.at(name).first, 1, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, glm::vec3 value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniform3fv(_uniforms.at(name).first, 1, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, glm::vec4 value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniform4fv(_uniforms.at(name).first, 1, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, glm::mat2 value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniformMatrix2fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
+    }
+        
+    void OpenGLShader::setUniform(const std::string & name, glm::mat3 value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniformMatrix3fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, glm::mat4 value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniformMatrix4fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
+    }
+
 
 }

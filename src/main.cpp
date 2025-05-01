@@ -38,9 +38,11 @@ namespace velora
                     co_await window->close(); // and destroy window object
                     co_return;
                 },
-                .onResize = [&window](int width, int height) -> asio::awaitable<void>
+                .onResize = [&window, &renderer](int width, int height) -> asio::awaitable<void>
                 {
                     spdlog::info(std::format("WindowCallbacks Resized {}x{}", width, height));
+                    //co_await window->resize(width, height);
+                    co_await renderer->updateViewport(Resolution{(std::size_t)width, (std::size_t)height});
                     co_return;
                 },
                 .onKeyPress = [&window, &input_system](int key) -> asio::awaitable<void>
@@ -77,9 +79,10 @@ namespace velora
             {
                 "#version 330 core\n",
                 "layout(location = 0) in vec3 aPos;\n",
+                "uniform mat4 uModel;\n",
                 "void main()\n",
                 "{\n",
-                "    gl_Position = vec4(aPos, 1.0);\n",
+                "    gl_Position = uModel * vec4(aPos, 1.0);\n",
                 "}\n"
             }
         );
@@ -129,52 +132,49 @@ namespace velora
         // player entity definition
         // should be loaded from level file 
         // just like the rest of entities
-        world.getCurrentLevel().addComponent(*player_entity, game::TransformComponent{.position = {0, 0, 0}});
+        world.getCurrentLevel().addComponent(*player_entity, game::TransformComponent{.position = {0, 0, 0}, .rotation = {0, 0, 0, 0}, .scale = {1, 1, 1}});
         world.getCurrentLevel().addComponent(*player_entity, game::HealthComponent{.health = 100});
-        world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent{});
+        world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent{.vertex_buffer_ID = *vb_id, .shader_ID = *sh_id});
         world.getCurrentLevel().addComponent(*player_entity, game::InputComponent{});
-
-        auto player_transform_component =  world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
-        if(player_transform_component == nullptr)
-        {
-            spdlog::error("Failed to get player transform component");
-            co_return -1;
-        }
-
-        player_transform_component->position = {0, 10, 0};
-        player_transform_component->rotation = glm::vec3(0.0f, glm::radians(90.0f), 0.0f);
-        player_transform_component->scale = {1, 1, 1};
 
 
         auto input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
         auto transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
 
-        while (window->good()) 
+        while (renderer->good()) 
         {
+            if(input_component->action == 37)
+            {
+                transform_component->position.x -= 0.1f;
+            }
 
             if(input_component->action == 38)
             {
-                spdlog::info("Player pressed action 38");
                 transform_component->position.y += 0.1f;
-                spdlog::info(std::format("Player position: {} {} {}", transform_component->position.x, transform_component->position.y, transform_component->position.z));
             }
 
+            if(input_component->action == 39)
+            {
+                transform_component->position.x += 0.1f;
+            }
+
+            if(input_component->action == 40)
+            {
+                transform_component->position.y -= 0.1f;
+            }
 
             // clear window
             co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});
-            
-            co_await renderer->render(*vb_id, *sh_id);
-
-            // swap buffers
-            co_await renderer->present(); 
-            // update window
-            //co_await window->present();
             
             // apply input
             co_await world.getCurrentLevel().runSystem(input_system);
             
             // update world state
+            // visual system will render entities with visual component
             co_await world.update();
+
+            // swap buffers
+            co_await renderer->present(); 
         }
 
         if(renderer->good())co_await renderer->close();
