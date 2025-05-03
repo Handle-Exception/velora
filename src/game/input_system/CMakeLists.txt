@@ -8,4 +8,6 @@ add_module(NAME "InputSystem"
         "${PROJECT_PREFIX}::Native"
 
         "${PROJECT_PREFIX}::ECS"
+
+        "proto_gen"
 )

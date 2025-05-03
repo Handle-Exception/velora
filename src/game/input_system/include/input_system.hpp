@@ -1,9 +1,11 @@
 #pragma once
 
+#include <queue>
+
 #include "native.hpp"
 #include <asio.hpp>
 
-#include "input_component.hpp"
+#include "input_component.pb.h"
 
 #include "ecs.hpp"
 
@@ -39,7 +41,7 @@ namespace velora::game
                     assert(input_component != nullptr);
 
                     // clear action for entity
-                    input_component->action = 0;
+                    input_component->set_action(0);
                 }
 
                 if(_inputs.empty()) co_return;
@@ -55,7 +57,7 @@ namespace velora::game
                     
                     // store current action for this system pass in component of given entity
                     // ??? tu w sumie nie jestem pewien czy to dobry plan
-                    input_component->action = action;
+                    input_component->set_action(action);
                 }
                 co_return;
             }

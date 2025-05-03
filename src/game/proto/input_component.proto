@@ -4,5 +4,6 @@ package velora.game;
 
 message InputComponent
 {
-    uint64 tick = 1;
+    int32 action = 1;
+    uint64 tick = 2;
 }

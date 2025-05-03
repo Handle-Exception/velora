@@ -164,32 +164,36 @@ namespace velora
         // player entity definition
         // should be loaded from level file 
         // just like the rest of entities
-        world.getCurrentLevel().addComponent(*player_entity, 
-        game::TransformComponent{
-                .position = {0, 0, 0},
-                .rotation = glm::radians(glm::vec3(45.0f, 30.0f, 14.0f)),
-                .scale = {1, 1, 1}}
-        );
-
+        world.getCurrentLevel().addComponent(*player_entity, game::TransformComponent());
         world.getCurrentLevel().addComponent(*player_entity, game::HealthComponent());
-        world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity)->set_health(100);
-
         world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent());
-                world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_visible(true);
-        world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_vertex_buffer_name("vertex_buffer_0");
-        world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_shader_name("basic_shader");
-
         world.getCurrentLevel().addComponent(*player_entity, game::InputComponent{});
-
 
         auto input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
         auto transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
+        auto visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
+        auto health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
+
+        visual_component->set_visible(true);
+        visual_component->set_vertex_buffer_name("vertex_buffer_0");
+        visual_component->set_shader_name("basic_shader");
+
+        health_component->set_health(100);
+
+        transform_component->mutable_scale()->set_x(1.0f);
+        transform_component->mutable_scale()->set_y(1.0f);
+        transform_component->mutable_scale()->set_z(1.0f);
+
+
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         float pitch = 45.0f; // X axis
         float yaw   = 90.0f; // Y axis
         float roll  = 30.0f; // Z axis
+
+        glm::quat rotation;
+        glm::vec3 position{0,0,0};
 
         co_await window->show();
 
@@ -199,27 +203,37 @@ namespace velora
             yaw   += 0.1f;
             roll  += 0.03f;
 
-            transform_component->rotation = glm::radians(glm::vec3(pitch, yaw, roll));
+            rotation = glm::radians(glm::vec3(pitch, yaw, roll));
 
-            if(input_component->action == 37)
+            if(input_component->action() == 37)
             {
-                transform_component->position.x -= 0.1f;
+                position.x -= 0.1f;
             }
 
-            if(input_component->action == 38)
+            if(input_component->action() == 38)
             {
-                transform_component->position.y += 0.1f;
+                position.y += 0.1f;
             }
 
-            if(input_component->action == 39)
+            if(input_component->action() == 39)
             {
-                transform_component->position.x += 0.1f;
+                position.x += 0.1f;
             }
 
-            if(input_component->action == 40)
+            if(input_component->action() == 40)
             {
-                transform_component->position.y -= 0.1f;
+                position.y -= 0.1f;
             }
+
+            transform_component->mutable_rotation()->set_w(rotation.w);
+            transform_component->mutable_rotation()->set_x(rotation.x);
+            transform_component->mutable_rotation()->set_y(rotation.y);
+            transform_component->mutable_rotation()->set_z(rotation.z);
+
+            transform_component->mutable_position()->set_x(position.x);
+            transform_component->mutable_position()->set_y(position.y);
+            transform_component->mutable_position()->set_z(position.z);
+
 
             // clear window
             co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});

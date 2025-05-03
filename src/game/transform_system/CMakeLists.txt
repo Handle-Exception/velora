@@ -4,4 +4,5 @@ add_module(NAME "TransformSystem"
     DEPENDENCIES
         glm
         "${PROJECT_PREFIX}::ECS"
+        "proto_gen"
 )

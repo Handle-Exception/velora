@@ -4,8 +4,7 @@
 #include "render.hpp"
 
 #include "visual_component.pb.h"
-
-#include "transform_component.hpp"
+#include "transform_component.pb.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -30,6 +29,9 @@ namespace velora::game
                 VisualComponent * visual_component = nullptr;
                 
                 glm::mat4 model_matrix = glm::mat4(1.0f);
+                glm::vec3 position = glm::vec3(0.0f);
+                glm::vec3 scale = glm::vec3(1.0f);
+                glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
                 for (const auto& [entity, mask] : entities.getAllEntities())
                 {
@@ -59,11 +61,24 @@ namespace velora::game
                     {
                         auto* transform_component = components.getComponent<TransformComponent>(entity);
                         assert(transform_component != nullptr);
+                        
+                        position = glm::vec3(transform_component->position().x(), 
+                                           transform_component->position().y(), 
+                                           transform_component->position().z());
+                        
+                        scale = glm::vec3(transform_component->scale().x(), 
+                                         transform_component->scale().y(), 
+                                         transform_component->scale().z());
+                        
+                        rotation = glm::quat(transform_component->rotation().w(), 
+                                            transform_component->rotation().x(), 
+                                            transform_component->rotation().y(), 
+                                            transform_component->rotation().z());
 
                         // get model matrix from transform component
-                        model_matrix = glm::translate(glm::mat4(1.0f), transform_component->position)
-                                                        * glm::toMat4(transform_component->rotation)
-                                                        * glm::scale(glm::mat4(1.0f), transform_component->scale);
+                        model_matrix = glm::translate(glm::mat4(1.0f), position)
+                                                        * glm::toMat4(rotation)
+                                                        * glm::scale(glm::mat4(1.0f), scale);
                     }
                     else 
                     {

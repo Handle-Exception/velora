@@ -1,9 +1,13 @@
 #pragma once
 
-#include "transform_component.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+
+#include "transform_component.pb.h"
 
 #include "ecs.hpp"
-
 
 namespace velora::game
 {
