@@ -1,8 +1,9 @@
 #pragma once
 
 #include "ecs.hpp"
+#include "render.hpp"
 
-#include "visual_component.hpp"
+#include "visual_component.pb.h"
 
 #include "transform_component.hpp"
 
@@ -10,6 +11,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+
+#include <asio.hpp>
+#include <asio/experimental/awaitable_operators.hpp>
+using namespace asio::experimental::awaitable_operators;
 
 namespace velora::game
 {
@@ -23,6 +28,8 @@ namespace velora::game
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
             {
                 VisualComponent * visual_component = nullptr;
+                
+                glm::mat4 model_matrix = glm::mat4(1.0f);
 
                 for (const auto& [entity, mask] : entities.getAllEntities())
                 {
@@ -32,7 +39,17 @@ namespace velora::game
                     assert(visual_component != nullptr);
                     
                     // if not visible, skip
-                    if(visual_component->visible == false) continue;
+                    if(visual_component->visible() == false) continue;
+
+                    const auto [vb_id, sh_id] = co_await (
+                            _renderer.getVertexBuffer(visual_component->vertex_buffer_name()) && 
+                            _renderer.getShader(visual_component->shader_name()));
+
+                    if (!vb_id || !sh_id)
+                    {
+                        // if cannot find vertex buffer or shader, skip
+                        continue;
+                    }
 
                     // if also has a transform component
                     // update transform matrix
@@ -42,15 +59,22 @@ namespace velora::game
                     {
                         auto* transform_component = components.getComponent<TransformComponent>(entity);
                         assert(transform_component != nullptr);
-                        visual_component->model_matrix = glm::translate(glm::mat4(1.0f), transform_component->position)
+
+                        // get model matrix from transform component
+                        model_matrix = glm::translate(glm::mat4(1.0f), transform_component->position)
                                                         * glm::toMat4(transform_component->rotation)
                                                         * glm::scale(glm::mat4(1.0f), transform_component->scale);
                     }
+                    else 
+                    {
+                        // if no transform component, use identity matrix
+                        model_matrix = glm::mat4(1.0f);
+                    }
 
                     // render
-                    co_await _renderer.render(visual_component->vertex_buffer_ID, visual_component->shader_ID, 
+                    co_await _renderer.render(*vb_id, *sh_id, 
                         ShaderInputs{
-                            .in_mat4f = {{"uModel", visual_component->model_matrix}}
+                            .in_mat4f = {{"uModel", model_matrix}}
                         });
                 }
                 co_return;
@@ -60,7 +84,7 @@ namespace velora::game
         
             std::ranges::ref_view<std::vector<std::string>> getDependencies() const 
             {
-                static std::vector<std::string> deps{"PositionSystem"};
+                static std::vector<std::string> deps{"TransformSystem"};
                 return std::views::all(deps);
             }
 

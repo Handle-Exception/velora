@@ -1,0 +1,12 @@
+syntax="proto3";
+
+import "math.proto";
+
+package velora.game;
+
+message TransformComponent 
+{
+  Vec3 position = 1;
+  Quat rotation = 2;
+  Vec3 scale = 3;
+}

@@ -41,14 +41,17 @@ namespace velora::opengl
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
 
-            asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices);
+            asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices);
             
             asio::awaitable<bool> eraseVertexBuffer(std::size_t id);
+            asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name);
 
-            asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code);
-            asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code);
+            asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code);
+            asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code);
 
             asio::awaitable<bool> eraseShader(std::size_t id);
+            asio::awaitable<std::optional<std::size_t>> getShader(std::string name);
+
 
         protected:
             OpenGLRenderer(asio::io_context & io_context, IWindow & window, native::opengl_context_handle oglctx_handle);
@@ -64,5 +67,8 @@ namespace velora::opengl
 
             absl::flat_hash_map<std::size_t, VertexBuffer> _vertex_buffers;
             absl::flat_hash_map<std::size_t, Shader> _shaders;
+
+            absl::flat_hash_map<std::string, std::size_t> _vertex_buffer_names;
+            absl::flat_hash_map<std::string, std::size_t> _shader_names;
     };
 }

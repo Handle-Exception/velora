@@ -36,14 +36,19 @@ namespace velora
         virtual asio::awaitable<void> present() = 0;
         virtual asio::awaitable<void> updateViewport(Resolution resolution) = 0;
 
-        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices) = 0;
         
         virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0;
 
-        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code) = 0;
-        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name) = 0;
+
+        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) = 0;
 
         virtual asio::awaitable<bool> eraseShader(std::size_t id) = 0;
+        
+        virtual asio::awaitable<std::optional<std::size_t>> getShader(std::string name) = 0;
+
     };
 
     template<class RendererImplType>
@@ -76,24 +81,32 @@ namespace velora
                 co_return co_await dispatch::getImpl().updateViewport(std::move(resolution));
             };
 
-            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices) override{ 
-                co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(indices), std::move(vertices));
+            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices) override{ 
+                co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(name), std::move(indices), std::move(vertices));
             };
         
             inline asio::awaitable<bool> eraseVertexBuffer(std::size_t id) override {
                 co_return co_await dispatch::getImpl().eraseVertexBuffer(std::move(id));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code) override { 
-                co_return co_await dispatch::getImpl().constructShader(std::move(vertex_code));
+            inline asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name) override{
+                co_return co_await dispatch::getImpl().getVertexBuffer(std::move(name));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) override { 
-                co_return co_await dispatch::getImpl().constructShader(std::move(vertex_code), std::move(fragment_code));
+            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code) override { 
+                co_return co_await dispatch::getImpl().constructShader(std::move(name), std::move(vertex_code));
+            }
+
+            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) override { 
+                co_return co_await dispatch::getImpl().constructShader(std::move(name), std::move(vertex_code), std::move(fragment_code));
             }
 
             inline asio::awaitable<bool> eraseShader(std::size_t id) override {
                 co_return co_await dispatch::getImpl().eraseShader(std::move(id));
+            }
+            
+            inline asio::awaitable<std::optional<std::size_t>> getShader(std::string name) override{
+                co_return co_await dispatch::getImpl().getShader(std::move(name));
             }
     };
 

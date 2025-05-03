@@ -74,10 +74,16 @@ namespace velora::opengl
         co_return;
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::vector<unsigned int> indices, std::vector<Vertex> vertices)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::string name,  std::vector<unsigned int> indices, std::vector<Vertex> vertices)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         
+        if(_vertex_buffer_names.contains(name))
+        {
+            spdlog::warn(std::format("[t{}] Vertex buffer {} already exists", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+
         // bind context
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
@@ -87,15 +93,17 @@ namespace velora::opengl
         }
 
         VertexBuffer vb = VertexBuffer::construct<OpenGLVertexBuffer>(std::move(indices), std::move(vertices));
+
+        // unbind context
+        wglMakeCurrent(0, 0);
+        _window.releaseDeviceContext(device_context);
+
         std::size_t id = vb->ID();
 
         if(_vertex_buffers.contains(id))co_return std::nullopt;
 
         _vertex_buffers.try_emplace(id, std::move(vb));
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
+        _vertex_buffer_names.try_emplace(std::move(name), id);
 
         co_return id;
     }
@@ -130,10 +138,34 @@ namespace velora::opengl
 
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::vector<const char *> vertex_code)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::getVertexBuffer(std::string name)
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+
+        if(_vertex_buffer_names.contains(name) == false)
+        {
+            spdlog::warn(std::format("[t{}] Vertex buffer {} does not exist", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+        auto id = _vertex_buffer_names.at(name);
+        if(_vertex_buffers.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
+            co_return std::nullopt;
+        }
+        co_return id;
+    }
+
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<const char *> vertex_code)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         
+        if(_shader_names.contains(name))
+        {
+            spdlog::warn(std::format("[t{}] Shader {} already exists", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+
         // bind context
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
@@ -143,23 +175,31 @@ namespace velora::opengl
         }
 
         Shader shader = Shader::construct<OpenGLShader>(std::move(vertex_code));
-        std::size_t id = shader->ID();
-
-        if(_shaders.contains(id))co_return std::nullopt;
-
-        _shaders.try_emplace(id, std::move(shader));
 
         // unbind context
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(device_context);
 
+        std::size_t id = shader->ID();
+
+        if(_shaders.contains(id))co_return std::nullopt;
+
+        _shaders.try_emplace(id, std::move(shader));
+        _shader_names.try_emplace(std::move(name), id);
+
         co_return id;
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         
+        if(_shader_names.contains(name))
+        {
+            spdlog::warn(std::format("[t{}] Shader {} already exists", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+
         // bind context
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
@@ -169,15 +209,16 @@ namespace velora::opengl
         }
 
         Shader shader = Shader::construct<OpenGLShader>(std::move(vertex_code), std::move(fragment_code));
+        // unbind context
+        wglMakeCurrent(0, 0);
+        _window.releaseDeviceContext(device_context);
+
         std::size_t id = shader->ID();
 
         if(_shaders.contains(id))co_return std::nullopt;
 
         _shaders.try_emplace(id, std::move(shader));
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
+        _shader_names.try_emplace(std::move(name), id);
 
         co_return id;
     }
@@ -210,6 +251,25 @@ namespace velora::opengl
 
         co_return true;
     }
+
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::getShader(std::string name)
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+
+        if(_shader_names.contains(name) == false)
+        {
+            spdlog::warn(std::format("[t{}] Shader {} does not exist", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+        auto id = _shader_names.at(name);
+        if(_shaders.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t{}] Shader {} does not exist", std::this_thread::get_id(), id));
+            co_return std::nullopt;
+        }
+        co_return id;
+    }
+
 
     void OpenGLRenderer::assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs)
     {
@@ -303,7 +363,7 @@ namespace velora::opengl
 
         assignShaderInputs(shader_ID, shader_inputs);
 
-        glDrawElements(GL_TRIANGLES, vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
 
         // unbind context
         wglMakeCurrent(0, 0);

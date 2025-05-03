@@ -35,7 +35,7 @@ namespace velora::opengl
             lengths.push_back(static_cast<int>(strlen(c)));
         }
 
-        glShaderSource(_stage_ID, code.size(), code.data(), lengths.data());
+        glShaderSource(_stage_ID, (GLsizei)code.size(), code.data(), lengths.data());
         glCompileShader(_stage_ID);
         glGetShaderiv(_stage_ID, GL_COMPILE_STATUS, &_result);
         if (_result == GL_FALSE)
@@ -199,14 +199,14 @@ namespace velora::opengl
         // already binded
         GLint currently_used_shader = 0;
         glGetIntegerv(GL_CURRENT_PROGRAM, &currently_used_shader);
-        if(currently_used_shader == _shader_program_ID){
+        if(currently_used_shader == (GLint)_shader_program_ID){
             return true;
         }
         
         glUseProgram(_shader_program_ID);
 
         glGetIntegerv(GL_CURRENT_PROGRAM, &currently_used_shader);
-        if(currently_used_shader != _shader_program_ID){
+        if(currently_used_shader != (GLint)_shader_program_ID){
             spdlog::error(std::format("Cannot bind OpenGL shader[{}], currently binded {}", _shader_program_ID, currently_used_shader));
             return false;
         }
@@ -218,7 +218,7 @@ namespace velora::opengl
         // only unbind if this is currently used
         GLint currently_used_shader = 0;
         glGetIntegerv(GL_CURRENT_PROGRAM, &currently_used_shader);
-        if(currently_used_shader != _shader_program_ID)
+        if(currently_used_shader != (GLint)_shader_program_ID)
         {
             spdlog::debug(std::format("OpenGL shader[{}] is not currently used by opengl rendering state", _shader_program_ID));
             return false;

@@ -129,7 +129,7 @@ namespace velora::opengl
         GLint currently_bound_VAO = 0;
         glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &currently_bound_VAO);
         
-        if(currently_bound_VAO != _VAO)
+        if(currently_bound_VAO != (GLint)_VAO)
         {
             spdlog::warn("Disable OpenGL Vertex Buffer which is not currently bound");
             return;
@@ -166,12 +166,12 @@ namespace velora::opengl
         GLint currently_bound_VAO = 0;
         glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &currently_bound_VAO);
 
-        if(currently_bound_VAO != _VAO)
+        if(currently_bound_VAO != (GLint)_VAO)
         {
             glBindVertexArray(_VAO);
             glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &currently_bound_VAO);
 
-            if(currently_bound_VAO != _VAO)
+            if(currently_bound_VAO != (GLint)_VAO)
             { 
                 spdlog::error(
                     std::format("VBO binding failed, currently bound: {}, should be {} ", 
@@ -186,12 +186,12 @@ namespace velora::opengl
         GLint currently_bound_VBO = 0;
         glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &currently_bound_VBO);
 
-        if(currently_bound_VBO != _VBO)
+        if(currently_bound_VBO != (GLint)_VBO)
         {
             glBindBuffer(GL_ARRAY_BUFFER, _VBO);
             glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &currently_bound_VBO);
 
-            if(currently_bound_VBO != _VBO)
+            if(currently_bound_VBO != (GLint)_VBO)
             {
                 spdlog::error(
                     std::format("VBO binding failed, currently bound {}, should be {}",
@@ -206,12 +206,12 @@ namespace velora::opengl
         GLint currently_bound_EBO = 0;
         glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &currently_bound_EBO);
 
-        if(currently_bound_EBO != _EBO)
+        if(currently_bound_EBO != (GLint)_EBO)
         {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _EBO);
             glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &currently_bound_EBO);
 
-            if(currently_bound_EBO != _EBO)
+            if(currently_bound_EBO != (GLint)_EBO)
             {
                 spdlog::error(
                     std::format("EBO binding failed, currently bound {}, should be {}",

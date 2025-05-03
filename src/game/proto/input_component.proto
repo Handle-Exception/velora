@@ -1,0 +1,8 @@
+syntax="proto3";
+
+package velora.game;
+
+message InputComponent
+{
+    uint64 tick = 1;
+}

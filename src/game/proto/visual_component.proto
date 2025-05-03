@@ -1,0 +1,10 @@
+syntax="proto3";
+
+package velora.game;
+
+message VisualComponent 
+{
+    bool visible = 1;
+    string vertex_buffer_name = 2;
+    string shader_name = 3;
+}

@@ -12,7 +12,7 @@ namespace velora::game
         public:
             TransformSystem();
 
-            inline constexpr std::string_view getName() const { return "PositionSystem"; }
+            inline constexpr std::string_view getName() const { return "TransformSystem"; }
         
             std::ranges::ref_view<std::vector<std::string>> getDependencies() const {
                 static std::vector<std::string> deps{};

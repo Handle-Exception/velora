@@ -62,6 +62,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::World"
         "${PROJECT_PREFIX}::Level"
         "${PROJECT_PREFIX}::Game"
+        "proto_gen"
 )
 add_dependencies("${PROJECT_NAME}Lib" glew_build)
 target_compile_definitions("${PROJECT_NAME}Lib" PUBLIC GLEW_STATIC)
@@ -76,10 +77,13 @@ if(WIN32)
     )
 endif()
 
-if(${protobuf_FOUND})
+if(USE_PROTOBUF)
     target_link_libraries("${PROJECT_NAME}Lib"
         PUBLIC
             protobuf::libprotobuf
+    )
+    target_include_directories("${PROJECT_NAME}Lib" SYSTEM PRIVATE
+        $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
     )
 endif()
 

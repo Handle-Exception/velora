@@ -1,6 +1,6 @@
 #pragma once
 
-#include "health_component.hpp"
+#include "health_component.pb.h"
 
 #include "ecs.hpp"
 

@@ -20,4 +20,7 @@ if(${protobuf_FOUND})
         PUBLIC
             protobuf::libprotobuf
     )
+    target_include_directories("${PROJECT_NAME}Lib" SYSTEM PRIVATE
+        $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
+    )
 endif()

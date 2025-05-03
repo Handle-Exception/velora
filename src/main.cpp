@@ -10,7 +10,7 @@ namespace velora
 
         spdlog::debug(std::format("[t:{}] Velora main started", std::this_thread::get_id()));
 
-        auto window = co_await Window::construct<winapi::WinapiWindow>(asio::use_awaitable, io_context, process, "Velora", Resolution{512, 256});
+        auto window = co_await Window::construct<winapi::WinapiWindow>(asio::use_awaitable, io_context, process, "Velora", Resolution{256, 512});
         if (window->good() == false)
         {
             spdlog::error("Failed to create window");
@@ -24,8 +24,10 @@ namespace velora
             co_return -1;
         }
 
-
         co_await asio::dispatch(asio::bind_executor(main_strand, asio::use_awaitable));
+
+        // create input system
+
         game::InputSystem input_system(io_context);
 
         co_await process.setWindowCallbacks(window->getHandle(), 
@@ -55,16 +57,48 @@ namespace velora
                 }
             });
 
-        auto vb_id = co_await renderer->constructVertexBuffer(
+
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // LOADING ASSETS
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        auto vb_id = co_await renderer->constructVertexBuffer("vertex_buffer_0",
             {
-                0, 1, 2, // first triangle (bottom-left → top-right)
-                2, 3, 0  // second triangle (top-right → top-left)
+                // Front face
+                0, 1, 2,
+                2, 3, 0,
+
+                // Right face
+                1, 5, 6,
+                6, 2, 1,
+
+                // Back face
+                5, 4, 7,
+                7, 6, 5,
+
+                // Left face
+                4, 0, 3,
+                3, 7, 4,
+
+                // Top face
+                3, 2, 6,
+                6, 7, 3,
+
+                // Bottom face
+                4, 5, 1,
+                1, 0, 4
             },
             {
-                Vertex{{-0.5f, -0.5f, 0.0f}, {1, 0, 0}, {0.0f, 0.0f}}, // 0: bottom-left
-                Vertex{{ 0.5f, -0.5f, 0.0f}, {0, 1, 0}, {1.0f, 0.0f}}, // 1: bottom-right
-                Vertex{{ 0.5f,  0.5f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}}, // 2: top-right
-                Vertex{{-0.5f,  0.5f, 0.0f}, {1, 1, 0}, {0.0f, 1.0f}}, // 3: top-left
+            // Front face
+            {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0.0f, 0.0f}}, // 0
+            {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {1.0f, 0.0f}}, // 1
+            {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1.0f, 1.0f}}, // 2
+            {{-0.5f,  0.5f,  0.5f}, {1, 1, 0}, {0.0f, 1.0f}}, // 3
+
+            // Back face
+            {{-0.5f, -0.5f, -0.5f}, {1, 0, 1}, {1.0f, 0.0f}}, // 4
+            {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0.0f, 0.0f}}, // 5
+            {{ 0.5f,  0.5f, -0.5f}, {1, 1, 1}, {0.0f, 1.0f}}, // 6
+            {{-0.5f,  0.5f, -0.5f}, {0, 0, 0}, {1.0f, 1.0f}}, // 7
             }
         );
 
@@ -75,7 +109,7 @@ namespace velora
         }
 
 
-        auto sh_id = co_await renderer->constructShader(
+        auto sh_id = co_await renderer->constructShader("shader_0",
             {
                 "#version 330 core\n",
                 "layout(location = 0) in vec3 aPos;\n",
@@ -92,9 +126,10 @@ namespace velora
             spdlog::error("Failed to create Shader");
             co_return -1;
         }
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // 
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
 
-
-        co_await window->show();
 
         // create level in world in which we will spawn entities
         // level is divided in chunks which is basically octree
@@ -113,8 +148,15 @@ namespace velora
         // then Physics component uses Transform component to move entity
 
         // Create game subsystems
+
+        // create world
+
         game::World world(io_context, *renderer);
 
+        // create level
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // LOADING LEVEL
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
         if(world.constructLevel("level_0") == false)
         {
             spdlog::error("Failed to create level");
@@ -132,17 +174,43 @@ namespace velora
         // player entity definition
         // should be loaded from level file 
         // just like the rest of entities
-        world.getCurrentLevel().addComponent(*player_entity, game::TransformComponent{.position = {0, 0, 0}, .rotation = {0, 0, 0, 0}, .scale = {1, 1, 1}});
-        world.getCurrentLevel().addComponent(*player_entity, game::HealthComponent{.health = 100});
-        world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent{.vertex_buffer_ID = *vb_id, .shader_ID = *sh_id});
+        world.getCurrentLevel().addComponent(*player_entity, 
+        game::TransformComponent{
+                .position = {0, 0, 0},
+                .rotation = glm::radians(glm::vec3(45.0f, 30.0f, 14.0f)),
+                .scale = {1, 1, 1}}
+        );
+
+        world.getCurrentLevel().addComponent(*player_entity, game::HealthComponent());
+        world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity)->set_health(100);
+
+        world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent());
+                world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_visible(true);
+        world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_vertex_buffer_name("vertex_buffer_0");
+        world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_shader_name("shader_0");
+
         world.getCurrentLevel().addComponent(*player_entity, game::InputComponent{});
 
 
         auto input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
         auto transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // 
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        float pitch = 45.0f; // X axis
+        float yaw   = 90.0f; // Y axis
+        float roll  = 30.0f; // Z axis
 
-        while (renderer->good()) 
+        co_await window->show();
+
+        while (window->good() && renderer->good()) 
         {
+            pitch += 0.05f;
+            yaw   += 0.1f;
+            roll  += 0.03f;
+
+            transform_component->rotation = glm::radians(glm::vec3(pitch, yaw, roll));
+
             if(input_component->action == 37)
             {
                 transform_component->position.x -= 0.1f;
@@ -178,9 +246,10 @@ namespace velora
         }
 
         if(renderer->good())co_await renderer->close();
-        if(window->good())co_await window->close(); // here we want to notifiy the process to close the window
+        if(window->good())co_await window->close();
 
         spdlog::debug("Velora main finished with code {}", 0);
+
         co_return 0;
     }
 }
