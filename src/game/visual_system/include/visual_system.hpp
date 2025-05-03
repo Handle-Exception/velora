@@ -22,12 +22,26 @@ namespace velora::game
         public:
             static const uint32_t MASK_POSITION_BIT;
 
-            VisualSystem(IRenderer & renderer)
-            : _renderer(renderer)
+            VisualSystem(IRenderer & renderer, ISystem & camera_system)
+            : _renderer(renderer), _camera_system(camera_system)
             {}
 
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
             {
+                // get camera system state
+                const glm::mat4 * const view_ptr = _camera_system.getState().get<glm::mat4>("uView");
+                const glm::mat4 * const proj_ptr = _camera_system.getState().get<glm::mat4>("uProjection");
+
+                if(!view_ptr || !proj_ptr)
+                {
+                    // if cannot find view or projection matrix, skip
+                    spdlog::warn("VisualSystem cannot find view or projection matrix, skipping visual system");
+                    co_return;
+                }
+
+                const glm::mat4 view_matrix = *view_ptr;
+                const glm::mat4 proj_matrix = *proj_ptr;
+
                 VisualComponent * visual_component = nullptr;
                 
                 glm::mat4 model_matrix = glm::mat4(1.0f);
@@ -88,10 +102,15 @@ namespace velora::game
                         model_matrix = glm::mat4(1.0f);
                     }
 
+
                     // render
                     co_await _renderer.render(*vb_id, *sh_id, 
                         ShaderInputs{
-                            .in_mat4f = {{"uModel", model_matrix}}
+                            .in_mat4f = {
+                                {"uModel", model_matrix},
+                                {"uView", view_matrix},
+                                {"uProjection", proj_matrix}
+                            }
                         });
                 }
                 co_return;
@@ -101,12 +120,18 @@ namespace velora::game
         
             std::ranges::ref_view<std::vector<std::string>> getDependencies() const 
             {
-                static std::vector<std::string> deps{"TransformSystem"};
+                static std::vector<std::string> deps{"TransformSystem", "CameraSystem"};
                 return std::views::all(deps);
             }
 
+            const SystemState& getState() const
+            {
+                return _state;
+            }
         private:
 
             IRenderer & _renderer;
+            ISystem & _camera_system;
+            SystemState _state;
     };
 }

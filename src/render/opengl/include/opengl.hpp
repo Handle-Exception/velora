@@ -40,6 +40,7 @@ namespace velora::opengl
             asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs);
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
+            asio::awaitable<Resolution> getViewport() const;
 
             asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices);
             
@@ -64,6 +65,8 @@ namespace velora::opengl
             asio::io_context & _io_context;
             asio::strand<asio::io_context::executor_type> _strand;
             native::opengl_context_handle _oglctx_handle;
+
+            Resolution _viewport_resolution;
 
             absl::flat_hash_map<std::size_t, VertexBuffer> _vertex_buffers;
             absl::flat_hash_map<std::size_t, Shader> _shaders;

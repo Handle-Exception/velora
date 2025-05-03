@@ -259,6 +259,16 @@ namespace velora
             }
         );
 
+        components_loader_registry.registerLoader("CameraComponent", 
+    [](const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
+            {
+                if (!entity_def.has_camera()) return;
+                game::CameraComponent cam;
+                cam.CopyFrom(entity_def.camera());
+                level.addComponent(entity, std::move(cam));
+            }
+        );
+
         return components_loader_registry;
     }
 
@@ -271,7 +281,7 @@ namespace velora
             {
                 // serialize transform component to entity_def
                 if (!level.hasComponent<game::TransformComponent>(entity)) return;
-                game::TransformComponent * const t = level.getComponent<game::TransformComponent>(entity);
+                const game::TransformComponent * const t = level.getComponent<game::TransformComponent>(entity);
                 entity_def.mutable_transform()->CopyFrom(*t);
             }
         );
@@ -280,7 +290,7 @@ namespace velora
         [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
             {
                 if (!level.hasComponent<game::VisualComponent>(entity)) return;
-                game::VisualComponent * const v = level.getComponent<game::VisualComponent>(entity);
+                const game::VisualComponent * const v = level.getComponent<game::VisualComponent>(entity);
                 entity_def.mutable_visual()->CopyFrom(*v);
             }
         );
@@ -289,7 +299,7 @@ namespace velora
         [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
             {
                 if (!level.hasComponent<game::InputComponent>(entity)) return;
-                game::InputComponent * const i = level.getComponent<game::InputComponent>(entity);
+                const game::InputComponent * const  i = level.getComponent<game::InputComponent>(entity);
                 entity_def.mutable_input()->CopyFrom(*i);
             }
         );
@@ -298,8 +308,17 @@ namespace velora
         [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
             {
                 if (!level.hasComponent<game::HealthComponent>(entity)) return;
-                game::HealthComponent * const h = level.getComponent<game::HealthComponent>(entity);
+                const game::HealthComponent * const h = level.getComponent<game::HealthComponent>(entity);
                 entity_def.mutable_health()->CopyFrom(*h);
+            }
+        );
+
+        components_serializer_registry.registerSerializer("CameraComponent", 
+            [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def)
+            {
+                if (!level.hasComponent<game::CameraComponent>(entity)) return;
+                const game::CameraComponent * const cam = level.getComponent<game::CameraComponent>(entity);
+                entity_def.mutable_camera()->CopyFrom(*cam);
             }
         );
 

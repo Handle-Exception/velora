@@ -2,8 +2,23 @@ syntax="proto3";
 
 package velora.game;
 
+enum InputCode {
+    UNKNOWN = 0;
+    KEY_W = 1;
+    KEY_A = 2;
+    KEY_S = 3;
+    KEY_D = 4;
+    KEY_Q = 5;
+    KEY_E = 6;
+
+    MOUSE_LEFT = 7;
+}
+
 message InputComponent
 {
-    int32 action = 1;
-    uint64 tick = 2;
+    uint64 tick = 1;
+
+    repeated InputCode pressed = 2;    // All currently pressed keys/buttons
+    repeated InputCode just_pressed = 3; // Keys newly pressed this frame
+    repeated InputCode just_released = 4; // Keys released this frame
 }

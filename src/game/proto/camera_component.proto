@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package velora.game;
+
+message CameraComponent {
+  float fov = 1;         // Field of view (degrees)
+  float near_plane = 2;        // Near clipping plane
+  float far_plane = 3;         // Far clipping plane
+  bool is_primary = 4;   // Whether this camera should be used for rendering
+}

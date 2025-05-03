@@ -483,42 +483,24 @@ namespace velora::winapi
 
         case WM_KEYDOWN: 
         {
-            int key = 0;
-            switch(wparam)
-            {
-                case VK_ESCAPE : 
-                {
-                    key = 0x1B;
-                    break;
-                }
-                case VK_LEFT : 
-                {
-                    key = 0x25;
-                    break;
-                }
-                case VK_RIGHT : 
-                {
-                    key = 0x27;
-                    break;
-                }
-                case VK_UP : 
-                {
-                    key = 0x26;
-                    break;
-                }
-                case VK_DOWN : 
-                {
-                    key = 0x28;
-                    break;
-                }
-            }
-
-            spdlog::debug(std::format("[winapi-procedure] WM_KEYDOWN received"));
+            int key = (int)wparam;
 
             auto handling_result = DefWindowProc(window, message, wparam, lparam);
             if(window_callbacks.onKeyPress != nullptr)
             {
                 asio::co_spawn(window_callbacks.executor, window_callbacks.onKeyPress(key), asio::detached);
+            }
+            return handling_result;
+        }
+
+        case WM_KEYUP : 
+        {
+            int key = wparam;
+
+            auto handling_result = DefWindowProc(window, message, wparam, lparam);
+            if(window_callbacks.onKeyRelease != nullptr)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onKeyRelease(key), asio::detached);
             }
             return handling_result;
         }

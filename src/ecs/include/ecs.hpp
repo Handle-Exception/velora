@@ -3,6 +3,7 @@
 #include "type.hpp"
 #include "component_manager.hpp"
 #include "entity_manager.hpp"
+#include "system_state.hpp"
 
 #include <ranges>
 #include <vector>
@@ -12,6 +13,7 @@
 
 namespace velora
 {
+
     class ISystem
     {
         public:
@@ -20,6 +22,7 @@ namespace velora
             virtual std::string_view getName() const = 0;
             virtual asio::awaitable<void> run(ComponentManager& components, EntityManager& entities) = 0;
             virtual std::ranges::ref_view<std::vector<std::string>> getDependencies() const = 0;
+            virtual const SystemState & getState() const = 0;
     };
 
     template<class SystemImplType>
@@ -38,6 +41,8 @@ namespace velora
                 co_return co_await dispatch::getImpl().run(components, entities);}
             constexpr inline std::ranges::ref_view<std::vector<std::string>> getDependencies() const override { 
                 return dispatch::getImpl().getDependencies();}
+            constexpr inline const SystemState & getState() const override { 
+                return dispatch::getImpl().getState();}
     };
 
     template<class SystemImplType>

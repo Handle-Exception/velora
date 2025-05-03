@@ -17,8 +17,9 @@ namespace velora::opengl
         _oglctx_handle(oglctx_handle),
 
         _vertex_buffers(),
-        _shaders()
+        _shaders(),
 
+        _viewport_resolution(0, 0)
     {
         spdlog::info("[render] OpenGL renderer created");
     }
@@ -30,7 +31,9 @@ namespace velora::opengl
         _oglctx_handle(other._oglctx_handle),
 
         _vertex_buffers(std::move(other._vertex_buffers)),
-        _shaders(std::move(other._shaders))
+        _shaders(std::move(other._shaders)),
+
+        _viewport_resolution(std::move(other._viewport_resolution))
     {
         other._oglctx_handle = nullptr;
     }
@@ -404,8 +407,10 @@ namespace velora::opengl
             spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return;
         }
+        
+        _viewport_resolution = resolution;
 
-        glViewport(0, 0, (GLsizei)resolution.getWidth(), (GLsizei)resolution.getHeight());
+        glViewport(0, 0, (GLsizei)_viewport_resolution.getWidth(), (GLsizei)_viewport_resolution.getHeight());
         
         // unbind context
         wglMakeCurrent(0, 0);
@@ -414,4 +419,9 @@ namespace velora::opengl
         co_return;
     }
 
+    asio::awaitable<Resolution> OpenGLRenderer::getViewport() const
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        co_return _viewport_resolution;
+    }
 }

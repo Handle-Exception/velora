@@ -1,15 +1,13 @@
 include("${PROJECT_SOURCE_DIR}/cmake/add_module.cmake")
 
-add_module(NAME "InputSystem"
+add_module(NAME "CameraSystem"
     DEPENDENCIES
         glm
         asio
-        absl::hash
-        absl::flat_hash_set
-        
+        "proto_gen"
+
         "${PROJECT_PREFIX}::Native"
 
         "${PROJECT_PREFIX}::ECS"
-
-        "proto_gen"
+        "${PROJECT_PREFIX}::Render"
 )

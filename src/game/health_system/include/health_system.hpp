@@ -26,7 +26,11 @@ namespace velora::game
             co_return;
         }
 
+        const SystemState& getState() const
+        {
+            return _state;
+        }
     private:
-
+        SystemState _state;
     };
 }

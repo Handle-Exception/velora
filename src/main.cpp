@@ -2,6 +2,35 @@
 
 namespace velora
 {
+    // todo move to a better place
+    game::InputCode keyToInputCode(int key)
+    {
+        switch (key)
+        {
+            case 87: //W
+                return game::InputCode::KEY_W;
+            case 65: //A
+                return game::InputCode::KEY_A;
+            case 83: //S
+                return game::InputCode::KEY_S;
+            case 68: //D
+                return game::InputCode::KEY_D;
+            case 81: //Q
+                return game::InputCode::KEY_Q;
+            case 69: //E
+                return game::InputCode::KEY_E;
+            
+            default:
+                return game::InputCode::UNKNOWN;
+        }
+    }
+    
+    template<class T>
+    bool isInputPresent(game::InputCode code, const T & keys_set)
+    {
+        return std::find(keys_set.begin(), keys_set.end(), code) != keys_set.end();
+    }
+
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
         // create system objects
@@ -47,12 +76,29 @@ namespace velora
                     co_await renderer->updateViewport(Resolution{(std::size_t)width, (std::size_t)height});
                     co_return;
                 },
-                .onKeyPress = [&window, &input_system](int key) -> asio::awaitable<void>
-                {                    
-                    spdlog::info(std::format("[t:{}] WindowCallbacks Key pressed {}", std::this_thread::get_id(), key));
+                .onKeyPress = [&window, &renderer, &input_system](int key) -> asio::awaitable<void>
+                {                                        
+                    game::InputCode code;
+                    
+                    switch (key)
+                    {
+                        case 0x1B: // ESC
+                            co_await renderer->close();
+                            co_await window->close();
+                            co_return;
+                        
+                        default : 
+                            code = keyToInputCode(key);
+                    }
 
                     // need to propagate this information into InputSystem
-                    co_await input_system.recordInput(key);
+                    co_await input_system.recordKeyPressed(code);
+                    co_return;
+                },
+                .onKeyRelease = [&window, &input_system](int key) -> asio::awaitable<void>
+                {
+                    // need to propagate this information into InputSystem
+                    co_await input_system.recordKeyReleased(keyToInputCode(key));
                     co_return;
                 }
             });
@@ -157,62 +203,78 @@ namespace velora
         // 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         auto player_entity = world.getCurrentLevel().getEntity("player");
-        if(!player_entity)
+        auto camera_entity = world.getCurrentLevel().getEntity("camera");
+
+        if(!player_entity || !camera_entity)
         {
-            spdlog::error("Failed to find player entity");
+            spdlog::error("Failed to find entities");
             co_return -1;
         }
         
-        auto input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
-        auto transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
-        auto visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
-        auto health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
+        auto player_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
+        auto player_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
+        auto player_visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
+        auto player_health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
         
+        auto camera_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*camera_entity);
+        auto camera_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*camera_entity);
+        auto camera_camera_component = world.getCurrentLevel().getComponent<game::CameraComponent>(*camera_entity);
+
         float pitch = 45.0f; // X axis
         float yaw   = 90.0f; // Y axis
         float roll  = 30.0f; // Z axis
 
-        glm::quat rotation;
-        glm::vec3 position{0,0,0};
+        glm::quat player_rotation;
+        glm::vec3 player_position{0,0,0};
+        glm::vec3 camera_position{0,0,0};
 
         co_await window->show();
 
         while (window->good() && renderer->good()) 
         {
+
+            // -----------------------------------------------------------------
+            // CAMERA
+            // -----------------------------------------------------------------
+
+            if(isInputPresent(game::InputCode::KEY_A, camera_input_component->pressed()))
+                camera_position.x -= 0.1f;
+            if(isInputPresent(game::InputCode::KEY_D, camera_input_component->pressed()))
+                camera_position.x += 0.1f;
+
+            if(isInputPresent(game::InputCode::KEY_W, camera_input_component->pressed()))
+                camera_position.z -= 0.1f;
+            if(isInputPresent(game::InputCode::KEY_S, camera_input_component->pressed()))
+                camera_position.z += 0.1f;
+
+            if(isInputPresent(game::InputCode::KEY_Q, camera_input_component->pressed()))
+                camera_position.y += 0.1f;
+            if(isInputPresent(game::InputCode::KEY_E, camera_input_component->pressed()))
+                camera_position.y -= 0.1f;
+            
+
+            camera_transform_component->mutable_position()->set_x(camera_position.x);
+            camera_transform_component->mutable_position()->set_y(camera_position.y);
+            camera_transform_component->mutable_position()->set_z(camera_position.z);
+
+            // -----------------------------------------------------------------
+            // PLAYER
+            // -----------------------------------------------------------------
+
             pitch += 0.05f;
             yaw   += 0.1f;
             roll  += 0.03f;
 
-            rotation = glm::radians(glm::vec3(pitch, yaw, roll));
+            player_rotation = glm::radians(glm::vec3(pitch, yaw, roll));
 
-            if(input_component->action() == 37)
-            {
-                position.x -= 0.1f;
-            }
+            player_transform_component->mutable_rotation()->set_w(player_rotation.w);
+            player_transform_component->mutable_rotation()->set_x(player_rotation.x);
+            player_transform_component->mutable_rotation()->set_y(player_rotation.y);
+            player_transform_component->mutable_rotation()->set_z(player_rotation.z);
 
-            if(input_component->action() == 38)
-            {
-                position.y += 0.1f;
-            }
-
-            if(input_component->action() == 39)
-            {
-                position.x += 0.1f;
-            }
-
-            if(input_component->action() == 40)
-            {
-                position.y -= 0.1f;
-            }
-
-            transform_component->mutable_rotation()->set_w(rotation.w);
-            transform_component->mutable_rotation()->set_x(rotation.x);
-            transform_component->mutable_rotation()->set_y(rotation.y);
-            transform_component->mutable_rotation()->set_z(rotation.z);
-
-            transform_component->mutable_position()->set_x(position.x);
-            transform_component->mutable_position()->set_y(position.y);
-            transform_component->mutable_position()->set_z(position.z);
+            player_transform_component->mutable_position()->set_x(player_position.x);
+            player_transform_component->mutable_position()->set_y(player_position.y);
+            player_transform_component->mutable_position()->set_z(player_position.z);            
 
 
             // clear window

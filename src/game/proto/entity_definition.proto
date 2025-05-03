@@ -4,6 +4,7 @@ import "transform_component.proto";
 import "visual_component.proto";
 import "input_component.proto";
 import "health_component.proto";
+import "camera_component.proto";
 
 package velora.game;
 
@@ -14,4 +15,5 @@ message EntityDefinition
   optional HealthComponent health = 3;
   optional VisualComponent visual = 4;
   optional InputComponent input = 5;
+  optional CameraComponent camera = 6;
 }

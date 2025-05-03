@@ -57,6 +57,14 @@ namespace velora
                 return nullptr;
             }
 
+            const Component* get(Entity entity) const {
+                auto it = _components.find(entity);
+                if (it != _components.end()) {
+                    return &it->second;
+                }
+                return nullptr;
+            }
+
         private:
             std::unordered_map<Entity, Component> _components;
     };
@@ -112,7 +120,7 @@ namespace velora
             }
 
             template<typename Component>
-            Component* const getComponent(Entity entity) const {
+            const Component*  getComponent(Entity entity) const {
                 auto storage = getStorage<Component>();
                 if (storage) {
                     return storage->get(entity);
@@ -138,10 +146,10 @@ namespace velora
             }
 
             template<typename Component>
-            ComponentStorage<Component>* const getStorage() const {
+            const ComponentStorage<Component>*  getStorage() const {
                 auto it = _storages.find(std::type_index(typeid(Component)));
                 if (it != _storages.end()) {
-                    return static_cast<ComponentStorage<Component>* const>(it->second.get());
+                    return static_cast<const ComponentStorage<Component>*>(it->second.get());
                 }
                 return nullptr;
             }

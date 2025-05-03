@@ -50,7 +50,7 @@ namespace velora::game
             }
 
             template<typename ComponentType>
-            ComponentType * const getComponent(Entity entity) const
+            const ComponentType * getComponent(Entity entity) const
             { 
                 return _components.getComponent<ComponentType>(entity);
             }

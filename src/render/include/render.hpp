@@ -35,6 +35,7 @@ namespace velora
         virtual asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs = ShaderInputs{}) = 0;
         virtual asio::awaitable<void> present() = 0;
         virtual asio::awaitable<void> updateViewport(Resolution resolution) = 0;
+        virtual asio::awaitable<Resolution> getViewport() const = 0;
 
         virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices) = 0;
         
@@ -79,6 +80,10 @@ namespace velora
 
             inline asio::awaitable<void> updateViewport(Resolution resolution) override { 
                 co_return co_await dispatch::getImpl().updateViewport(std::move(resolution));
+            };
+
+            inline asio::awaitable<Resolution> getViewport() const override { 
+                co_return co_await dispatch::getImpl().getViewport();
             };
 
             inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices) override{ 
