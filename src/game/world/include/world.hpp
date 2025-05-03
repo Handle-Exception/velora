@@ -53,6 +53,11 @@ namespace velora::game
 
             Level & getCurrentLevel()
             {
+                if(_current_level.empty())
+                {
+                    spdlog::error("No current level set, returning default level");
+                    return _levels.at("default");
+                }
                 return _levels.at(_current_level);
             }
 
@@ -63,6 +68,17 @@ namespace velora::game
                     co_await asio::co_spawn(_io_context, runLayer(layer), asio::use_awaitable);
                 }
                 co_return;
+            }
+
+            std::vector<std::string> getLevelNames() const
+            {
+                std::vector<std::string> level_names;
+                level_names.reserve(_levels.size());
+                for(const auto & [name, _] : _levels)
+                {
+                    level_names.push_back(name);
+                }
+                return level_names;
             }
 
         protected:

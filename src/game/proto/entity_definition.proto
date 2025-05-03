@@ -1,0 +1,17 @@
+syntax="proto3";
+
+import "transform_component.proto";
+import "visual_component.proto";
+import "input_component.proto";
+import "health_component.proto";
+
+package velora.game;
+
+message EntityDefinition
+{
+  string name = 1;
+  optional TransformComponent transform = 2;
+  optional HealthComponent health = 3;
+  optional VisualComponent visual = 4;
+  optional InputComponent input = 5;
+}

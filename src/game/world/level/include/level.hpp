@@ -18,15 +18,16 @@ namespace velora::game
 
             std::optional<Entity> spawnEntity(std::string name)
             {
-                if(_entities_names.contains(name))
+                if(_names_to_entities.contains(name))
                 {
                     spdlog::error("Entity with name {} already exists in the level", name); 
                     return std::nullopt;
                 }
 
-                _entities_names.emplace(name, _entities.createEntity());
+                _names_to_entities.emplace(name, _entities.createEntity());
+                _entities_to_names.emplace(_names_to_entities.at(name), name);
 
-                return _entities_names.at(name);
+                return _names_to_entities.at(name);
             }
 
             template<class ComponentType>
@@ -48,6 +49,18 @@ namespace velora::game
                 return _components.getComponent<ComponentType>(entity);
             }
 
+            template<typename ComponentType>
+            ComponentType * const getComponent(Entity entity) const
+            { 
+                return _components.getComponent<ComponentType>(entity);
+            }
+
+            template<class ComponentType>
+            bool hasComponent(Entity entity) const
+            {
+                return _entities.getComponentMask(entity).test(ComponentTypeManager::getTypeID<ComponentType>());
+            }
+
             const EntityManager& getEntityManager() const { return _entities; }
             EntityManager & getEntityManager() { return _entities; }
 
@@ -59,6 +72,31 @@ namespace velora::game
             template<class SystemType>
             asio::awaitable<void> runSystem(SystemType & system) {co_return co_await system.run(_components, _entities); }
 
+            std::optional<std::string> getName(Entity entity) const 
+            {
+                if(_entities_to_names.contains(entity))
+                {
+                    return _entities_to_names.at(entity);
+                }
+                else
+                {
+                    spdlog::error("Entity {} does not exist in the level", entity); 
+                    return std::nullopt;
+                }
+            }
+
+            std::optional<Entity> getEntity(std::string name) const 
+            {
+                if(_names_to_entities.contains(name))
+                {
+                    return _names_to_entities.at(name);
+                }
+                else
+                {
+                    spdlog::error("Entity with name {} does not exist in the level", name); 
+                    return std::nullopt;
+                }
+            }
 
         private:
             IRenderer & _renderer;
@@ -66,6 +104,7 @@ namespace velora::game
             EntityManager _entities;
             ComponentManager _components;
 
-            absl::flat_hash_map<std::string, Entity> _entities_names;
+            absl::flat_hash_map<std::string, Entity> _names_to_entities;
+            absl::flat_hash_map<Entity, std::string> _entities_to_names;
     };
 }

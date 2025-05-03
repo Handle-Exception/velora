@@ -1,0 +1,11 @@
+syntax="proto3";
+
+import "entity_definition.proto";
+
+package velora.game;
+
+message LevelDefinition
+{
+    string name = 1;
+    repeated EntityDefinition entities = 2;
+}

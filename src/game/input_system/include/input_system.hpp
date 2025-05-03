@@ -15,6 +15,8 @@ namespace velora::game
     class InputSystem
     {
         public:
+            static const uint32_t MASK_POSITION_BIT;
+
             InputSystem(asio::io_context & io_context);
             InputSystem(const InputSystem&) = delete;
             InputSystem(InputSystem&&) = delete;
@@ -35,7 +37,7 @@ namespace velora::game
                 // clear actions for entites
                 for(auto & [entity, mask] : entities.getAllEntities())
                 {
-                    if(mask.test(_POSITION_BIT) == false) continue;
+                    if(mask.test(MASK_POSITION_BIT) == false) continue;
 
                     auto* input_component = components.getComponent<InputComponent>(entity);
                     assert(input_component != nullptr);
@@ -50,7 +52,7 @@ namespace velora::game
                 _inputs.pop();
                 for(auto & [entity, mask] : entities.getAllEntities())
                 {
-                    if(mask.test(_POSITION_BIT) == false) continue;
+                    if(mask.test(MASK_POSITION_BIT) == false) continue;
 
                     auto* input_component = components.getComponent<InputComponent>(entity);
                     assert(input_component != nullptr);
@@ -73,7 +75,6 @@ namespace velora::game
             }
 
         private:
-            static const uint32_t _POSITION_BIT;
 
             asio::strand<asio::io_context::executor_type> _strand;
             std::queue<int> _inputs;

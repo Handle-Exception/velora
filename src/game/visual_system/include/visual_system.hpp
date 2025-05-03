@@ -20,6 +20,8 @@ namespace velora::game
     class VisualSystem
     {
         public:
+            static const uint32_t MASK_POSITION_BIT;
+
             VisualSystem(IRenderer & renderer)
             : _renderer(renderer)
             {}
@@ -35,7 +37,7 @@ namespace velora::game
 
                 for (const auto& [entity, mask] : entities.getAllEntities())
                 {
-                    if (mask.test(_POSITION_BIT) == false) continue;
+                    if (mask.test(MASK_POSITION_BIT) == false) continue;
 
                     visual_component = components.getComponent<VisualComponent>(entity);
                     assert(visual_component != nullptr);
@@ -104,7 +106,6 @@ namespace velora::game
             }
 
         private:
-            static const uint32_t _POSITION_BIT;
 
             IRenderer & _renderer;
     };

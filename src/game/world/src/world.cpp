@@ -20,5 +20,7 @@ namespace velora::game
                 spdlog::debug(system->getName());
             }
         }
+
+        _levels.emplace("default", _renderer);
     }    
 }

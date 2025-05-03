@@ -1,0 +1,28 @@
+{
+ "name": "level_0",
+ "entities": [
+  {
+   "name": "player",
+   "transform": {
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "health": {
+    "health": 100,
+    "alive": false
+   },
+   "visual": {
+    "visible": true,
+    "vertex_buffer_name": "vertex_buffer_0",
+    "shader_name": "basic_shader"
+   },
+   "input": {
+    "action": 0,
+    "tick": "0"
+   }
+  }
+ ]
+}

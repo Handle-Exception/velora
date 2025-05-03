@@ -14,6 +14,8 @@ namespace velora::game
     class TransformSystem 
     {
         public:
+            static const uint32_t MASK_POSITION_BIT;
+
             TransformSystem();
 
             inline constexpr std::string_view getName() const { return "TransformSystem"; }
@@ -29,6 +31,5 @@ namespace velora::game
             }
 
         private:
-            static const uint32_t _POSITION_BIT;
     };
 }

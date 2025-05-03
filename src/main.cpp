@@ -109,7 +109,7 @@ namespace velora
         }
 
 
-        auto sh_id = co_await loadShader(*renderer, "shaders/glsl/basic_shader");
+        auto sh_id = co_await loadShaderFromFile(*renderer, "shaders/glsl/basic_shader");
 
         if(!sh_id)
         {
@@ -141,53 +141,33 @@ namespace velora
 
         // create world
 
+        ComponentLoaderRegistry components_loader_reg = constructComponentLoaderRegistry();
+        ComponentSerializerRegistry components_serializer_reg = constructComponentSerializerRegistry();
+
         game::World world(io_context, *renderer);
 
         // create level
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING LEVEL
         // ---------------------------------------------------------------------------------------------------------------------------------------------
-        if(world.constructLevel("level_0") == false)
-        {
-            spdlog::error("Failed to create level");
-            co_return -1;
-        }
+
+        co_await loadLevelFromFile(world, components_loader_reg, getResourcesPath() / "levels/level_0.json" );
         world.setCurrentLevel("level_0");
-
-        auto player_entity = world.getCurrentLevel().spawnEntity("player");
-        if(player_entity.has_value() == false)
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // 
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        auto player_entity = world.getCurrentLevel().getEntity("player");
+        if(!player_entity)
         {
-            spdlog::error("Failed to spawn player entity");
+            spdlog::error("Failed to find player entity");
             co_return -1;
         }
-
-        // player entity definition
-        // should be loaded from level file 
-        // just like the rest of entities
-        world.getCurrentLevel().addComponent(*player_entity, game::TransformComponent());
-        world.getCurrentLevel().addComponent(*player_entity, game::HealthComponent());
-        world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent());
-        world.getCurrentLevel().addComponent(*player_entity, game::InputComponent{});
-
+        
         auto input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
         auto transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
         auto visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
         auto health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
-
-        visual_component->set_visible(true);
-        visual_component->set_vertex_buffer_name("vertex_buffer_0");
-        visual_component->set_shader_name("basic_shader");
-
-        health_component->set_health(100);
-
-        transform_component->mutable_scale()->set_x(1.0f);
-        transform_component->mutable_scale()->set_y(1.0f);
-        transform_component->mutable_scale()->set_z(1.0f);
-
-
-        // ---------------------------------------------------------------------------------------------------------------------------------------------
-        // 
-        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        
         float pitch = 45.0f; // X axis
         float yaw   = 90.0f; // Y axis
         float roll  = 30.0f; // Z axis
@@ -251,6 +231,8 @@ namespace velora
 
         if(renderer->good())co_await renderer->close();
         if(window->good())co_await window->close();
+
+        co_await saveWorldToFiles(world, components_serializer_reg, getResourcesPath() / "saves" );
 
         spdlog::debug("Velora main finished with code {}", 0);
 

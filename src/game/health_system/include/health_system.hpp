@@ -9,6 +9,8 @@ namespace velora::game
     class HealthSystem 
     {
     public:
+        static const uint32_t MASK_POSITION_BIT;
+
         HealthSystem();
 
         inline constexpr std::string_view getName() const { return "HealthSystem"; }

@@ -111,6 +111,15 @@ namespace velora
                 return nullptr;
             }
 
+            template<typename Component>
+            Component* const getComponent(Entity entity) const {
+                auto storage = getStorage<Component>();
+                if (storage) {
+                    return storage->get(entity);
+                }
+                return nullptr;
+            }
+
         private:
             /**
              * @brief Retrieves the storage for a specific component type.
@@ -128,6 +137,14 @@ namespace velora
                 return nullptr;
             }
 
+            template<typename Component>
+            ComponentStorage<Component>* const getStorage() const {
+                auto it = _storages.find(std::type_index(typeid(Component)));
+                if (it != _storages.end()) {
+                    return static_cast<ComponentStorage<Component>* const>(it->second.get());
+                }
+                return nullptr;
+            }
             /**
              * @brief Retrieves or creates the storage for a specific component type.
              * 
