@@ -9,6 +9,10 @@
 #include "shader.hpp"
 
 #include <GL/glew.h>
+#ifdef WIN32
+    #include <GL/wglew.h>
+#endif
+
 #include <spdlog/spdlog.h>
 #include <asio.hpp>
 
@@ -41,8 +45,10 @@ namespace velora::opengl
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
             asio::awaitable<Resolution> getViewport() const;
+            asio::awaitable<void> enableVSync();
+            asio::awaitable<void> disableVSync();
 
-            asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices);
+            asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh);
             
             asio::awaitable<bool> eraseVertexBuffer(std::size_t id);
             asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name);

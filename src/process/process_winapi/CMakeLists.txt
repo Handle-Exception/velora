@@ -10,7 +10,7 @@ add_module(NAME "ProcessWinapi"
         absl::flat_hash_map
         "${PROJECT_PREFIX}::Native"
         "${PROJECT_PREFIX}::Resolution"
-        "${PROJECT_PREFIX}::Event"
+        "${PROJECT_PREFIX}::Process"
 
         "${PROJECT_PREFIX}::OpenGLCore"
 )

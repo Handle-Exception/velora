@@ -1,14 +1,16 @@
 #pragma once
 
-#include "type.hpp"
 #include "native.hpp"
-#include "events.hpp"
+#include <asio.hpp>
+
+#include "type.hpp"
 #include "resolution.hpp"
 
-#include <asio.hpp>
+#include "process_window_callbacks.hpp"
 
 namespace velora
 {
+
     class IProcess : public type::Interface
     {
     public:

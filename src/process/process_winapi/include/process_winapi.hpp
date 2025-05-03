@@ -5,7 +5,7 @@
 
 #include "native.hpp"
 #include "resolution.hpp"
-#include "events.hpp"
+#include "process_window_callbacks.hpp"
 
 #include <asio.hpp>
 #include <spdlog/spdlog.h>

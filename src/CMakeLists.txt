@@ -1,7 +1,6 @@
 add_subdirectory(version)
 add_subdirectory(native)
 add_subdirectory(type)
-add_subdirectory(event)
 add_subdirectory(entry)
 add_subdirectory(resolution)
 add_subdirectory(process)

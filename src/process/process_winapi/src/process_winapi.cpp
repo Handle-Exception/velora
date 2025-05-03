@@ -232,7 +232,6 @@ namespace velora::winapi
         co_return true;
     }
 
-
     bool WinapiProcess::initOpenGL()
     {
         if(_default_oglctx_handle != nullptr){
@@ -495,7 +494,7 @@ namespace velora::winapi
 
         case WM_KEYUP : 
         {
-            int key = wparam;
+            int key = (int)wparam;
 
             auto handling_result = DefWindowProc(window, message, wparam, lparam);
             if(window_callbacks.onKeyRelease != nullptr)

@@ -8,7 +8,6 @@ using namespace std::chrono_literals;
 #include "native.hpp"
 #include "entry.hpp"
 #include "type.hpp"
-#include "events.hpp"
 #include "resolution.hpp"
 #include "process.hpp"
 #include "window.hpp"

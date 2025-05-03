@@ -9,6 +9,8 @@
 
 #include "shader.hpp"
 
+#include "fps_counter.hpp"
+
 namespace velora
 {
     class IRenderer : public type::Interface
@@ -36,8 +38,10 @@ namespace velora
         virtual asio::awaitable<void> present() = 0;
         virtual asio::awaitable<void> updateViewport(Resolution resolution) = 0;
         virtual asio::awaitable<Resolution> getViewport() const = 0;
+        virtual asio::awaitable<void> enableVSync() = 0;
+        virtual asio::awaitable<void> disableVSync() = 0;
 
-        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) = 0;
         
         virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0;
 
@@ -86,8 +90,16 @@ namespace velora
                 co_return co_await dispatch::getImpl().getViewport();
             };
 
-            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, std::vector<unsigned int> indices, std::vector<Vertex> vertices) override{ 
-                co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(name), std::move(indices), std::move(vertices));
+            inline asio::awaitable<void> enableVSync() override { 
+                co_return co_await dispatch::getImpl().enableVSync();
+            };
+
+            inline asio::awaitable<void> disableVSync() override { 
+                co_return co_await dispatch::getImpl().disableVSync();
+            };
+
+            inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) override{ 
+                co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(name), mesh);
             };
         
             inline asio::awaitable<bool> eraseVertexBuffer(std::size_t id) override {

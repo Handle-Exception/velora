@@ -3,7 +3,6 @@
 #include "native.hpp"
 #include "resolution.hpp"
 #include "process.hpp"
-#include "events.hpp"
 
 #include <asio.hpp>
 

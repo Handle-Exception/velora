@@ -24,12 +24,6 @@ namespace velora
                 return game::InputCode::UNKNOWN;
         }
     }
-    
-    template<class T>
-    bool isInputPresent(game::InputCode code, const T & keys_set)
-    {
-        return std::find(keys_set.begin(), keys_set.end(), code) != keys_set.end();
-    }
 
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
@@ -52,6 +46,8 @@ namespace velora
             spdlog::error("Failed to create renderer");
             co_return -1;
         }
+
+        co_await renderer->enableVSync();
 
         co_await asio::dispatch(asio::bind_executor(main_strand, asio::use_awaitable));
 
@@ -78,21 +74,8 @@ namespace velora
                 },
                 .onKeyPress = [&window, &renderer, &input_system](int key) -> asio::awaitable<void>
                 {                                        
-                    game::InputCode code;
-                    
-                    switch (key)
-                    {
-                        case 0x1B: // ESC
-                            co_await renderer->close();
-                            co_await window->close();
-                            co_return;
-                        
-                        default : 
-                            code = keyToInputCode(key);
-                    }
-
                     // need to propagate this information into InputSystem
-                    co_await input_system.recordKeyPressed(code);
+                    co_await input_system.recordKeyPressed(keyToInputCode(key));
                     co_return;
                 },
                 .onKeyRelease = [&window, &input_system](int key) -> asio::awaitable<void>
@@ -107,46 +90,7 @@ namespace velora
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING ASSETS
         // ---------------------------------------------------------------------------------------------------------------------------------------------
-        auto vb_id = co_await renderer->constructVertexBuffer("vertex_buffer_0",
-            {
-                // Front face
-                0, 1, 2,
-                2, 3, 0,
-
-                // Right face
-                1, 5, 6,
-                6, 2, 1,
-
-                // Back face
-                5, 4, 7,
-                7, 6, 5,
-
-                // Left face
-                4, 0, 3,
-                3, 7, 4,
-
-                // Top face
-                3, 2, 6,
-                6, 7, 3,
-
-                // Bottom face
-                4, 5, 1,
-                1, 0, 4
-            },
-            {
-            // Front face
-            {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0.0f, 0.0f}}, // 0
-            {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {1.0f, 0.0f}}, // 1
-            {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1.0f, 1.0f}}, // 2
-            {{-0.5f,  0.5f,  0.5f}, {1, 1, 0}, {0.0f, 1.0f}}, // 3
-
-            // Back face
-            {{-0.5f, -0.5f, -0.5f}, {1, 0, 1}, {1.0f, 0.0f}}, // 4
-            {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0.0f, 0.0f}}, // 5
-            {{ 0.5f,  0.5f, -0.5f}, {1, 1, 1}, {0.0f, 1.0f}}, // 6
-            {{-0.5f,  0.5f, -0.5f}, {0, 0, 0}, {1.0f, 1.0f}}, // 7
-            }
-        );
+        auto vb_id = co_await renderer->constructVertexBuffer("vertex_buffer_0", getCubePrefab());
 
         if(!vb_id)
         {
@@ -230,6 +174,10 @@ namespace velora
 
         co_await window->show();
 
+        FpsCounter fps_counter;
+        auto last_log_time = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+
         while (window->good() && renderer->good()) 
         {
 
@@ -276,19 +224,25 @@ namespace velora
             player_transform_component->mutable_position()->set_y(player_position.y);
             player_transform_component->mutable_position()->set_z(player_position.z);            
 
+            // track fps frames for profiling
+            fps_counter.frame();
+            now = std::chrono::steady_clock::now();
+            if (now - last_log_time >= std::chrono::seconds(3)) {
+                spdlog::info("FPS: {:.1f}", fps_counter.getFPS());
+                last_log_time = now;
+            }
+            // apply input
+            co_await world.getCurrentLevel().runSystem(input_system);
 
             // clear window
             co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});
-            
-            // apply input
-            co_await world.getCurrentLevel().runSystem(input_system);
             
             // update world state
             // visual system will render entities with visual component
             co_await world.update();
 
             // swap buffers
-            co_await renderer->present(); 
+            co_await renderer->present();
         }
 
         if(renderer->good())co_await renderer->close();

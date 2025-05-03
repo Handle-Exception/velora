@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <glm/glm.hpp>
 
 namespace velora
@@ -13,4 +15,13 @@ namespace velora
         glm::vec2 uv;
     };
     #pragma pack(pop) // each vertex is now exactly 8 floats = 32 bytes, no extra padding
+
+
+    struct Mesh
+    {
+        std::vector<unsigned int> indices;
+        std::vector<Vertex> vertices;
+    };
+
+    const Mesh & getCubePrefab();
 }

@@ -11,25 +11,23 @@ namespace velora::game
     public:
         static const uint32_t MASK_POSITION_BIT;
 
-        HealthSystem();
+        constexpr static const char * NAME = "HealthSystem";
+        constexpr static inline const char * getName() { return NAME; }
 
-        inline constexpr std::string_view getName() const { return "HealthSystem"; }
+        constexpr static const std::initializer_list<const char *> DEPS = {};
+        constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-        inline std::ranges::ref_view<std::vector<std::string>> getDependencies() const 
-        { 
-            static std::vector<std::string> deps{};
-            return std::views::all(deps);
-        }
+        HealthSystem() = default;
+        HealthSystem(const HealthSystem&) = delete;
+        HealthSystem(HealthSystem&&) = default;
+        HealthSystem& operator=(const HealthSystem&) = delete;
+        HealthSystem& operator=(HealthSystem&&) = default;
+        ~HealthSystem() = default;
 
-        asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
-        {
-            co_return;
-        }
+        asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
 
-        const SystemState& getState() const
-        {
-            return _state;
-        }
+        const SystemState& getState() const;
+
     private:
         SystemState _state;
     };

@@ -19,9 +19,10 @@ namespace velora
         public:
             virtual ~ISystem() = default;
 
-            virtual std::string_view getName() const = 0;
+            virtual const char * getName() const = 0;
+            virtual const std::initializer_list<const char *> & getDependencies() const = 0;
+
             virtual asio::awaitable<void> run(ComponentManager& components, EntityManager& entities) = 0;
-            virtual std::ranges::ref_view<std::vector<std::string>> getDependencies() const = 0;
             virtual const SystemState & getState() const = 0;
     };
 
@@ -36,11 +37,15 @@ namespace velora
             inline SystemDispatcher(Args && ... args) : dispatch(std::forward<Args>(args)...){} 
             inline ~SystemDispatcher() = default;
 
-            constexpr inline std::string_view getName() const override { return dispatch::getImpl().getName();}
+            constexpr inline const char * getName() const override {
+                return dispatch::getImpl().getName();}
+
+            constexpr inline const std::initializer_list<const char *> & getDependencies() const override { 
+                return dispatch::getImpl().getDependencies();}
+                
             inline asio::awaitable<void> run(ComponentManager& components, EntityManager& entities) override { 
                 co_return co_await dispatch::getImpl().run(components, entities);}
-            constexpr inline std::ranges::ref_view<std::vector<std::string>> getDependencies() const override { 
-                return dispatch::getImpl().getDependencies();}
+
             constexpr inline const SystemState & getState() const override { 
                 return dispatch::getImpl().getState();}
     };

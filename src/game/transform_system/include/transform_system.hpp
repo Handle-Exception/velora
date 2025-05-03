@@ -15,25 +15,23 @@ namespace velora::game
     {
         public:
             static const uint32_t MASK_POSITION_BIT;
-
-            TransformSystem();
-
-            inline constexpr std::string_view getName() const { return "TransformSystem"; }
-        
-            std::ranges::ref_view<std::vector<std::string>> getDependencies() const {
-                static std::vector<std::string> deps{};
-                return std::views::all(deps);
-            }
-
-            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities)
-            {
-                co_return;
-            }
             
-            const SystemState& getState() const
-            {
-                return _state;
-            }
+            constexpr static const char * NAME = "TransformSystem";
+            constexpr static inline const char * getName() { return NAME; }
+
+            constexpr static const std::initializer_list<const char *> DEPS = {};
+            constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
+
+            TransformSystem() = default;
+            TransformSystem(const TransformSystem&) = delete;
+            TransformSystem(TransformSystem&&) = default;
+            TransformSystem& operator=(const TransformSystem&) = delete;
+            TransformSystem& operator=(TransformSystem&&) = default;
+            ~TransformSystem() = default;
+
+            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
+            const SystemState& getState() const;
+
         private:    
             SystemState _state;
     };

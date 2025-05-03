@@ -49,6 +49,22 @@ namespace velora::opengl
         return _oglctx_handle != nullptr;
     }
 
+    asio::awaitable<void> OpenGLRenderer::enableVSync()
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+
+        wglSwapIntervalEXT(1);
+        co_return;
+    }
+
+    asio::awaitable<void> OpenGLRenderer::disableVSync()
+    {
+        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+
+        wglSwapIntervalEXT(0);
+        co_return;
+    }
+
     asio::awaitable<void> OpenGLRenderer::close()
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
@@ -77,7 +93,7 @@ namespace velora::opengl
         co_return;
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::string name,  std::vector<unsigned int> indices, std::vector<Vertex> vertices)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::string name,  const Mesh & mesh)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         
@@ -95,7 +111,7 @@ namespace velora::opengl
             co_return std::nullopt;
         }
 
-        VertexBuffer vb = VertexBuffer::construct<OpenGLVertexBuffer>(std::move(indices), std::move(vertices));
+        VertexBuffer vb = VertexBuffer::construct<OpenGLVertexBuffer>(mesh.indices, mesh.vertices);
 
         // unbind context
         wglMakeCurrent(0, 0);

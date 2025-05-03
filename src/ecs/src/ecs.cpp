@@ -21,7 +21,7 @@ namespace velora
             {
                 if (!system_map.count(dep))
                 {
-                    throw std::runtime_error("Unknown dependency: " + dep);
+                    throw std::runtime_error(std::string("Unknown dependency: ") + dep);
                 }
 
                 adj[dep].push_back(sys->getName());
