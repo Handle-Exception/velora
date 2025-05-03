@@ -3,6 +3,32 @@
 namespace velora::game
 {
     const uint32_t InputSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<InputComponent>();
+    
+    game::InputCode keyToInputCode(int key)
+    {
+        #ifdef WIN32 //TODO: move to native.hpp?
+            switch (key)
+            {
+                case 87: //W
+                    return game::InputCode::KEY_W;
+                case 65: //A
+                    return game::InputCode::KEY_A;
+                case 83: //S
+                    return game::InputCode::KEY_S;
+                case 68: //D
+                    return game::InputCode::KEY_D;
+                case 81: //Q
+                    return game::InputCode::KEY_Q;
+                case 69: //E
+                    return game::InputCode::KEY_E;
+
+                default:
+                    return game::InputCode::UNKNOWN;
+            }
+        #endif
+
+        return game::InputCode::UNKNOWN;
+    }
 
     InputSystem::InputSystem(asio::io_context & io_context)
     : _strand(asio::make_strand(io_context))

@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <cstring>
+#include <tuple>
 
 #include "native.hpp"
 #include <asio.hpp>
@@ -62,11 +64,11 @@ namespace velora::game
                 return _levels.at(_current_level);
             }
 
-            asio::awaitable<void> update()
+            asio::awaitable<void> update(std::chrono::duration<double> delta)
             {
                 for(const auto & layer : _layers)
                 {
-                    co_await asio::co_spawn(_io_context, runLayer(layer), asio::use_awaitable);
+                    co_await asio::co_spawn(_io_context, runLayer(delta, layer), asio::use_awaitable);
                 }
                 co_return;
             }
@@ -82,14 +84,47 @@ namespace velora::game
                 return level_names;
             }
 
-        protected:
-            asio::awaitable<void> runLayer(const std::vector<ISystem*> & layer)
+            ISystem & getSystem(const char * name)
             {
-                for(const auto & system : layer)
+                for(auto & system : _systems)
                 {
-                    co_await asio::co_spawn(_io_context, getCurrentLevel().runSystem(*system), asio::use_awaitable);
+                    if(std::strcmp(system->getName(), name) == 0)
+                    {
+                        return *system;
+                    }
                 }
-                co_return;
+                throw std::runtime_error("System not found: " + std::string(name));
+            }
+
+            const ISystem & getSystem(const char * name) const
+            {
+                for(auto & system : _systems)
+                {
+                    if(std::strcmp(system->getName(), name) == 0)
+                    {
+                        return *system;
+                    }
+                }
+                throw std::runtime_error("System not found: " + std::string(name));
+            }
+
+        protected:
+            asio::awaitable<void> runLayer(const std::chrono::duration<double> & delta, const std::vector<ISystem*> & layer)
+            {
+                std::vector<asio::awaitable<void>> joiners;
+                joiners.reserve(layer.size());
+
+                for (auto* system : layer) 
+                {
+                    auto joiner = asio::co_spawn(_io_context, getCurrentLevel().runSystem(*system), asio::use_awaitable);
+                    joiners.emplace_back(std::move(joiner));
+                }
+
+                // Await all joiners (manually wait each)
+                for (asio::awaitable<void> & joiner : joiners) 
+                {
+                    co_await std::move(joiner);
+                }
             }
 
         private:

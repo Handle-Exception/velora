@@ -76,7 +76,7 @@ namespace velora::opengl
         // bind context
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
         }
 
         _vertex_buffers.clear();
@@ -99,7 +99,7 @@ namespace velora::opengl
         
         if(_vertex_buffer_names.contains(name))
         {
-            spdlog::warn(std::format("[t{}] Vertex buffer {} already exists", std::this_thread::get_id(), name));
+            spdlog::warn(std::format("[t:{}] Vertex buffer {} already exists", std::this_thread::get_id(), name));
             co_return std::nullopt;
         }
 
@@ -107,7 +107,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return std::nullopt;
         }
 
@@ -133,7 +133,7 @@ namespace velora::opengl
 
         if(_vertex_buffers.contains(id) == false)
         {
-            spdlog::warn(std::format("[t{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
+            spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
             co_return false;
         }
 
@@ -141,13 +141,13 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return false;
         }
 
         _vertex_buffers.erase(id);
 
-        spdlog::info(std::format("[t{}] Vertex buffer {} erased", std::this_thread::get_id(), id));
+        spdlog::info(std::format("[t:{}] Vertex buffer {} erased", std::this_thread::get_id(), id));
 
         // unbind context
         wglMakeCurrent(0, 0);
@@ -163,13 +163,13 @@ namespace velora::opengl
 
         if(_vertex_buffer_names.contains(name) == false)
         {
-            spdlog::warn(std::format("[t{}] Vertex buffer {} does not exist", std::this_thread::get_id(), name));
+            spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), name));
             co_return std::nullopt;
         }
         auto id = _vertex_buffer_names.at(name);
         if(_vertex_buffers.contains(id) == false)
         {
-            spdlog::warn(std::format("[t{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
+            spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
             co_return std::nullopt;
         }
         co_return id;
@@ -181,7 +181,7 @@ namespace velora::opengl
         
         if(_shader_names.contains(name))
         {
-            spdlog::warn(std::format("[t{}] Shader {} already exists", std::this_thread::get_id(), name));
+            spdlog::warn(std::format("[t:{}] Shader {} already exists", std::this_thread::get_id(), name));
             co_return std::nullopt;
         }
 
@@ -189,7 +189,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return std::nullopt;
         }
 
@@ -215,7 +215,7 @@ namespace velora::opengl
         
         if(_shader_names.contains(name))
         {
-            spdlog::warn(std::format("[t{}] Shader {} already exists", std::this_thread::get_id(), name));
+            spdlog::warn(std::format("[t:{}] Shader {} already exists", std::this_thread::get_id(), name));
             co_return std::nullopt;
         }
 
@@ -223,7 +223,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return std::nullopt;
         }
 
@@ -248,7 +248,7 @@ namespace velora::opengl
 
         if(_shaders.contains(id) == false)
         {
-            spdlog::warn(std::format("[t{}] Shader {} does not exist", std::this_thread::get_id(), id));
+            spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), id));
             co_return false;
         }
 
@@ -256,13 +256,13 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return false;
         }
 
         _shaders.erase(id);
 
-        spdlog::info(std::format("[t{}] Shader {} erased", std::this_thread::get_id(), id));
+        spdlog::info(std::format("[t:{}] Shader {} erased", std::this_thread::get_id(), id));
 
         // unbind context
         wglMakeCurrent(0, 0);
@@ -277,13 +277,13 @@ namespace velora::opengl
 
         if(_shader_names.contains(name) == false)
         {
-            spdlog::warn(std::format("[t{}] Shader {} does not exist", std::this_thread::get_id(), name));
+            spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), name));
             co_return std::nullopt;
         }
         auto id = _shader_names.at(name);
         if(_shaders.contains(id) == false)
         {
-            spdlog::warn(std::format("[t{}] Shader {} does not exist", std::this_thread::get_id(), id));
+            spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), id));
             co_return std::nullopt;
         }
         co_return id;
@@ -292,6 +292,11 @@ namespace velora::opengl
 
     void OpenGLRenderer::assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs)
     {
+        for(const auto & [name, val] : shader_inputs.in_bool)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+
         for(const auto & [name, val] : shader_inputs.in_int)
         {
             _shaders.at(shader_ID)->setUniform(name, val);
@@ -301,24 +306,28 @@ namespace velora::opengl
             _shaders.at(shader_ID)->setUniform(name, val);
         }
 
-        for(const auto & [name, val] : shader_inputs.in_vec2f)
+        for(const auto & [name, val] : shader_inputs.in_vec2)
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
-        for(const auto & [name, val] : shader_inputs.in_vec3f)
+        for(const auto & [name, val] : shader_inputs.in_vec3)
+        {
+            _shaders.at(shader_ID)->setUniform(name, val);
+        }
+        for(const auto & [name, val] : shader_inputs.in_vec4)
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
 
-        for(const auto & [name, val] : shader_inputs.in_mat2f)
+        for(const auto & [name, val] : shader_inputs.in_mat2)
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
-        for(const auto & [name, val] : shader_inputs.in_mat3f)
+        for(const auto & [name, val] : shader_inputs.in_mat3)
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
-        for(const auto & [name, val] : shader_inputs.in_mat4f)
+        for(const auto & [name, val] : shader_inputs.in_mat4)
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
@@ -332,7 +341,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return;
         }
 
@@ -366,7 +375,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return;
         }
 
@@ -398,7 +407,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return;
         }
 
@@ -420,7 +429,7 @@ namespace velora::opengl
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
         {
-            spdlog::error(std::format("[t{}] Cannot activate opengl context", std::this_thread::get_id()));
+            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
             co_return;
         }
         

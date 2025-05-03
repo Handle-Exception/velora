@@ -2,28 +2,59 @@
 
 namespace velora
 {
-    // todo move to a better place
-    game::InputCode keyToInputCode(int key)
+    // TODO
+    void moveCamera(const std::chrono::duration<double> & delta, game::TransformComponent * camera_transform_component, game::InputComponent * camera_input_component)
     {
-        switch (key)
-        {
-            case 87: //W
-                return game::InputCode::KEY_W;
-            case 65: //A
-                return game::InputCode::KEY_A;
-            case 83: //S
-                return game::InputCode::KEY_S;
-            case 68: //D
-                return game::InputCode::KEY_D;
-            case 81: //Q
-                return game::InputCode::KEY_Q;
-            case 69: //E
-                return game::InputCode::KEY_E;
+        static glm::vec3 camera_position{0,0,0};
+        static const float speed = 0.3f;
+        
+        if(isInputPresent(game::InputCode::KEY_A, camera_input_component->pressed()))
+                camera_position.x -= speed * (float)delta.count();
+        if(isInputPresent(game::InputCode::KEY_D, camera_input_component->pressed()))
+                camera_position.x += speed * (float)delta.count();
+
+        if(isInputPresent(game::InputCode::KEY_W, camera_input_component->pressed()))
+                camera_position.z -= speed * (float)delta.count();
+        if(isInputPresent(game::InputCode::KEY_S, camera_input_component->pressed()))
+                camera_position.z += speed * (float)delta.count();
+
+        if(isInputPresent(game::InputCode::KEY_Q, camera_input_component->pressed()))
+                camera_position.y += speed * (float)delta.count();
+        if(isInputPresent(game::InputCode::KEY_E, camera_input_component->pressed()))
+                camera_position.y -= speed * (float)delta.count();
             
-            default:
-                return game::InputCode::UNKNOWN;
-        }
+
+        camera_transform_component->mutable_position()->set_x(camera_position.x);
+        camera_transform_component->mutable_position()->set_y(camera_position.y);
+        camera_transform_component->mutable_position()->set_z(camera_position.z);
     }
+
+    void movePlayer(const std::chrono::duration<double> & delta, game::TransformComponent * player_transform_component)
+    {
+        static float pitch = 45.0f; // X axis
+        static float yaw   = 90.0f; // Y axis
+        static float roll  = 30.0f; // Z axis
+        static glm::quat player_rotation;
+        static glm::vec3 player_position{0,0,0};
+
+        pitch += 0.05f * (float)delta.count();
+        yaw   += 0.1f * (float)delta.count();
+        roll  += 0.03f * (float)delta.count();
+
+        player_rotation = glm::radians(glm::vec3(pitch, yaw, roll));
+
+        player_transform_component->mutable_rotation()->set_w(player_rotation.w);
+        player_transform_component->mutable_rotation()->set_x(player_rotation.x);
+        player_transform_component->mutable_rotation()->set_y(player_rotation.y);
+        player_transform_component->mutable_rotation()->set_z(player_rotation.z);
+
+        player_transform_component->mutable_position()->set_x(player_position.x);
+        player_transform_component->mutable_position()->set_y(player_position.y);
+        player_transform_component->mutable_position()->set_z(player_position.z);   
+    }
+
+
+
 
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
@@ -75,13 +106,13 @@ namespace velora
                 .onKeyPress = [&window, &renderer, &input_system](int key) -> asio::awaitable<void>
                 {                                        
                     // need to propagate this information into InputSystem
-                    co_await input_system.recordKeyPressed(keyToInputCode(key));
+                    co_await input_system.recordKeyPressed(game::keyToInputCode(key));
                     co_return;
                 },
                 .onKeyRelease = [&window, &input_system](int key) -> asio::awaitable<void>
                 {
                     // need to propagate this information into InputSystem
-                    co_await input_system.recordKeyReleased(keyToInputCode(key));
+                    co_await input_system.recordKeyReleased(game::keyToInputCode(key));
                     co_return;
                 }
             });
@@ -136,7 +167,9 @@ namespace velora
 
         game::World world(io_context, *renderer);
 
-        // create level
+        game::VisualSystem visual_system(*renderer, world.getSystem("CameraSystem"));
+
+
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING LEVEL
         // ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -164,82 +197,65 @@ namespace velora
         auto camera_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*camera_entity);
         auto camera_camera_component = world.getCurrentLevel().getComponent<game::CameraComponent>(*camera_entity);
 
-        float pitch = 45.0f; // X axis
-        float yaw   = 90.0f; // Y axis
-        float roll  = 30.0f; // Z axis
-
-        glm::quat player_rotation;
-        glm::vec3 player_position{0,0,0};
-        glm::vec3 camera_position{0,0,0};
-
         co_await window->show();
 
+        using clock = std::chrono::high_resolution_clock;
+        constexpr const std::chrono::duration<double> FIXED_DELTA = 16.66ms; // 60Hz logic update
+        constexpr const double MAX_ACCUMULATED_TIME = 0.25f; // avoid spiral of death
+        uint64_t simulation_tick = 0;
+        std::chrono::steady_clock::time_point now = clock::now();
+        auto previous_time = clock::now();
+        std::chrono::duration<double> frame_time;
+        double delta = 0.0;
+        double lag = 0.0;
+
         FpsCounter fps_counter;
-        auto last_log_time = std::chrono::steady_clock::now();
-        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        auto last_log_time = clock::now();
 
         while (window->good() && renderer->good()) 
         {
+            now = clock::now();
+            frame_time = now - previous_time;
+            // Clamp to avoid spiral of death
+            delta = std::min(frame_time.count(), MAX_ACCUMULATED_TIME);
+            lag += delta;
 
-            // -----------------------------------------------------------------
-            // CAMERA
-            // -----------------------------------------------------------------
-
-            if(isInputPresent(game::InputCode::KEY_A, camera_input_component->pressed()))
-                camera_position.x -= 0.1f;
-            if(isInputPresent(game::InputCode::KEY_D, camera_input_component->pressed()))
-                camera_position.x += 0.1f;
-
-            if(isInputPresent(game::InputCode::KEY_W, camera_input_component->pressed()))
-                camera_position.z -= 0.1f;
-            if(isInputPresent(game::InputCode::KEY_S, camera_input_component->pressed()))
-                camera_position.z += 0.1f;
-
-            if(isInputPresent(game::InputCode::KEY_Q, camera_input_component->pressed()))
-                camera_position.y += 0.1f;
-            if(isInputPresent(game::InputCode::KEY_E, camera_input_component->pressed()))
-                camera_position.y -= 0.1f;
-            
-
-            camera_transform_component->mutable_position()->set_x(camera_position.x);
-            camera_transform_component->mutable_position()->set_y(camera_position.y);
-            camera_transform_component->mutable_position()->set_z(camera_position.z);
-
-            // -----------------------------------------------------------------
-            // PLAYER
-            // -----------------------------------------------------------------
-
-            pitch += 0.05f;
-            yaw   += 0.1f;
-            roll  += 0.03f;
-
-            player_rotation = glm::radians(glm::vec3(pitch, yaw, roll));
-
-            player_transform_component->mutable_rotation()->set_w(player_rotation.w);
-            player_transform_component->mutable_rotation()->set_x(player_rotation.x);
-            player_transform_component->mutable_rotation()->set_y(player_rotation.y);
-            player_transform_component->mutable_rotation()->set_z(player_rotation.z);
-
-            player_transform_component->mutable_position()->set_x(player_position.x);
-            player_transform_component->mutable_position()->set_y(player_position.y);
-            player_transform_component->mutable_position()->set_z(player_position.z);            
-
-            // track fps frames for profiling
             fps_counter.frame();
-            now = std::chrono::steady_clock::now();
+
+            // Input runs every frame, regardless of update rate
+            co_await world.getCurrentLevel().runSystem(input_system);
+        
+            // track fps frames for profiling
             if (now - last_log_time >= std::chrono::seconds(3)) {
-                spdlog::info("FPS: {:.1f}", fps_counter.getFPS());
+                spdlog::info(std::format("[t:{}] FPS: {:.1f}", std::this_thread::get_id(), fps_counter.getFPS()));
                 last_log_time = now;
             }
-            // apply input
-            co_await world.getCurrentLevel().runSystem(input_system);
+
+            // Apply fixed time steps
+            while (lag >= FIXED_DELTA.count()) 
+            {
+                //TODO
+                // Store tick count in input for deterministic use
+                //world.getCurrentLevel().visitComponents<InputComponent>([&](InputComponent& input) {
+                //    input.tick = simulation_tick;
+                //});
+
+                // TODO
+                moveCamera(FIXED_DELTA, camera_transform_component, camera_input_component);
+                movePlayer(FIXED_DELTA, player_transform_component);
+
+                // Fixed time update
+                co_await world.update(FIXED_DELTA); // assumes systems respect fixed delta
+
+                simulation_tick++;
+                lag -= FIXED_DELTA.count();
+            }
 
             // clear window
             co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});
             
-            // update world state
             // visual system will render entities with visual component
-            co_await world.update();
+            co_await world.getCurrentLevel().runSystem(visual_system);
 
             // swap buffers
             co_await renderer->present();

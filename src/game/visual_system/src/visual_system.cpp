@@ -93,7 +93,9 @@ namespace velora::game
             // render
             co_await _renderer.render(*vb_id, *sh_id, 
                         ShaderInputs{
-                            .in_mat4f = {
+                            .in_bool = {{"useTexture", false}},
+                            .in_vec4 = {{"uColor", glm::vec4(1, 0, 0, 1)}},
+                            .in_mat4 = {
                                 {"uModel", model_matrix},
                                 {"uView", view_matrix},
                                 {"uProjection", proj_matrix}

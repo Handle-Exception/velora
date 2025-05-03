@@ -31,6 +31,8 @@ namespace velora::opengl
         bool enable();
         bool disable();
 
+        void setUniform(const std::string & name, bool value);
+
         void setUniform(const std::string & name, int value);
         void setUniform(const std::string & name, float value);
 

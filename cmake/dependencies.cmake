@@ -127,12 +127,16 @@ if(USE_PROTOBUF)
     message(STATUS "Fetching dependency `protobuf` ...")
     find_package(Protobuf CONFIG QUIET)
     if(NOT Protobuf_FOUND)
+
+        
         FetchContent_Declare(
             protobuf
             GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
             GIT_TAG        "v30.2"
             SYSTEM
         )
+        set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+        set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
         set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
         set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
         set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -155,7 +159,6 @@ if(USE_PROTOBUF)
             utf8_validity
             )
 
-        #set(Protobuf_PROTOC_EXECUTABLE "${protobuf_BINARY_DIR}/Debug/protoc.exe" CACHE FILEPATH "" FORCE)
         set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc> CACHE FILEPATH "" FORCE)
     endif()
 endif()

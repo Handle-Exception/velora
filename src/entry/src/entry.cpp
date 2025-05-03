@@ -83,13 +83,26 @@ int main(int argc, char* argv[])
         }
     );
     
-    try
+    std::vector<std::thread> worker_threads;
+    worker_threads.reserve(used_cores);
+    for(unsigned i = 0; i < used_cores; ++i)
     {
-        io_context.run();
+        worker_threads.emplace_back([&io_context]()
+        {
+            try
+            {
+                io_context.run();
+            }
+            catch(std::exception & e)
+            {
+                spdlog::error("Error: {}", e.what());
+            }  
+        });
     }
-    catch(std::exception & e)
+    // Wait for all threads to finish
+    for(auto & thread : worker_threads)
     {
-        spdlog::error("Error: {}", e.what());
+        thread.join();
     }
     
     // Wait for the external main to finish

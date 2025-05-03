@@ -328,6 +328,16 @@ namespace velora::opengl
         }
     }
 
+    void OpenGLShader::setUniform(const std::string & name, bool value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+        glUniform1i(_uniforms.at(name).first, value);
+    }
+
     void OpenGLShader::setUniform(const std::string & name, int value)
     {
         if(_uniforms.contains(name) == false)

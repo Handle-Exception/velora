@@ -64,4 +64,6 @@ namespace velora::game
     {
         return std::find(keys_set.begin(), keys_set.end(), code) != keys_set.end();
     }
+
+    game::InputCode keyToInputCode(int key);
 }

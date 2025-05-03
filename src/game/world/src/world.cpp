@@ -10,8 +10,6 @@ namespace velora::game
         assert(transform_system != nullptr && "TransformSystem construction failed" );
         velora::ISystem * camera_system = _systems.emplace_back(System::construct<CameraSystem>(_renderer)).get();
         assert(camera_system != nullptr && "CameraSystem construction failed" );
-        velora::ISystem * visual_system = _systems.emplace_back(System::construct<VisualSystem>( _renderer, *camera_system)).get();
-        assert(visual_system != nullptr && "VisualSystem construction failed" );
         velora::ISystem * health_system = _systems.emplace_back(System::construct<HealthSystem>()).get();
         assert(health_system != nullptr && "HealthSystem construction failed" );
 

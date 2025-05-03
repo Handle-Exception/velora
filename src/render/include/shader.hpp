@@ -13,15 +13,18 @@ namespace velora
 {
     struct ShaderInputs
     {
+        absl::flat_hash_map<std::string, bool> in_bool;
+
         absl::flat_hash_map<std::string, int> in_int;
         absl::flat_hash_map<std::string, float> in_float;
 
-        absl::flat_hash_map<std::string, glm::vec2> in_vec2f;
-        absl::flat_hash_map<std::string, glm::vec2> in_vec3f;
+        absl::flat_hash_map<std::string, glm::vec2> in_vec2;
+        absl::flat_hash_map<std::string, glm::vec3> in_vec3;
+        absl::flat_hash_map<std::string, glm::vec4> in_vec4;
 
-        absl::flat_hash_map<std::string, glm::mat2> in_mat2f;
-        absl::flat_hash_map<std::string, glm::mat3> in_mat3f;
-        absl::flat_hash_map<std::string, glm::mat4> in_mat4f;
+        absl::flat_hash_map<std::string, glm::mat2> in_mat2;
+        absl::flat_hash_map<std::string, glm::mat3> in_mat3;
+        absl::flat_hash_map<std::string, glm::mat4> in_mat4;
     };
 
 
@@ -36,6 +39,8 @@ namespace velora
         virtual bool enable() = 0;
         //
         virtual bool disable() = 0;
+
+        virtual void setUniform(const std::string & name, bool value) = 0;
 
         virtual void setUniform(const std::string & name, int value) = 0;
         virtual void setUniform(const std::string & name, float value)= 0;
@@ -64,6 +69,8 @@ namespace velora
 
             constexpr inline bool enable() override { return dispatch::getImpl().enable();}
             constexpr inline bool disable() override { return dispatch::getImpl().disable();}
+
+            constexpr inline void setUniform(const std::string & name, bool value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
 
             constexpr inline void setUniform(const std::string & name, int value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
             constexpr inline void setUniform(const std::string & name, float value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
