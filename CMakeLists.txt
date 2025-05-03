@@ -63,6 +63,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::Level"
         "${PROJECT_PREFIX}::Game"
         "proto_gen"
+        "${PROJECT_PREFIX}::Asset"
 )
 add_dependencies("${PROJECT_NAME}Lib" glew_build)
 target_compile_definitions("${PROJECT_NAME}Lib" PUBLIC GLEW_STATIC)

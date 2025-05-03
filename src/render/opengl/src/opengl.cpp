@@ -156,7 +156,7 @@ namespace velora::opengl
         co_return id;
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<const char *> vertex_code)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         
@@ -190,7 +190,7 @@ namespace velora::opengl
         co_return id;
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code)
     {
         co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         

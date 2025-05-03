@@ -17,6 +17,9 @@
 
 namespace velora
 {
+    std::filesystem::path getBinPath();
+    std::filesystem::path getResourcesPath();
+
     // Must be defined by executable.
     // Engine will call this function on startup
     extern asio::awaitable<int> main(asio::io_context & io_context, IProcess & process);

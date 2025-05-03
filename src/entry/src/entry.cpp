@@ -2,6 +2,22 @@
 
 using namespace velora;
 
+namespace velora
+{
+    static std::filesystem::path BIN_PATH = "";
+    static std::filesystem::path RESOURCES_PATH = "";
+
+    std::filesystem::path getBinPath()
+    {
+        return BIN_PATH;
+    }
+
+    std::filesystem::path getResourcesPath()
+    {
+        return RESOURCES_PATH;
+    }
+}
+
 const std::string & getAsciiLogo()
 {
     static const std::string logo = R"(
@@ -39,7 +55,12 @@ int main(int argc, char* argv[])
         spdlog::info("Argument at [{}] = {}", i, argv[i]);
     }
 
+    BIN_PATH = std::filesystem::path(argv[0]).parent_path();
+    RESOURCES_PATH = BIN_PATH.parent_path() / "resources";
+
     spdlog::info("Current working path: {}", std::filesystem::current_path().string());
+    spdlog::info("/bin path: {}", getBinPath().string());
+    spdlog::info("/resources path: {}", getResourcesPath().string());
 
     asio::io_context io_context(used_cores);
 

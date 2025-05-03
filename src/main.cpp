@@ -109,17 +109,7 @@ namespace velora
         }
 
 
-        auto sh_id = co_await renderer->constructShader("shader_0",
-            {
-                "#version 330 core\n",
-                "layout(location = 0) in vec3 aPos;\n",
-                "uniform mat4 uModel;\n",
-                "void main()\n",
-                "{\n",
-                "    gl_Position = uModel * vec4(aPos, 1.0);\n",
-                "}\n"
-            }
-        );
+        auto sh_id = co_await loadShader(*renderer, "shaders/glsl/basic_shader");
 
         if(!sh_id)
         {
@@ -187,7 +177,7 @@ namespace velora
         world.getCurrentLevel().addComponent(*player_entity, game::VisualComponent());
                 world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_visible(true);
         world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_vertex_buffer_name("vertex_buffer_0");
-        world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_shader_name("shader_0");
+        world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity)->set_shader_name("basic_shader");
 
         world.getCurrentLevel().addComponent(*player_entity, game::InputComponent{});
 

@@ -2,7 +2,7 @@
 
 namespace velora::opengl
 {
-    OpenGLShader::Stage::Stage(GLuint linked_shader_ID, GLenum stage_type, const std::vector<const char *> & code)
+    OpenGLShader::Stage::Stage(GLuint linked_shader_ID, GLenum stage_type, std::vector<std::string> code)
     :   _linked_shader_ID(linked_shader_ID),
         _stage_type(stage_type),
         _stage_ID(0)
@@ -32,10 +32,20 @@ namespace velora::opengl
         lengths.reserve(code.size());
         for (const auto &c : code)
         {
-            lengths.push_back(static_cast<int>(strlen(c)));
+            lengths.push_back((int)c.length());
         }
 
-        glShaderSource(_stage_ID, (GLsizei)code.size(), code.data(), lengths.data());
+        // convert to c-style string
+        // need to make sure the strings are not destroyed before the shader is compiled
+        // this array only holds the pointers to the strings, not the strings themselves
+        std::vector<const char *> code_ptrs;
+        code_ptrs.reserve(code.size());
+        for (const auto &c : code)
+        {
+            code_ptrs.push_back(c.c_str());
+        }
+
+        glShaderSource(_stage_ID, (GLsizei)code_ptrs.size(), code_ptrs.data(), lengths.data());
         glCompileShader(_stage_ID);
         glGetShaderiv(_stage_ID, GL_COMPILE_STATUS, &_result);
         if (_result == GL_FALSE)
@@ -106,12 +116,12 @@ namespace velora::opengl
         logOpenGLState();
     }
 
-    OpenGLShader::OpenGLShader(std::vector<const char *> vertex_code)
+    OpenGLShader::OpenGLShader(std::vector<std::string> vertex_code)
     :   OpenGLShader()
     {
         spdlog::debug(std::format("Compiling OpenGL shader[{}] : [Vertex Stage] ", _shader_program_ID));
         
-        _vertex_stage = Stage(_shader_program_ID, GL_VERTEX_SHADER, vertex_code);
+        _vertex_stage = Stage(_shader_program_ID, GL_VERTEX_SHADER, std::move(vertex_code));
         
         if(linkProgram() == false)
         {
@@ -129,13 +139,13 @@ namespace velora::opengl
         fetchUniforms();
     }
 
-    OpenGLShader::OpenGLShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code)
+    OpenGLShader::OpenGLShader(std::vector<std::string> vertex_code, std::vector<std::string> fragment_code)
     :   OpenGLShader()
     {
         spdlog::debug(std::format("Compiling OpenGL shader[{}] : [Vertex Stage] ", _shader_program_ID));
         
-        _vertex_stage = Stage(_shader_program_ID, GL_VERTEX_SHADER, vertex_code);
-        _fragment_stage = Stage(_shader_program_ID, GL_FRAGMENT_SHADER, fragment_code);
+        _vertex_stage = Stage(_shader_program_ID, GL_VERTEX_SHADER, std::move(vertex_code));
+        _fragment_stage = Stage(_shader_program_ID, GL_FRAGMENT_SHADER, std::move(fragment_code));
         
         if(linkProgram() == false)
         {

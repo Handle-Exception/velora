@@ -46,8 +46,8 @@ namespace velora::opengl
             asio::awaitable<bool> eraseVertexBuffer(std::size_t id);
             asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name);
 
-            asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code);
-            asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code);
+            asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code);
+            asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code);
 
             asio::awaitable<bool> eraseShader(std::size_t id);
             asio::awaitable<std::optional<std::size_t>> getShader(std::string name);

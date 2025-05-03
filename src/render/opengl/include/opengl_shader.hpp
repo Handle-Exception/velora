@@ -21,8 +21,8 @@ namespace velora::opengl
     {
     public:
         //ctor
-        OpenGLShader(std::vector<const char *> vertex_code);
-        OpenGLShader(std::vector<const char *> vertex_code, std::vector<const char *> fragment_code);
+        OpenGLShader(std::vector<std::string> vertex_code);
+        OpenGLShader(std::vector<std::string> vertex_code, std::vector<std::string> fragment_code);
         OpenGLShader(OpenGLShader && other);
         ~OpenGLShader();
 
@@ -48,7 +48,7 @@ namespace velora::opengl
         class Stage
         {
             public:
-                Stage(GLuint linked_shader_ID, GLenum stage_type, const std::vector<const char *> & code);
+                Stage(GLuint linked_shader_ID, GLenum stage_type, std::vector<std::string> code);
                 Stage(Stage && other);
                 Stage & operator=(Stage && other);
                 Stage(const Stage & other) = delete;

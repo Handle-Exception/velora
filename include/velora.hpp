@@ -15,6 +15,7 @@ using namespace std::chrono_literals;
 #include "render.hpp"
 #include "ecs.hpp"
 #include "game.hpp"
+#include "asset.hpp"
 
 #ifdef WIN32
 #include "process_winapi.hpp"

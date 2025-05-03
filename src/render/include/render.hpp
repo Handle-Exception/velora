@@ -42,8 +42,8 @@ namespace velora
 
         virtual asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name) = 0;
 
-        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code) = 0;
-        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code) = 0;
 
         virtual asio::awaitable<bool> eraseShader(std::size_t id) = 0;
         
@@ -93,11 +93,11 @@ namespace velora
                 co_return co_await dispatch::getImpl().getVertexBuffer(std::move(name));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code) override { 
+            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code) override { 
                 co_return co_await dispatch::getImpl().constructShader(std::move(name), std::move(vertex_code));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<const char *> vertex_code, std::vector<const char *> fragment_code) override { 
+            inline asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code) override { 
                 co_return co_await dispatch::getImpl().constructShader(std::move(name), std::move(vertex_code), std::move(fragment_code));
             }
 
