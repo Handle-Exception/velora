@@ -123,44 +123,41 @@ if(NOT absl_FOUND)
   FetchContent_MakeAvailable(abseil)
 endif()
 
-if(USE_PROTOBUF)
-    message(STATUS "Fetching dependency `protobuf` ...")
-    find_package(Protobuf CONFIG QUIET)
-    if(NOT Protobuf_FOUND)
-
-        
-        FetchContent_Declare(
+message(STATUS "Fetching dependency `protobuf` ...")
+find_package(Protobuf CONFIG QUIET)
+if(NOT Protobuf_FOUND)
+    message(STATUS "Protobuf not found, falling back to FetchContent")
+    FetchContent_Declare(
             protobuf
             GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
             GIT_TAG        "v30.2"
             SYSTEM
-        )
-        set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
-        set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-        set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
-        set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
-        set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-        set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "" FORCE)
-        set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    )
+    set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+    set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
+    set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
+    set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "" FORCE)
+    set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         
-        FetchContent_MakeAvailable(protobuf)
+    FetchContent_MakeAvailable(protobuf)
         
-        # Suppress warnings for building protobuf
-        silence_warnings(TARGETS 
-            protobuf::libprotobuf
-            protobuf::libprotoc
-            protobuf::protoc
-            protobuf::protoc-gen-upb
-            protobuf::protoc-gen-upb_minitable
-            protobuf::protoc-gen-upbdefs
-            protobuf::libupb
-            protobuf::libprotobuf-lite
-            utf8_range
-            utf8_validity
-            )
+    # Suppress warnings for building protobuf
+    silence_warnings(TARGETS 
+        protobuf::libprotobuf
+        protobuf::libprotoc
+        protobuf::protoc
+        protobuf::protoc-gen-upb
+        protobuf::protoc-gen-upb_minitable
+        protobuf::protoc-gen-upbdefs
+        protobuf::libupb
+        protobuf::libprotobuf-lite
+        utf8_range
+        utf8_validity
+    )
 
-        set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc> CACHE FILEPATH "" FORCE)
-    endif()
+    set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc> CACHE FILEPATH "" FORCE)
 endif()
 
 if(BUILD_TESTING)

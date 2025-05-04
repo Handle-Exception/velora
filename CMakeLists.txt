@@ -10,7 +10,6 @@ project("${PROJECT_NAME}"
     LANGUAGES CXX
 )
 
-option(USE_PROTOBUF "Use protobuf" OFF)
 option(BUILD_TESTING "Build tests" OFF)
 
 
@@ -80,15 +79,13 @@ if(WIN32)
     )
 endif()
 
-if(USE_PROTOBUF)
-    target_link_libraries("${PROJECT_NAME}Lib"
-        PUBLIC
-            protobuf::libprotobuf
-    )
-    target_include_directories("${PROJECT_NAME}Lib" SYSTEM PRIVATE
-        $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
-    )
-endif()
+target_link_libraries("${PROJECT_NAME}Lib"
+    PUBLIC
+        protobuf::libprotobuf
+)
+target_include_directories("${PROJECT_NAME}Lib" SYSTEM PRIVATE
+    $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
+)
 
 target_sources("${PROJECT_NAME}Lib" PUBLIC
     FILE_SET public_headers
