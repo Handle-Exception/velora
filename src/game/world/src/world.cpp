@@ -6,12 +6,12 @@ namespace velora::game
     :   _io_context(io_context),
         _renderer(renderer)
     {
-        velora::ISystem * transform_system = _systems.emplace_back(System::construct<TransformSystem>()).get();
+        velora::ISystem * transform_system = _systems.emplace_back(System::construct<TransformSystem>(_io_context)).get();
         assert(transform_system != nullptr && "TransformSystem construction failed" );
-        velora::ISystem * camera_system = _systems.emplace_back(System::construct<CameraSystem>(_renderer)).get();
-        assert(camera_system != nullptr && "CameraSystem construction failed" );
-        velora::ISystem * health_system = _systems.emplace_back(System::construct<HealthSystem>()).get();
+        velora::ISystem * health_system = _systems.emplace_back(System::construct<HealthSystem>(_io_context)).get();
         assert(health_system != nullptr && "HealthSystem construction failed" );
+        velora::ISystem * terrain_system = _systems.emplace_back(System::construct<TerrainSystem>(io_context, _renderer)).get();
+        assert(terrain_system != nullptr && "TerrainSystem construction failed" );
 
         _layers = topologicalSortLayers(_systems);
 

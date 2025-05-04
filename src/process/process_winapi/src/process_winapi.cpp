@@ -51,7 +51,9 @@ namespace velora::winapi
 
     asio::awaitable<void> WinapiProcess::close()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         spdlog::debug(std::format("[winapi] [t:{}] WinapiProcess clearing data", std::this_thread::get_id()));
 
@@ -122,7 +124,9 @@ namespace velora::winapi
 
     asio::awaitable<native::window_handle> WinapiProcess::registerWindow(std::string name, Resolution resolution)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         spdlog::debug(std::format("[winapi] [t:{}] registerWindow", std::this_thread::get_id()));
 
@@ -199,7 +203,9 @@ namespace velora::winapi
 
     asio::awaitable<bool> WinapiProcess::unregisterWindow(native::window_handle window)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         spdlog::debug(std::format("[winapi] [t:{}] unregisterWindow", std::this_thread::get_id()));
 
@@ -219,7 +225,9 @@ namespace velora::winapi
 
     asio::awaitable<bool> WinapiProcess::setWindowCallbacks(native::window_handle window, WindowCallbacks && callbacks)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         spdlog::debug(std::format("[winapi] [t:{}] setWindowCallbacks", std::this_thread::get_id()));
 
@@ -321,8 +329,10 @@ namespace velora::winapi
 
     asio::awaitable<native::opengl_context_handle> WinapiProcess::registerOGLContext(native::window_handle window_handle, unsigned int major_version, unsigned int minor_version)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         if(window_handle == nullptr){
             spdlog::error(std::format("[winapi-procedure] cannot construct OGLContext on empty window "));
             co_return nullptr;
@@ -376,7 +386,10 @@ namespace velora::winapi
 
     asio::awaitable<bool> WinapiProcess::unregisterOGLContext(native::opengl_context_handle oglctx)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+        
         spdlog::debug(std::format("[winapi] [t:{}] unregisterOGLContext", std::this_thread::get_id()));
 
         if(oglctx == nullptr)
@@ -466,7 +479,8 @@ namespace velora::winapi
 
         case WM_PAINT :
         {
-            return DefWindowProc(window, message, wparam, lparam);
+            ValidateRect(window, nullptr);
+            return 0;
         }
 
         case WM_SIZE:

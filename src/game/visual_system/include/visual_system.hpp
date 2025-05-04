@@ -3,6 +3,7 @@
 #include "ecs.hpp"
 #include "render.hpp"
 
+#include "camera_system.hpp"
 #include "visual_component.pb.h"
 #include "transform_component.pb.h"
 
@@ -28,20 +29,20 @@ namespace velora::game
             constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem", "CameraSystem"};
             constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-            VisualSystem(IRenderer & renderer, ISystem & camera_system);
+            VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system);
             VisualSystem(const VisualSystem&) = delete;
             VisualSystem(VisualSystem&&) = default;
             VisualSystem& operator=(const VisualSystem&) = delete;
             VisualSystem& operator=(VisualSystem&&) = default;
             ~VisualSystem() = default;
 
-            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
-
-            const SystemState& getState() const;
+            // interpolated run
+            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha);
 
         private:
+            asio::strand<asio::io_context::executor_type> _strand;
+
             IRenderer & _renderer;
-            ISystem & _camera_system;
-            SystemState _state;
+            game::CameraSystem & _camera_system;
     };
 }

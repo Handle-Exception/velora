@@ -20,8 +20,6 @@ namespace velora
         virtual asio::awaitable<void> hide() = 0;
         //
         virtual asio::awaitable<void> close() = 0;
-        // 
-        virtual asio::awaitable<void> present() = 0;
         //
         virtual const Resolution & getResolution() const = 0;
         //
@@ -30,7 +28,6 @@ namespace velora
         virtual native::device_context acquireDeviceContext() = 0;
 
         virtual bool releaseDeviceContext(native::device_context device_context) = 0;
-
 
         virtual IProcess & getProcess() = 0;
     };
@@ -50,7 +47,6 @@ namespace velora
             inline asio::awaitable<void> show() override {co_return co_await dispatch::getImpl().show();}
             inline asio::awaitable<void> hide() override {co_return co_await dispatch::getImpl().hide();}
             inline asio::awaitable<void> close() override {co_return co_await dispatch::getImpl().close();}
-            inline asio::awaitable<void> present() override {return dispatch::getImpl().present();}
             constexpr inline native::window_handle getHandle() const override { return dispatch::getImpl().getHandle();}
 
             constexpr inline native::device_context acquireDeviceContext() override { 

@@ -24,19 +24,25 @@ namespace velora::game
         constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem"};
         constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-        CameraSystem(IRenderer & renderer);
+        CameraSystem(asio::io_context & io_context, IRenderer & renderer);
         CameraSystem(const CameraSystem&) = delete;
         CameraSystem(CameraSystem&&) = default;
         CameraSystem& operator=(const CameraSystem&) = delete;
         CameraSystem& operator=(CameraSystem&&) = default;
         ~CameraSystem() = default;
 
-        asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
+        asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha);
 
-        const SystemState& getState() const;
+        const glm::mat4 & getView() const;
+        const glm::mat4 & getProjection () const;
 
     private:
+        asio::strand<asio::io_context::executor_type> _strand;
+
         IRenderer & _renderer;
-        SystemState _state;
+        glm::mat4 _view;
+        glm::mat4 _projection;
+        glm::vec3 _direction;
+        glm::vec3 _up;
     };
 }

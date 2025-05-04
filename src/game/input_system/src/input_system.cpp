@@ -37,64 +37,65 @@ namespace velora::game
 
     asio::awaitable<void> InputSystem::recordKeyPressed(InputCode key)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        _current_keys.emplace(key);
+        if(!_strand.running_in_this_thread()) {
+            co_await asio::dispatch(_strand, asio::use_awaitable);
+        }
+        _event_queue.push_back(InputEvent{key, InputEventType::Pressed, std::chrono::steady_clock::now()});
         co_return;
     }
 
     asio::awaitable<void> InputSystem::recordKeyReleased(InputCode key)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        _current_keys.erase(key);
+        if(!_strand.running_in_this_thread()) {
+            co_await asio::dispatch(_strand, asio::use_awaitable);
+        }
+        _event_queue.push_back(InputEvent{key, InputEventType::Released, std::chrono::steady_clock::now()});
         co_return;
-    }
-
-    const SystemState& InputSystem::getState() const
-    {
-        return _state;
     }
 
     asio::awaitable<void> InputSystem::run(ComponentManager& components, EntityManager& entities)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-                
-        std::unordered_set<game::InputCode> last_keys;
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
-        // clear inputs for entites
-        for(auto & [entity, mask] : entities.getAllEntities())
+        std::deque<InputEvent> events;
+        std::swap(events, _event_queue); // fast, avoids realloc
+
+        absl::flat_hash_set<InputCode> just_pressed;
+        absl::flat_hash_set<InputCode> just_released;
+
+        for (const auto& event : events)
         {
-            if(mask.test(MASK_POSITION_BIT) == false) continue;
-
-            auto* input_component = components.getComponent<InputComponent>(entity);
-            assert(input_component != nullptr);
-
-            // store old pressed keys in last_keys
-            last_keys.clear();
-            for(auto key : input_component->pressed())
-                last_keys.insert((game::InputCode)key);
-
-            input_component->clear_pressed();
-            input_component->clear_just_pressed();
-            input_component->clear_just_released();
-
-            for (InputCode key : _current_keys) 
+            switch (event.type) 
             {
-                // add pressed keys to input_component
-                input_component->add_pressed(key);
-                //if this key was not in last_keys, it is a new key pressed
-                if (!last_keys.contains(key)) input_component->add_just_pressed(key);
+                case InputEventType::Pressed:
+                    if (_held_keys.insert(event.key).second)
+                    {
+                        just_pressed.insert(event.key);
+                    }
+                    break;
+                case InputEventType::Released:
+                    if (_held_keys.erase(event.key) > 0)
+                    {
+                        just_released.insert(event.key);
+                    }
+                    break;
             }
+        }
 
-            // iterate over last_keys and check if any key was released
-            for (InputCode key : last_keys) 
-            {
-                // if this key is not in current_keys, it was released
-                if (!_current_keys.contains(key)) input_component->add_just_released(key);
-            }
+        for (auto& [entity, mask] : entities.getAllEntities()) {
+            if (!mask.test(MASK_POSITION_BIT)) continue;
+            auto* input = components.getComponent<InputComponent>(entity);
+            assert(input != nullptr);
 
-            // tutaj by sie chyba przydał jakiś callback?
-            // coś w styluuuuuu hym hym hym 
+            input->clear_pressed();
+            input->clear_just_pressed();
+            input->clear_just_released();
 
+            for (auto key : _held_keys) input->add_pressed(key);
+            for (auto key : just_pressed) input->add_just_pressed(key);
+            for (auto key : just_released) input->add_just_released(key);
         }
 
         co_return;

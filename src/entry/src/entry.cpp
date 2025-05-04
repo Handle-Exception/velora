@@ -89,6 +89,10 @@ int main(int argc, char* argv[])
     {
         worker_threads.emplace_back([&io_context]()
         {
+            #ifdef WIN32 //TODO
+            SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+            #endif
+            
             try
             {
                 io_context.run();

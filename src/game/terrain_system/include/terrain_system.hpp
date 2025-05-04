@@ -29,7 +29,7 @@ namespace velora::game
             constexpr static const std::initializer_list<const char *> DEPS = {};
             constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-            TerrainSystem(IRenderer & renderer);
+            TerrainSystem(asio::io_context & io_context, IRenderer & renderer);
             TerrainSystem(const TerrainSystem&) = delete;
             TerrainSystem(TerrainSystem&&) = default;
             TerrainSystem& operator=(const TerrainSystem&) = delete;
@@ -38,12 +38,11 @@ namespace velora::game
 
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
 
-            const SystemState & getState() const;
-
         private:
+            asio::strand<asio::io_context::executor_type> _strand;
+
             IRenderer & _renderer;
-            SystemState _state;
             
-            absl::flat_hash_map<TerrainComponent *, Mesh> _batched_meshes;
+            absl::flat_hash_map<Entity, Mesh> _batched_meshes;
     };
 }

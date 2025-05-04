@@ -4,17 +4,16 @@ namespace velora::game
 {
     const uint32_t TerrainSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<TerrainComponent>();
 
-    TerrainSystem::TerrainSystem(IRenderer & renderer)
-        : _renderer(renderer)
+    TerrainSystem::TerrainSystem(asio::io_context & io_context, IRenderer & renderer)
+        : _strand(asio::make_strand(io_context)), _renderer(renderer)
     {}
-
-    const SystemState& TerrainSystem::getState() const
-    {
-        return _state;
-    }
 
     asio::awaitable<void> TerrainSystem::run(ComponentManager& components, EntityManager& entities)
     {
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
             if (mask.test(MASK_POSITION_BIT) == false) continue;
@@ -22,8 +21,10 @@ namespace velora::game
             TerrainComponent * terrain_component = components.getComponent<TerrainComponent>(entity);
             assert(terrain_component != nullptr);
 
-            if(_batched_meshes.contains(terrain_component) == false)
+            if(_batched_meshes.contains(entity) == false)
             {
+                spdlog::debug("TerrainSystem: creating terrain mesh for entity {}", entity);
+                
                 // Compute vertices/indices
                 std::vector<Vertex> vertices;
                 std::vector<uint32_t> indices;
@@ -45,7 +46,7 @@ namespace velora::game
                     }
                 }
 
-                _batched_meshes.try_emplace(terrain_component, indices, vertices);
+                _batched_meshes.try_emplace(entity, indices, vertices);
             }
         }
         co_return;

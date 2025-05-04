@@ -51,7 +51,9 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::enableVSync()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         wglSwapIntervalEXT(1);
         co_return;
@@ -59,7 +61,9 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::disableVSync()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         wglSwapIntervalEXT(0);
         co_return;
@@ -67,7 +71,9 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::close()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         if(_oglctx_handle == nullptr)co_return;
 
@@ -95,8 +101,10 @@ namespace velora::opengl
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::string name,  const Mesh & mesh)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         if(_vertex_buffer_names.contains(name))
         {
             spdlog::warn(std::format("[t:{}] Vertex buffer {} already exists", std::this_thread::get_id(), name));
@@ -129,7 +137,9 @@ namespace velora::opengl
 
     asio::awaitable<bool> OpenGLRenderer::eraseVertexBuffer(std::size_t id)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         if(_vertex_buffers.contains(id) == false)
         {
@@ -157,28 +167,28 @@ namespace velora::opengl
 
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::getVertexBuffer(std::string name)
+    std::optional<std::size_t> OpenGLRenderer::getVertexBuffer(std::string name) const
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-
         if(_vertex_buffer_names.contains(name) == false)
         {
             spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), name));
-            co_return std::nullopt;
+            return std::nullopt;
         }
         auto id = _vertex_buffer_names.at(name);
         if(_vertex_buffers.contains(id) == false)
         {
             spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
-            co_return std::nullopt;
+            return std::nullopt;
         }
-        co_return id;
+        return id;
     }
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         if(_shader_names.contains(name))
         {
             spdlog::warn(std::format("[t:{}] Shader {} already exists", std::this_thread::get_id(), name));
@@ -211,8 +221,10 @@ namespace velora::opengl
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         if(_shader_names.contains(name))
         {
             spdlog::warn(std::format("[t:{}] Shader {} already exists", std::this_thread::get_id(), name));
@@ -244,7 +256,9 @@ namespace velora::opengl
 
     asio::awaitable<bool> OpenGLRenderer::eraseShader(std::size_t id)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         if(_shaders.contains(id) == false)
         {
@@ -271,22 +285,20 @@ namespace velora::opengl
         co_return true;
     }
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::getShader(std::string name)
+    std::optional<std::size_t> OpenGLRenderer::getShader(std::string name) const
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-
         if(_shader_names.contains(name) == false)
         {
             spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), name));
-            co_return std::nullopt;
+            return std::nullopt;
         }
         auto id = _shader_names.at(name);
         if(_shaders.contains(id) == false)
         {
             spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), id));
-            co_return std::nullopt;
+            return std::nullopt;
         }
-        co_return id;
+        return id;
     }
 
 
@@ -335,7 +347,9 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::clearScreen(glm::vec4 color)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if (!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         // bind context
         native::device_context device_context = _window.acquireDeviceContext();
@@ -357,7 +371,9 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if (!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
 
         auto shader_it = _shaders.find(shader_ID);
         if(shader_it == _shaders.end()){
@@ -402,7 +418,10 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::present()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if (!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+        
         // bind context
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
@@ -411,20 +430,22 @@ namespace velora::opengl
             co_return;
         }
 
-        glFinish();
+        glFlush();
         SwapBuffers(device_context);
 
         // unbind context
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(device_context);
 
-        co_return co_await _window.present();
+        co_return;
     }
 
     asio::awaitable<void> OpenGLRenderer::updateViewport(Resolution resolution)
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        
+        if (!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         // bind context
         native::device_context device_context = _window.acquireDeviceContext();
         if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
@@ -444,9 +465,8 @@ namespace velora::opengl
         co_return;
     }
 
-    asio::awaitable<Resolution> OpenGLRenderer::getViewport() const
+    Resolution OpenGLRenderer::getViewport() const
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        co_return _viewport_resolution;
+        return _viewport_resolution;
     }
 }

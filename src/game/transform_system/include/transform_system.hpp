@@ -22,7 +22,7 @@ namespace velora::game
             constexpr static const std::initializer_list<const char *> DEPS = {};
             constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-            TransformSystem() = default;
+            TransformSystem(asio::io_context & io_context);
             TransformSystem(const TransformSystem&) = delete;
             TransformSystem(TransformSystem&&) = default;
             TransformSystem& operator=(const TransformSystem&) = delete;
@@ -30,9 +30,9 @@ namespace velora::game
             ~TransformSystem() = default;
 
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
-            const SystemState& getState() const;
 
-        private:    
-            SystemState _state;
+        private:
+            asio::strand<asio::io_context::executor_type> _strand;
+
     };
 }

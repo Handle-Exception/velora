@@ -17,7 +17,7 @@ add_module(NAME "World"
         "${PROJECT_PREFIX}::HealthSystem"
         "${PROJECT_PREFIX}::InputSystem"
         "${PROJECT_PREFIX}::CameraSystem"
-
+        "${PROJECT_PREFIX}::TerrainSystem"
 
         "${PROJECT_PREFIX}::Level"
 )

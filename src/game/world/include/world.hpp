@@ -18,6 +18,7 @@
 #include "health_system.hpp"
 #include "input_system.hpp"
 #include "camera_system.hpp"
+#include "terrain_system.hpp"
 
 #include "level.hpp"
 

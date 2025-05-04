@@ -44,20 +44,20 @@ namespace velora::opengl
             asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs);
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
-            asio::awaitable<Resolution> getViewport() const;
+            Resolution getViewport() const;
             asio::awaitable<void> enableVSync();
             asio::awaitable<void> disableVSync();
 
             asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh);
             
             asio::awaitable<bool> eraseVertexBuffer(std::size_t id);
-            asio::awaitable<std::optional<std::size_t>> getVertexBuffer(std::string name);
+            std::optional<std::size_t> getVertexBuffer(std::string name) const;
 
             asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code);
             asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code);
 
             asio::awaitable<bool> eraseShader(std::size_t id);
-            asio::awaitable<std::optional<std::size_t>> getShader(std::string name);
+            std::optional<std::size_t> getShader(std::string name) const;
 
 
         protected:

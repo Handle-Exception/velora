@@ -33,7 +33,7 @@ namespace velora::winapi
         wcex.cbWndExtra  = sizeof(Extra);
         wcex.lpszClassName = class_name.c_str();
         wcex.lpszMenuName = NULL;
-        wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+        wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC ;
         return wcex;
     }
 

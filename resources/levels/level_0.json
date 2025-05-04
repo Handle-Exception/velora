@@ -4,10 +4,15 @@
       {
          "name":"terrain",
          "transform": {
+            "position": {
+                "x": 0,
+                "y": -15,
+                "z": 0
+             },
             "scale": {
-               "x": 1,
+               "x": "100.0",
                "y": "0.1",
-               "z": 1
+               "z": "100.0"
             }
          },
          "visual": {

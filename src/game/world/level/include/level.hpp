@@ -69,8 +69,9 @@ namespace velora::game
 
             asio::awaitable<void> runSystem(ISystem & system) {co_return co_await system.run(_components, _entities); }
             
-            template<class SystemType>
-            asio::awaitable<void> runSystem(SystemType & system) {co_return co_await system.run(_components, _entities); }
+            template<class SystemType, class ... Args>
+            asio::awaitable<void> runSystem(SystemType & system, Args&& ... args) {
+                co_return co_await system.run(_components, _entities, std::forward<Args>(args)...); }
 
             std::optional<std::string> getName(Entity entity) const 
             {

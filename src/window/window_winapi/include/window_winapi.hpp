@@ -33,9 +33,7 @@ namespace velora::winapi
             //
             asio::awaitable<void> close();
             
-            // 
-            asio::awaitable<void> present();
-        //
+        //TODO
         const Resolution & getResolution() const
         {
             static Resolution res(0, 0);

@@ -17,7 +17,7 @@ namespace velora::game
         constexpr static const std::initializer_list<const char *> DEPS = {};
         constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-        HealthSystem() = default;
+        HealthSystem(asio::io_context & io_context);
         HealthSystem(const HealthSystem&) = delete;
         HealthSystem(HealthSystem&&) = default;
         HealthSystem& operator=(const HealthSystem&) = delete;
@@ -25,10 +25,7 @@ namespace velora::game
         ~HealthSystem() = default;
 
         asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
-
-        const SystemState& getState() const;
-
     private:
-        SystemState _state;
+        asio::strand<asio::io_context::executor_type> _strand;
     };
 }

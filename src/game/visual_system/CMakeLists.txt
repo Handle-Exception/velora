@@ -8,4 +8,6 @@ add_module(NAME "VisualSystem"
         "${PROJECT_PREFIX}::Render"
 
         "${PROJECT_PREFIX}::TransformSystem"
+        "${PROJECT_PREFIX}::CameraSystem"
+
 )

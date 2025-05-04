@@ -32,14 +32,20 @@ namespace velora::winapi
 
     asio::awaitable<void> WinapiWindow::show()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         ShowWindowAsync(_window_handle, SW_SHOW);
         co_return;
     }
 
     asio::awaitable<void> WinapiWindow::hide()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         ShowWindowAsync(_window_handle, SW_HIDE);
         co_return;
     }
@@ -54,16 +60,12 @@ namespace velora::winapi
         return _window_handle != nullptr;
     }
     
-    asio::awaitable<void> WinapiWindow::present()
-    {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        RedrawWindow(_window_handle, NULL, NULL, RDW_INTERNALPAINT);
-        co_return;
-    }
-
     asio::awaitable<void> WinapiWindow::close()
     {
-        co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
         if(_window_handle == nullptr)co_return;
 
         auto handle = _window_handle;

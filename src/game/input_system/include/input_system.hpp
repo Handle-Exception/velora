@@ -1,6 +1,7 @@
 #pragma once
 
 #include <queue>
+#include <deque>
 
 #include "native.hpp"
 #include <asio.hpp>
@@ -13,16 +14,17 @@
 
 namespace velora::game
 {
-    struct InputCallbacks
+    enum class InputEventType 
     {
-        asio::any_io_executor executor;
+        Pressed,
+        Released
+    };
 
-        std::function<asio::awaitable<void>(game::InputCode)> onKeyPress;
-        std::function<asio::awaitable<void>(game::InputCode)> onKeyRelease;
-        std::function<asio::awaitable<void>(int, int)> onMouseMove;
-        std::function<asio::awaitable<void>(int, int)> onMousePress;
-        std::function<asio::awaitable<void>(int, int)> onMouseRelease;
-        std::function<asio::awaitable<void>(int, int)> onMouseScroll;
+    struct InputEvent 
+    {
+        InputCode key;
+        InputEventType type;
+        std::chrono::steady_clock::time_point timestamp;
     };
 
     class InputSystem
@@ -47,16 +49,14 @@ namespace velora::game
 
             asio::awaitable<void> recordKeyReleased(InputCode key);
 
-            const SystemState& getState() const;
-
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
 
         private:
 
             asio::strand<asio::io_context::executor_type> _strand;
-            absl::flat_hash_set<InputCode> _current_keys;
 
-            SystemState _state;
+            std::deque<InputEvent> _event_queue;
+            absl::flat_hash_set<InputCode> _held_keys; // tracks current state
     };
 
     template<class T>
