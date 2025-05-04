@@ -6,6 +6,7 @@ add_subdirectory(transform_system)
 add_subdirectory(health_system)
 add_subdirectory(input_system)
 add_subdirectory(camera_system)
+add_subdirectory(terrain_system)
 
 add_subdirectory(world)
 
@@ -16,6 +17,7 @@ add_module(NAME "Game"
         "${PROJECT_PREFIX}::HealthSystem"
         "${PROJECT_PREFIX}::InputSystem"
         "${PROJECT_PREFIX}::CameraSystem"
+        "${PROJECT_PREFIX}::TerrainSystem"
 
         "${PROJECT_PREFIX}::World"
 )

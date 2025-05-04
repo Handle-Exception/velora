@@ -214,112 +214,98 @@ namespace velora
         return entity_def;
     }
 
+    template<class ComponentType>
+    ComponentLoader constructComponentLoader(
+            std::function<bool(const game::EntityDefinition*)> has_component,
+            std::function<const ComponentType &(const game::EntityDefinition*)> get_component) 
+    {
+        return 
+            [has_component, get_component]
+            (const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
+            {
+                if (!has_component(&entity_def)) return;
+                ComponentType c;
+                c.CopyFrom(get_component(&entity_def));
+                level.addComponent(entity, std::move(c));
+            };
+    }
+
     ComponentLoaderRegistry constructComponentLoaderRegistry()
     {
         ComponentLoaderRegistry components_loader_registry;
 
         components_loader_registry.registerLoader("TransformComponent", 
-        [](const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
-            {
-                // add transform component to level from entity_def
-                if (!entity_def.has_transform()) return;
-                game::TransformComponent t;
-                t.CopyFrom(entity_def.transform());
-                level.addComponent(entity, std::move(t));
-            }
+            constructComponentLoader<game::TransformComponent>(
+                &game::EntityDefinition::has_transform, &game::EntityDefinition::transform)
         );
 
-        components_loader_registry.registerLoader("VisualComponent", 
-        [](const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
-            {
-                if (!entity_def.has_visual()) return;
-                game::VisualComponent v;
-                v.CopyFrom(entity_def.visual());
-                level.addComponent(entity, std::move(v));
-            }
+        components_loader_registry.registerLoader("VisualComponent",
+            constructComponentLoader<game::VisualComponent>(
+                &game::EntityDefinition::has_visual, &game::EntityDefinition::visual)
         );
 
-        components_loader_registry.registerLoader("InputComponent", 
-        [](const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
-            {
-                if (!entity_def.has_input()) return;
-                game::InputComponent i;
-                i.CopyFrom(entity_def.input());
-                level.addComponent(entity, std::move(i));
-            }
+        components_loader_registry.registerLoader("InputComponent",
+            constructComponentLoader<game::InputComponent>(
+                &game::EntityDefinition::has_input, &game::EntityDefinition::input)
         );
 
         components_loader_registry.registerLoader("HealthComponent", 
-        [](const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
-            {
-                if (!entity_def.has_health()) return;
-                game::HealthComponent h;
-                h.CopyFrom(entity_def.health());
-                level.addComponent(entity, std::move(h));
-            }
+            constructComponentLoader<game::HealthComponent>(
+                &game::EntityDefinition::has_health, &game::EntityDefinition::health)
         );
 
         components_loader_registry.registerLoader("CameraComponent", 
-    [](const game::EntityDefinition & entity_def, Entity entity, game::Level & level) 
-            {
-                if (!entity_def.has_camera()) return;
-                game::CameraComponent cam;
-                cam.CopyFrom(entity_def.camera());
-                level.addComponent(entity, std::move(cam));
-            }
+            constructComponentLoader<game::CameraComponent>(
+                &game::EntityDefinition::has_camera, &game::EntityDefinition::camera)
+        );
+
+        components_loader_registry.registerLoader("TerrainComponent", 
+            constructComponentLoader<game::TerrainComponent>(
+                &game::EntityDefinition::has_terrain, &game::EntityDefinition::terrain)
         );
 
         return components_loader_registry;
+    }
+
+    template<class ComponentType>
+    ComponentSerializer constructComponentSerializer(std::function<ComponentType *(game::EntityDefinition *)> mutable_component)
+    {
+        return 
+            [mutable_component]
+            (const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
+            {
+                if (!level.hasComponent<ComponentType>(entity)) return;
+                const ComponentType * const c = level.getComponent<ComponentType>(entity);
+                mutable_component(&entity_def)->CopyFrom(*c);
+            };
     }
 
     ComponentSerializerRegistry constructComponentSerializerRegistry()
     {
         ComponentSerializerRegistry components_serializer_registry;
 
-        components_serializer_registry.registerSerializer("TransformComponent", 
-        [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
-            {
-                // serialize transform component to entity_def
-                if (!level.hasComponent<game::TransformComponent>(entity)) return;
-                const game::TransformComponent * const t = level.getComponent<game::TransformComponent>(entity);
-                entity_def.mutable_transform()->CopyFrom(*t);
-            }
+        components_serializer_registry.registerSerializer("TransformComponent",
+            constructComponentSerializer<game::TransformComponent>(&game::EntityDefinition::mutable_transform) 
         );
 
         components_serializer_registry.registerSerializer("VisualComponent", 
-        [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
-            {
-                if (!level.hasComponent<game::VisualComponent>(entity)) return;
-                const game::VisualComponent * const v = level.getComponent<game::VisualComponent>(entity);
-                entity_def.mutable_visual()->CopyFrom(*v);
-            }
+            constructComponentSerializer<game::VisualComponent>(&game::EntityDefinition::mutable_visual)
         );
 
-        components_serializer_registry.registerSerializer("InputComponent", 
-        [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
-            {
-                if (!level.hasComponent<game::InputComponent>(entity)) return;
-                const game::InputComponent * const  i = level.getComponent<game::InputComponent>(entity);
-                entity_def.mutable_input()->CopyFrom(*i);
-            }
+        components_serializer_registry.registerSerializer("InputComponent",
+            constructComponentSerializer<game::InputComponent>(&game::EntityDefinition::mutable_input)
         );
 
-        components_serializer_registry.registerSerializer("HealthComponent", 
-        [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def) 
-            {
-                if (!level.hasComponent<game::HealthComponent>(entity)) return;
-                const game::HealthComponent * const h = level.getComponent<game::HealthComponent>(entity);
-                entity_def.mutable_health()->CopyFrom(*h);
-            }
+        components_serializer_registry.registerSerializer("HealthComponent",
+            constructComponentSerializer<game::HealthComponent>(&game::EntityDefinition::mutable_health)
         );
 
         components_serializer_registry.registerSerializer("CameraComponent", 
-            [](const game::Level & level, Entity entity, game::EntityDefinition & entity_def)
-            {
-                if (!level.hasComponent<game::CameraComponent>(entity)) return;
-                const game::CameraComponent * const cam = level.getComponent<game::CameraComponent>(entity);
-                entity_def.mutable_camera()->CopyFrom(*cam);
-            }
+            constructComponentSerializer<game::CameraComponent>(&game::EntityDefinition::mutable_camera)
+        );
+
+        components_serializer_registry.registerSerializer("TerrainComponent", 
+            constructComponentSerializer<game::TerrainComponent>(&game::EntityDefinition::mutable_terrain)
         );
 
         return components_serializer_registry;

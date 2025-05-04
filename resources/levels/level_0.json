@@ -1,6 +1,26 @@
 {
     "name": "level_0",
     "entities": [
+      {
+         "name":"terrain",
+         "transform": {
+            "scale": {
+               "x": 1,
+               "y": "0.1",
+               "z": 1
+            }
+         },
+         "visual": {
+            "visible": true,
+            "vertex_buffer_name": "vertex_buffer_0",
+            "shader_name": "basic_shader"
+         },
+         "terrain": {
+            "width": 20,
+            "length": 20,
+            "tile_size": 10
+         }
+      },
      {
       "name": "player",
       "transform": {

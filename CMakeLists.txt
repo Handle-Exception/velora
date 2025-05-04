@@ -59,6 +59,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::HealthSystem"
         "${PROJECT_PREFIX}::InputSystem"
         "${PROJECT_PREFIX}::CameraSystem"
+        "${PROJECT_PREFIX}::TerrainSystem"
 
         "${PROJECT_PREFIX}::World"
         "${PROJECT_PREFIX}::Level"
