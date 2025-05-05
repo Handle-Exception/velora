@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thread>
+
 #include "native.hpp"
 #include "window.hpp"
 #include "process.hpp"
@@ -34,7 +36,7 @@ namespace velora::opengl
             ~OpenGLRenderer();
             OpenGLRenderer(OpenGLRenderer && other);
 
-            static asio::awaitable<OpenGLRenderer> asyncConstructor(asio::io_context & io_context, IWindow & window, int major_version, int minor_version);
+            static asio::awaitable<OpenGLRenderer> asyncConstructor(IWindow & window, int major_version, int minor_version);
 
             bool good() const;
 
@@ -60,17 +62,22 @@ namespace velora::opengl
             std::optional<std::size_t> getShader(std::string name) const;
 
 
-        protected:
-            OpenGLRenderer(asio::io_context & io_context, IWindow & window, native::opengl_context_handle oglctx_handle);
+            void join();
 
+        protected:
+            OpenGLRenderer(IWindow & window, native::opengl_context_handle oglctx_handle);
 
             void assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs);
 
         private:
             IWindow & _window;
-            asio::io_context & _io_context;
-            asio::strand<asio::io_context::executor_type> _strand;
-            native::opengl_context_handle _oglctx_handle;
+
+            std::unique_ptr<asio::io_context> _render_context; // dedicated single thread
+            asio::executor_work_guard<asio::io_context::executor_type> _render_context_work_guard;
+            asio::strand<asio::io_context::executor_type> _render_context_strand;
+
+            std::unique_ptr<native::opengl_context_handle> _oglctx_handle;
+            std::unique_ptr<native::device_context> _device_context;
 
             Resolution _viewport_resolution;
 
@@ -79,5 +86,8 @@ namespace velora::opengl
 
             absl::flat_hash_map<std::string, std::size_t> _vertex_buffer_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_names;
+
+            // Render thread initialized at the end of the constructor
+            std::thread _render_thread;
     };
 }

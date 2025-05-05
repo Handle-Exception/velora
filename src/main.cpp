@@ -85,6 +85,7 @@ namespace velora
                 _priority_time.end = clock::now();
                 _total_time.end = clock::now();
             }
+            spdlog::debug("fixed step loop ended");
 
             co_return;
         }
@@ -199,7 +200,7 @@ namespace velora
             co_return -1;
         }
 
-        auto renderer = co_await Renderer::construct<opengl::OpenGLRenderer>(asio::use_awaitable, io_context, *window, 4, 0);
+        auto renderer = co_await Renderer::construct<opengl::OpenGLRenderer>(asio::use_awaitable, *window, 4, 0);
         if (renderer->good() == false)
         {
             spdlog::error("Failed to create renderer");
@@ -361,8 +362,10 @@ namespace velora
         );
 
         co_await loop.run();
+        
+        spdlog::debug("joining renderer thread");
+        renderer->join();
 
-        if(renderer->good())co_await renderer->close();
         if(window->good())co_await window->close();
 
         co_await saveWorldToFiles(world, components_serializer_reg, getResourcesPath() / "saves" );

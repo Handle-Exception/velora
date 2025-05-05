@@ -32,6 +32,7 @@ namespace velora
          * @return asio::awaitable<void> 
          */
         virtual asio::awaitable<void> close() = 0;
+        virtual void join() = 0;
 
         virtual asio::awaitable<void> clearScreen(glm::vec4 color) = 0;
         virtual asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs = ShaderInputs{}) = 0;
@@ -53,7 +54,7 @@ namespace velora
         virtual asio::awaitable<bool> eraseShader(std::size_t id) = 0;
         
         virtual std::optional<std::size_t> getShader(std::string name) const = 0;
-
+        
     };
 
     template<class RendererImplType>
@@ -69,6 +70,7 @@ namespace velora
 
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
             inline asio::awaitable<void> close() override { co_return co_await dispatch::getImpl().close();}
+            constexpr inline void join() override { return dispatch::getImpl().join();}
 
             inline asio::awaitable<void> clearScreen(glm::vec4 color) override { 
                 co_return co_await dispatch::getImpl().clearScreen(std::move(color));

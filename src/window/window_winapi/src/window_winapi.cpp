@@ -77,17 +77,40 @@ namespace velora::winapi
 
     native::device_context WinapiWindow::acquireDeviceContext()
     {
-        return GetDC(_window_handle);
+        _acquired_device_context =  GetDC(_window_handle);
+        spdlog::info(std::format("Device context {} acquired", *_acquired_device_context));
+        return *_acquired_device_context;
     }
 
     bool WinapiWindow::releaseDeviceContext(native::device_context device_context)
     {
         if(device_context == NULL)
         {
-            spdlog::error("Wrong device context");
+            spdlog::error("Empty device context");
             return false;
         }
-        ReleaseDC(_window_handle, device_context);
+
+        if(!_acquired_device_context)
+        {
+            spdlog::warn("Device context not acquired, or already released");
+            return false;
+        }
+
+        if(device_context != *_acquired_device_context)
+        {
+            spdlog::error("Invalid device context");
+            return false;
+        }
+
+        if(ReleaseDC(_window_handle, device_context) == 0)
+        {
+            spdlog::error("Cannot release device context");
+            return false;
+        }
+        
+        _acquired_device_context = std::nullopt;
+        spdlog::info(std::format("Device context {} released", device_context));
+
         return true;
     }
 

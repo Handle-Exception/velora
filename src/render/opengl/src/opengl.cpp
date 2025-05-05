@@ -2,38 +2,84 @@
 
 namespace velora::opengl
 {
-    asio::awaitable<OpenGLRenderer> OpenGLRenderer::asyncConstructor(asio::io_context & io_context, IWindow & window, int major_version, int minor_version)
+    asio::awaitable<OpenGLRenderer> OpenGLRenderer::asyncConstructor(IWindow & window, int major_version, int minor_version)
     {
         auto window_handle = window.getHandle();
         native::opengl_context_handle oglctx_handle = co_await window.getProcess().registerOGLContext(window_handle, major_version, minor_version);
 
-        co_return OpenGLRenderer(io_context, window, oglctx_handle);
+        co_return OpenGLRenderer(window, oglctx_handle);
     }
 
-    OpenGLRenderer::OpenGLRenderer(asio::io_context & io_context, IWindow & window, native::opengl_context_handle oglctx_handle)
-    :   _io_context(io_context),
-        _window(window),
-        _strand(asio::make_strand(io_context)),
-        _oglctx_handle(oglctx_handle),
+    OpenGLRenderer::OpenGLRenderer(IWindow & window, native::opengl_context_handle oglctx_handle)
+    :   _window(window),
+        
+        _render_context(std::make_unique<asio::io_context>(1)),
+        _render_context_work_guard(asio::make_work_guard(_render_context->get_executor())),
+        _render_context_strand(asio::make_strand(*_render_context)),
+        _oglctx_handle(std::make_unique<native::opengl_context_handle>(oglctx_handle)),
+        _device_context(std::make_unique<native::device_context>(nullptr)),
 
         _vertex_buffers(),
         _shaders(),
 
-        _viewport_resolution(0, 0)
+        _viewport_resolution(0, 0),
+        _render_thread(
+            [
+                &window,
+                render_context = _render_context.get(), 
+                device_context = _device_context.get(),
+                oglctx_handle = _oglctx_handle.get()
+            ]()
+            {
+                #ifdef WIN32 //TODO
+                SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+                #endif
+                
+                spdlog::info(std::format("[render] OpenGL renderer thread started: {}", std::this_thread::get_id()));
+                
+                *device_context = window.acquireDeviceContext();
+                
+                // bind context
+                if(wglMakeCurrent(*device_context, *oglctx_handle) == FALSE)
+                {
+                    spdlog::error(std::format("[t:{}] Cannot activate OpenGL context", std::this_thread::get_id()));
+                    return;
+                }
+
+                try
+                {
+                    render_context->run();
+                }
+                catch(const std::exception & e)
+                {
+                    spdlog::error("[render] OpenGL renderer exception: {}", e.what());
+                }
+                
+                spdlog::info(std::format("[render] OpenGL renderer thread ended: {}", std::this_thread::get_id()));
+
+                // unbind context
+                wglMakeCurrent(0, 0);
+                window.releaseDeviceContext(*device_context);
+            }
+        )
     {
         spdlog::info("[render] OpenGL renderer created");
     }
 
     OpenGLRenderer::OpenGLRenderer(OpenGLRenderer && other)
-    :   _io_context(other._io_context),
-        _window(other._window),
-        _strand(std::move(other._strand)),
-        _oglctx_handle(other._oglctx_handle),
+    :   _window(other._window),
+        
+        _render_context(std::move(other._render_context)),
+        _render_context_work_guard(std::move(other._render_context_work_guard)),
+        _render_context_strand(std::move(other._render_context_strand)),
+        _oglctx_handle(std::move(other._oglctx_handle)),
+        _device_context(std::move(other._device_context)),
 
         _vertex_buffers(std::move(other._vertex_buffers)),
         _shaders(std::move(other._shaders)),
 
-        _viewport_resolution(std::move(other._viewport_resolution))
+        _viewport_resolution(std::move(other._viewport_resolution)),
+        _render_thread(std::move(other._render_thread))
     {
         other._oglctx_handle = nullptr;
     }
@@ -41,18 +87,79 @@ namespace velora::opengl
 
     OpenGLRenderer::~OpenGLRenderer()
     {
+        join();
+
+        assert(_render_thread.joinable() == false && "OpenGL context should be closed before destruction" );
         assert(_oglctx_handle == nullptr && "OpenGL context should be closed before destruction" );
+        assert(_render_context == nullptr && "OpenGL context should be closed before destruction" );
+        assert(_device_context == nullptr && "OpenGL context should be closed before destruction" );
+    }
+
+    void OpenGLRenderer::join()
+    {
+        if(_render_context == nullptr) return;
+
+        spdlog::debug(std::format("[opengl] [t:{}] join", std::this_thread::get_id()));
+        
+        if(_render_context->stopped() == false)
+        {
+            asio::co_spawn(*_render_context, close(),
+            // when close finishes, we know that oglcontext is unbinded and unregistered from process,
+            // and device context is released
+            [this](std::exception_ptr e)
+            {
+                // then we signal renderer thread to stop
+                _render_context_work_guard.reset();
+                _render_context->stop();
+            });
+        }
+
+        // and wait for it to finish
+        if(_render_thread.joinable()){
+            _render_thread.join();
+        }
+
+        _oglctx_handle.reset();
+        _device_context.reset();
+        _render_context.reset();
+    }
+
+    asio::awaitable<void> OpenGLRenderer::close()
+    {
+        if(good() == false)co_return;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
+        }
+
+        spdlog::debug(std::format("[opengl] [t:{}] close", std::this_thread::get_id()));
+
+        _vertex_buffers.clear();
+        _shaders.clear();
+
+        // unbind context before unregistering in winapi process
+        wglMakeCurrent(0, 0);
+        _window.releaseDeviceContext(*_device_context);
+
+        co_await _window.getProcess().unregisterOGLContext(*_oglctx_handle);
+        
+        _oglctx_handle.reset();
+
+        co_return;
     }
 
     bool OpenGLRenderer::good() const
     {
-        return _oglctx_handle != nullptr;
+        return  _oglctx_handle != nullptr && _render_context != nullptr && _device_context != nullptr &&
+                _render_context->stopped() == false;
     }
 
     asio::awaitable<void> OpenGLRenderer::enableVSync()
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         wglSwapIntervalEXT(1);
@@ -61,48 +168,22 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::disableVSync()
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         wglSwapIntervalEXT(0);
         co_return;
     }
 
-    asio::awaitable<void> OpenGLRenderer::close()
-    {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        }
-
-        if(_oglctx_handle == nullptr)co_return;
-
-
-        native::device_context device_context = _window.acquireDeviceContext();
-        // bind context
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-        }
-
-        _vertex_buffers.clear();
-        _shaders.clear();
-
-        // unbind and realease
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
-        
-        auto handle = _oglctx_handle;
-        _oglctx_handle = nullptr;
-
-        co_await _window.getProcess().unregisterOGLContext(handle);
-        co_return;
-    }
-
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::string name,  const Mesh & mesh)
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return std::nullopt;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         if(_vertex_buffer_names.contains(name))
@@ -111,19 +192,7 @@ namespace velora::opengl
             co_return std::nullopt;
         }
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return std::nullopt;
-        }
-
         VertexBuffer vb = VertexBuffer::construct<OpenGLVertexBuffer>(mesh.indices, mesh.vertices);
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
 
         std::size_t id = vb->ID();
 
@@ -137,8 +206,10 @@ namespace velora::opengl
 
     asio::awaitable<bool> OpenGLRenderer::eraseVertexBuffer(std::size_t id)
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return false;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         if(_vertex_buffers.contains(id) == false)
@@ -147,28 +218,18 @@ namespace velora::opengl
             co_return false;
         }
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return false;
-        }
-
         _vertex_buffers.erase(id);
 
         spdlog::info(std::format("[t:{}] Vertex buffer {} erased", std::this_thread::get_id(), id));
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
 
         co_return true;
 
     }
 
     std::optional<std::size_t> OpenGLRenderer::getVertexBuffer(std::string name) const
-    {
+    { 
+        if(good() == false)return std::nullopt;
+
         if(_vertex_buffer_names.contains(name) == false)
         {
             spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), name));
@@ -185,8 +246,10 @@ namespace velora::opengl
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code)
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return std::nullopt;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         if(_shader_names.contains(name))
@@ -195,19 +258,7 @@ namespace velora::opengl
             co_return std::nullopt;
         }
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return std::nullopt;
-        }
-
         Shader shader = Shader::construct<OpenGLShader>(std::move(vertex_code));
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
 
         std::size_t id = shader->ID();
 
@@ -219,10 +270,13 @@ namespace velora::opengl
         co_return id;
     }
 
+
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code)
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return std::nullopt;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         if(_shader_names.contains(name))
@@ -231,18 +285,7 @@ namespace velora::opengl
             co_return std::nullopt;
         }
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return std::nullopt;
-        }
-
         Shader shader = Shader::construct<OpenGLShader>(std::move(vertex_code), std::move(fragment_code));
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
 
         std::size_t id = shader->ID();
 
@@ -256,8 +299,10 @@ namespace velora::opengl
 
     asio::awaitable<bool> OpenGLRenderer::eraseShader(std::size_t id)
     {
-        if(!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return false;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         if(_shaders.contains(id) == false)
@@ -266,27 +311,17 @@ namespace velora::opengl
             co_return false;
         }
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return false;
-        }
-
         _shaders.erase(id);
 
         spdlog::info(std::format("[t:{}] Shader {} erased", std::this_thread::get_id(), id));
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
 
         co_return true;
     }
 
     std::optional<std::size_t> OpenGLRenderer::getShader(std::string name) const
     {
+        if(good() == false)return std::nullopt;
+
         if(_shader_names.contains(name) == false)
         {
             spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), name));
@@ -347,53 +382,38 @@ namespace velora::opengl
 
     asio::awaitable<void> OpenGLRenderer::clearScreen(glm::vec4 color)
     {
-        if (!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        }
+        if(good() == false)co_return;
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return;
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         glClearColor(color.r, color.g, color.b, color.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
 
         co_return;
     }
 
     asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs)
     {
-        if (!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        if(good() == false)co_return;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         auto shader_it = _shaders.find(shader_ID);
         if(shader_it == _shaders.end()){
-            spdlog::error("Shader not found");
+            spdlog::warn("Rendering: Shader not found");
             co_return;
         }
 
         auto vertex_buffer_it = _vertex_buffers.find(vertex_buffer_ID);
         if(vertex_buffer_it == _vertex_buffers.end()){
-            spdlog::error("Vertex buffer not found");
+            spdlog::warn("Rendering: Vertex buffer not found");
             co_return;
         }
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return;
-        }
 
         if(shader_it->second->enable() == false){
             spdlog::error("Cannot enable shader program");
@@ -409,58 +429,53 @@ namespace velora::opengl
 
         glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
 
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
-
         co_return;
     }
 
     asio::awaitable<void> OpenGLRenderer::present()
     {
-        if (!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        }
-        
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return;
+        if(good() == false)co_return;
+
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
 
         glFlush();
-        SwapBuffers(device_context);
-
-        // unbind context
-        wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
+        SwapBuffers(*_device_context);
 
         co_return;
     }
 
     asio::awaitable<void> OpenGLRenderer::updateViewport(Resolution resolution)
     {
-        if (!_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
-        }
+        if(good() == false)co_return;
 
-        // bind context
-        native::device_context device_context = _window.acquireDeviceContext();
-        if(wglMakeCurrent(device_context, _oglctx_handle) == FALSE)
-        {
-            spdlog::error(std::format("[t:{}] Cannot activate opengl context", std::this_thread::get_id()));
-            co_return;
+        if(!_render_context_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
         }
         
         _viewport_resolution = resolution;
 
-        glViewport(0, 0, (GLsizei)_viewport_resolution.getWidth(), (GLsizei)_viewport_resolution.getHeight());
+        // if the OpenGL context depends on a HDC that may change
+        // (e.g. due to window resize, DPI change, or re-creation), 
+        // then you must re-acquire the HDC (_device_context) from the HWND before calling glViewport()
+        // or any other GL function that implicitly touches the current drawable surface
         
-        // unbind context
+        // release old context
         wglMakeCurrent(0, 0);
-        _window.releaseDeviceContext(device_context);
+        _window.releaseDeviceContext(*_device_context);
+
+        // acquire new context
+        *_device_context = _window.acquireDeviceContext();
+                
+        // bind context
+        if(wglMakeCurrent(*_device_context, *_oglctx_handle) == FALSE)
+        {
+            spdlog::error(std::format("[t:{}] Cannot activate OpenGL context", std::this_thread::get_id()));
+            co_return;
+        }
+
+        glViewport(0, 0, (GLsizei)_viewport_resolution.getWidth(), (GLsizei)_viewport_resolution.getHeight());
 
         co_return;
     }

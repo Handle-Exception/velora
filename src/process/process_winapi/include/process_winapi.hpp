@@ -42,9 +42,9 @@ namespace velora::winapi
         public:
             WinapiProcess();
             WinapiProcess(const WinapiProcess &) = delete;
-            WinapiProcess(WinapiProcess &&);
+            WinapiProcess(WinapiProcess &&) = delete; //TODO
             WinapiProcess & operator=(const WinapiProcess &) = delete;
-            WinapiProcess & operator=(WinapiProcess &&);
+            WinapiProcess & operator=(WinapiProcess &&) = delete; //TODO
             ~WinapiProcess();
             //
             static LRESULT CALLBACK procedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
@@ -52,6 +52,7 @@ namespace velora::winapi
             LRESULT CALLBACK specyficProcedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
         
             asio::awaitable<void> close();
+            void join();
 
             asio::awaitable<native::window_handle> registerWindow(std::string name, Resolution resolution);
 
@@ -63,17 +64,15 @@ namespace velora::winapi
 
             asio::awaitable<bool> unregisterOGLContext(native::opengl_context_handle oglctx);
 
-            void join();
-
         protected:
             void messageLoop();
             bool registerClass(const WNDCLASSEX & class_structure);
-            bool unregisterClass(const std::string & class_name);
+            bool unregisterClass(std::string class_name);
 
             bool initOpenGL();
 
         private:
-            asio::io_context _io_context;
+            asio::io_context _io_context; // TODO UNIQUE_PTR for move ctor
             asio::strand<asio::io_context::executor_type> _strand;
 
             absl::flat_hash_map<std::string, const WNDCLASSEX> _registered_classes;

@@ -59,6 +59,7 @@ namespace velora::winapi
             asio::strand<asio::io_context::executor_type> _strand;
             native::window_handle _window_handle;
             IProcess & _process;
-        
+
+            std::optional<native::device_context> _acquired_device_context; 
     };
 }

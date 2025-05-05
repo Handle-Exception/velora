@@ -18,7 +18,7 @@ namespace velora::winapi
     }
 
     WinapiProcess::WinapiProcess()
-    :   _io_context(),
+    :   _io_context(1),
         _strand(asio::make_strand(_io_context)),
         _default_oglctx_handle(nullptr),
         _io_thread(&WinapiProcess::messageLoop, this)
@@ -47,6 +47,8 @@ namespace velora::winapi
         if(_io_thread.joinable()){
             _io_thread.join();
         }
+        
+        spdlog::debug(std::format("[winapi] [t:{}] WinApi process thread joined", std::this_thread::get_id()));
     }
 
     asio::awaitable<void> WinapiProcess::close()
@@ -79,6 +81,9 @@ namespace velora::winapi
     bool WinapiProcess::registerClass( const WNDCLASSEX & class_structure)
     {
         std::string name = (std::stringstream{} << class_structure.lpszClassName).str();
+
+        spdlog::debug(std::format("[winapi-class-manager] registering WinApi class {} ...", name));
+
         if(name.empty()){
             spdlog::error(std::format("[winapi-class-manager] Name of a class cannot be empty"));
             return false;
@@ -89,8 +94,6 @@ namespace velora::winapi
             return false;
         }
 
-        spdlog::debug(std::format("[winapi-class-manager] registering WinApi class {}", name));
-
         _registered_classes.try_emplace(name, std::move(class_structure));
 
         if(RegisterClassEx(&_registered_classes.at(name)) == false){
@@ -98,12 +101,15 @@ namespace velora::winapi
             return false;
         }
         
+        spdlog::info(std::format("[winapi-class-manager] WinApi class {} created", name));
+
         return true;
     }
 
-    bool WinapiProcess::unregisterClass(const std::string & class_name)
+    bool WinapiProcess::unregisterClass(std::string name)
     {
-        std::string name = (std::stringstream{} << class_name).str();
+        spdlog::debug(std::format("[winapi-class-manager] unregistering WinApi class {} ...", name));
+
         if(name.empty()){
             spdlog::error(std::format("[winapi-class-manager] Name of a class cannot be empty"));
             return false;
@@ -114,10 +120,10 @@ namespace velora::winapi
             return false;
         }
 
-        spdlog::debug(std::format("[winapi-class-manager] unregistering WinApi class {}", name));
-
         UnregisterClass(name.c_str(), GetModuleHandle(nullptr));
         _registered_classes.erase(name);
+
+        spdlog::info(std::format("[winapi-class-manager] WinApi class {} destroyed", name));
 
         return true;
     }
@@ -198,6 +204,9 @@ namespace velora::winapi
         ReleaseDC(window_handle, device_context);
 
         _window_handles.try_emplace(window_handle, std::nullopt);
+
+        spdlog::info(std::format("[winapi] [t:{}] Window {} created", std::this_thread::get_id(), window_handle));
+
         co_return window_handle;
     }
 
@@ -207,19 +216,19 @@ namespace velora::winapi
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
 
-        spdlog::debug(std::format("[winapi] [t:{}] unregisterWindow", std::this_thread::get_id()));
+        spdlog::debug(std::format("[winapi] [t:{}] unregistering Window {} ...", std::this_thread::get_id(), window));
 
         if(_window_handles.contains(window) == false){
             spdlog::error(std::format("[winapi-class-manager] window {} not registered", window));
             co_return false;
         }
 
-        spdlog::debug(std::format("[winapi-class-manager] unregistering window {}", window));
-
         ReleaseDC(window, GetDC(window));
         DestroyWindow(window);
         
         _window_handles.erase(window);
+
+        spdlog::info(std::format("[winapi-class-manager] window {} destroyed", window));
         co_return true;
     }
 
@@ -378,9 +387,10 @@ namespace velora::winapi
             co_return nullptr;
         }
 
-        spdlog::debug(std::format("[winapi-procedure] created opengl context {}", oglctx));
         _oglctx_handles.emplace(oglctx);
         
+        spdlog::info(std::format("[winapi-procedure] created opengl context {}", oglctx));
+
         co_return oglctx;
     }
 
@@ -390,7 +400,7 @@ namespace velora::winapi
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
         
-        spdlog::debug(std::format("[winapi] [t:{}] unregisterOGLContext", std::this_thread::get_id()));
+        spdlog::debug(std::format("[winapi] [t:{}] unregistering OGLContext {} ...", std::this_thread::get_id(), oglctx));
 
         if(oglctx == nullptr)
         {
@@ -412,9 +422,10 @@ namespace velora::winapi
         }
 
         _oglctx_handles.erase(oglctx);
-        spdlog::debug(std::format("[winapi-procedure] deleted OGLContext {}", oglctx));
 
-        co_return false;
+        spdlog::info(std::format("[winapi-procedure] OGLContext {} destroyed", oglctx));
+
+        co_return true;
     }
 
     LRESULT CALLBACK WinapiProcess::procedure(native::window_handle window, UINT message, WPARAM wparam, LPARAM lparam)
