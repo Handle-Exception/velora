@@ -2,7 +2,7 @@
 
 namespace velora::game
 {
-    const uint32_t HealthSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<HealthSystem>();
+    const uint32_t HealthSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<HealthComponent>();
 
     HealthSystem::HealthSystem(asio::io_context & io_context)
     : _strand(asio::make_strand(io_context))
@@ -22,7 +22,7 @@ namespace velora::game
 
             HealthComponent * health_component = components.getComponent<HealthComponent>(entity);
             assert(health_component != nullptr);
-            
+
             // Update health component logic here
         }
         co_return;

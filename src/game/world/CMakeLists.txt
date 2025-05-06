@@ -18,6 +18,7 @@ add_module(NAME "World"
         "${PROJECT_PREFIX}::InputSystem"
         "${PROJECT_PREFIX}::CameraSystem"
         "${PROJECT_PREFIX}::TerrainSystem"
+        "${PROJECT_PREFIX}::LightSystem"
 
         "${PROJECT_PREFIX}::Level"
 )

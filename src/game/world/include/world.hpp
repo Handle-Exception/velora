@@ -19,6 +19,7 @@
 #include "input_system.hpp"
 #include "camera_system.hpp"
 #include "terrain_system.hpp"
+#include "light_system.hpp"
 
 #include "level.hpp"
 
@@ -65,6 +66,11 @@ namespace velora::game
                 return _levels.at(_current_level);
             }
 
+            // Run all systems layer by layer
+            // in each layer, all systems are run in parallel
+            // the order of the layers is guaranteed
+            // the order of the systems in a layer is not guaranteed
+            // systems in layer must be independent of each other
             asio::awaitable<void> update(std::chrono::duration<double> delta)
             {
                 for(const auto & layer : _layers)
@@ -110,6 +116,10 @@ namespace velora::game
             }
 
         protected:
+            // Run a layer of systems
+            // all systems in a layer are run in parallel
+            // the order of the systems in the layer is not guaranteed
+            // systems in layer must be independent of each other      
             asio::awaitable<void> runLayer(const std::chrono::duration<double> & delta, const std::vector<ISystem*> & layer)
             {
                 std::vector<asio::awaitable<void>> joiners;

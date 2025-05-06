@@ -20,7 +20,7 @@ namespace velora::game
         return _projection;
     }
 
-    asio::awaitable<void> CameraSystem::run(ComponentManager& components, EntityManager& entities, float alpha)
+    asio::awaitable<void> CameraSystem::run(const ComponentManager& components, const EntityManager& entities, float alpha)
     {
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));

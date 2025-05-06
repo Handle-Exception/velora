@@ -60,6 +60,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::InputSystem"
         "${PROJECT_PREFIX}::CameraSystem"
         "${PROJECT_PREFIX}::TerrainSystem"
+        "${PROJECT_PREFIX}::LightSystem"
 
         "${PROJECT_PREFIX}::World"
         "${PROJECT_PREFIX}::Level"

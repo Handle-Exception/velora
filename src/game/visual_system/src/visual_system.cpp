@@ -4,12 +4,14 @@ namespace velora::game
 {
     const uint32_t VisualSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<VisualComponent>();
 
-    VisualSystem::VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system)
-        :   _strand(asio::make_strand(io_context)), _renderer(renderer), _camera_system(camera_system)
+    VisualSystem::VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system, game::LightSystem & light_system)
+        :   _strand(asio::make_strand(io_context)), _renderer(renderer), _camera_system(camera_system), _light_system(light_system)
     {}
 
     asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha)
     {
+        if(_renderer.good() == false)co_return;
+
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
@@ -48,6 +50,9 @@ namespace velora::game
                     
             // if not visible, skip
             if(visual_component->visible() == false) continue;
+            
+            // check renderer before
+            if(_renderer.good() == false)co_return;
 
             const auto vb_id = _renderer.getVertexBuffer(visual_component->vertex_buffer_name());
             const auto sh_id = _renderer.getShader(visual_component->shader_name());

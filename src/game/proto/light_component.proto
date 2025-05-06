@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package velora.game;
+
+enum LightType 
+{
+    DIRECTIONAL = 0;
+    POINT = 1;
+    SPOT = 2;
+}
+
+message LightComponent 
+{
+    LightType type = 1;
+    
+    bool cast_shadows = 2;
+
+    optional float direction_x = 3;
+    optional float direction_y = 4;
+    optional float direction_z = 5;
+
+    // Color and intensity
+    optional float color_r = 6;
+    optional float color_g = 7;
+    optional float color_b = 8;
+    optional float intensity = 9;
+
+    // Attenuation (used by point/spot lights)
+    optional float constant = 10;
+    optional float linear = 11;
+    optional float quadratic = 12;
+
+    // Spot-specific cutoff angles (cosine values)
+    optional float inner_cutoff = 13;
+    optional float outer_cutoff = 14;
+}

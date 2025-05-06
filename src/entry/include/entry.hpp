@@ -13,7 +13,10 @@
 #include <google/protobuf/descriptor.h>
 #endif
 
+#include "native.hpp"
 #include <asio.hpp>
+
+#include "fixed_step_loop.hpp"
 
 namespace velora
 {

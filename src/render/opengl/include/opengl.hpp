@@ -27,6 +27,7 @@
 #include "opengl_debug.hpp"
 #include "opengl_vertex_buffer.hpp"
 #include "opengl_shader.hpp"
+#include "opengl_shader_storage_buffer.hpp"
 
 namespace velora::opengl
 {

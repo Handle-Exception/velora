@@ -31,7 +31,7 @@ namespace velora::game
         CameraSystem& operator=(CameraSystem&&) = default;
         ~CameraSystem() = default;
 
-        asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha);
+        asio::awaitable<void> run(const ComponentManager& components, const EntityManager& entities, float alpha);
 
         const glm::mat4 & getView() const;
         const glm::mat4 & getProjection () const;

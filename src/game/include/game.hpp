@@ -6,6 +6,7 @@
 #include "input_system.hpp"
 #include "camera_system.hpp"
 #include "terrain_system.hpp"
+#include "light_system.hpp"
 
 #include "world.hpp"
 

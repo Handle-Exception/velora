@@ -5,8 +5,8 @@ add_module(NAME "Entry"
         spdlog::spdlog
         asio
         
-        "${PROJECT_PREFIX}::Version"
         "${PROJECT_PREFIX}::Native"
+        "${PROJECT_PREFIX}::Version"
         "${PROJECT_PREFIX}::Type"
         "${PROJECT_PREFIX}::Process"
 )

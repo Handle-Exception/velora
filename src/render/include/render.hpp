@@ -21,7 +21,7 @@ namespace velora
         /**
          * @brief Check if renderer is properly initialized
          * 
-         * @return `true` if renderer is properly initialized
+         * @return `true` if renderer is properly initialized and can render, `false` if renderer is closed or not initialized
          */
         virtual bool good() const = 0;
         
@@ -32,16 +32,55 @@ namespace velora
          * @return asio::awaitable<void> 
          */
         virtual asio::awaitable<void> close() = 0;
+
+        /**
+         * @brief Wait for the renderer to finish rendering and close
+         * 
+         */
         virtual void join() = 0;
 
+        /**
+         * @brief Clear the screen with a color
+         * 
+         * @param color Color to clear the screen with
+         * @return asio::awaitable<void> 
+         */
         virtual asio::awaitable<void> clearScreen(glm::vec4 color) = 0;
+        
+        /**
+         * @brief Render a vertex buffer with a shader
+         * 
+         * @param vertex_buffer_ID ID of the vertex buffer to render
+         * @param shader_ID ID of the shader to use
+         * @param shader_inputs Inputs for the shader
+         * @return asio::awaitable<void> 
+         */
         virtual asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs = ShaderInputs{}) = 0;
+        
+        /**
+         * @brief Present the rendered frame
+         * 
+         * @return asio::awaitable<void> 
+         */
         virtual asio::awaitable<void> present() = 0;
+
+        /**
+         * @brief Update the viewport
+         * 
+         * @param resolution Resolution of the viewport
+         * @return asio::awaitable<void> 
+         */
         virtual asio::awaitable<void> updateViewport(Resolution resolution) = 0;
+
+        /**
+         * @brief Get the viewport resolution
+         * 
+         * @return Resolution Resolution of the viewport
+         */
         virtual Resolution getViewport() const = 0;
+        
         virtual asio::awaitable<void> enableVSync() = 0;
         virtual asio::awaitable<void> disableVSync() = 0;
-
         virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) = 0;
         
         virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0;

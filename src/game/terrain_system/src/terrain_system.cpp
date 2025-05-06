@@ -28,15 +28,15 @@ namespace velora::game
                 // Compute vertices/indices
                 std::vector<Vertex> vertices;
                 std::vector<uint32_t> indices;
-                for (int z = 0; z <= terrain_component->length(); ++z) {
-                    for (int x = 0; x <= terrain_component->width(); ++x) {
+                for (uint32_t  z = 0; z <= terrain_component->length(); ++z) {
+                    for (uint32_t  x = 0; x <= terrain_component->width(); ++x) {
                         vertices.push_back(
                             Vertex{ {x * terrain_component->tile_size(), 0.0f, z * terrain_component->tile_size()}, {0, 1, 0}, {0, 0} });
                     }
                 }
 
-                for (int z = 0; z < terrain_component->length(); ++z) {
-                    for (int x = 0; x < terrain_component->width(); ++x) {
+                for (uint32_t  z = 0; z < terrain_component->length(); ++z) {
+                    for (uint32_t  x = 0; x < terrain_component->width(); ++x) {
                         uint32_t topLeft = z * (terrain_component->width() + 1) + x;
                         uint32_t topRight = topLeft + 1;
                         uint32_t bottomLeft = (z + 1) * (terrain_component->width() + 1) + x;

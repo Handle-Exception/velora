@@ -3,9 +3,11 @@
 #include "ecs.hpp"
 #include "render.hpp"
 
-#include "camera_system.hpp"
 #include "visual_component.pb.h"
 #include "transform_component.pb.h"
+
+#include "camera_system.hpp"
+#include "light_system.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -29,7 +31,7 @@ namespace velora::game
             constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem", "CameraSystem"};
             constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-            VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system);
+            VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system, game::LightSystem & light_system);
             VisualSystem(const VisualSystem&) = delete;
             VisualSystem(VisualSystem&&) = default;
             VisualSystem& operator=(const VisualSystem&) = delete;
@@ -44,5 +46,6 @@ namespace velora::game
 
             IRenderer & _renderer;
             game::CameraSystem & _camera_system;
+            game::LightSystem & _light_system;
     };
 }

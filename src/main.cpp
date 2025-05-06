@@ -2,127 +2,6 @@
 
 namespace velora
 {
-
-    struct FixedStepLoop
-    {
-        using clock = std::chrono::high_resolution_clock;
-
-        FixedStepLoop(asio::io_context & io_context, const std::chrono::duration<double> fixed_logic_step,
-                std::function<bool()> condition,
-                std::function<asio::awaitable<void>(std::chrono::duration<double>)> logic,
-                std::function<asio::awaitable<void>(float)> priority) 
-        :   _strand(asio::make_strand(io_context)),
-            _fixed_logic_step(std::move(fixed_logic_step)),
-            _condition(std::move(condition)),
-            _logic(std::move(logic)),
-            _priority(std::move(priority)) 
-        {}
-
-        asio::awaitable<void> run()
-        {
-            spdlog::debug("Starting fixed step loop");
-
-            FpsCounter priority_fps_counter;
-            FpsCounter logic_fps_counter;
-
-            _previous_alpha = 0.0f;
-            _raw_alpha = 0.0f;
-
-            auto last_log_time = clock::now();
-
-            while (_condition()) 
-            {
-                _total_time.duration = _total_time.end - _total_time.start;
-                _total_time.start = clock::now();
-
-                // Clamp to avoid spiral of death
-                _lag += _total_time.duration; //std::min(_total_time.duration, _MAX_ACCUMULATED_TIME);
-                
-                _logic_time.duration = _logic_time.end - _logic_time.start;
-                _logic_time.start = clock::now();
-                // Apply fixed time steps
-                while (_lag >= _fixed_logic_step) 
-                {
-                    logic_fps_counter.frame();
-
-                    // Fixed time update
-                    co_await _logic(_fixed_logic_step);
-
-                    _simulation_tick++;
-                    _lag -= _fixed_logic_step;
-
-                    //track fps frames for profiling
-                    if (_total_time.start - last_log_time >= std::chrono::seconds(5)) 
-                    {
-                        spdlog::info(std::format(
-                            "[t:{}]\n\tPriority FPS: {:.1f}\n\tLogic FPS:{:.1f}\n\tLast frame took: {:.1f}ms", 
-                                std::this_thread::get_id(),
-                                priority_fps_counter.getFPS(), 
-                                logic_fps_counter.getFPS(),
-                                _total_time.duration.count() * 1000.0f 
-                            )
-                        );
-                       last_log_time = _total_time.start;
-                    }
-                }
-                _logic_time.end = clock::now();
-
-                _priority_time.duration = _priority_time.end - _priority_time.start;
-                _priority_time.start = clock::now();
-
-                priority_fps_counter.frame();
-                
-                _raw_alpha = _lag / _fixed_logic_step;
-                _raw_alpha  = std::clamp(_raw_alpha, 0.0f, 1.0f);
-                if (std::isnan(_raw_alpha)) _raw_alpha = 0.0f;
-
-                // Exponential smoothing
-                _alpha = std::lerp(_previous_alpha, _raw_alpha, _ALPHA_SMOOTHING);
-                _previous_alpha = _alpha; // store for next frame
-
-                co_await _priority(_alpha);
-
-                _priority_time.end = clock::now();
-                _total_time.end = clock::now();
-            }
-            spdlog::debug("fixed step loop ended");
-
-            co_return;
-        }
-
-        private:
-            asio::strand<asio::any_io_executor> _strand;
-
-            const std::chrono::duration<double> _fixed_logic_step;
-
-            const std::function<bool()> _condition;
-            const std::function<asio::awaitable<void>(std::chrono::duration<double>)> _logic;
-            const std::function<asio::awaitable<void>(float)> _priority;
-
-            constexpr static const std::chrono::duration<double> _MAX_ACCUMULATED_TIME = std::chrono::milliseconds(25); // avoid spiral of death
-            uint64_t _simulation_tick = 0;
-
-
-            struct TimeSpent
-            {
-                std::chrono::steady_clock::time_point start = clock::now();
-                std::chrono::steady_clock::time_point end = clock::now();
-                std::chrono::duration<double> duration = std::chrono::duration<double>::zero();
-            };
-
-            TimeSpent _total_time;
-            TimeSpent _logic_time;
-            TimeSpent _priority_time;
-
-            std::chrono::duration<double> _lag = std::chrono::duration<double>::zero();
-
-            constexpr static const float _ALPHA_SMOOTHING = 0.5f;
-            float _raw_alpha = 0.0f;
-            float _previous_alpha = 0.0f;
-            float _alpha = 0.0f;
-    };
-
-
     // TODO
     void moveCamera(const std::chrono::duration<double> & delta, game::TransformComponent * camera_transform_component, game::InputComponent * camera_input_component)
     {
@@ -156,6 +35,7 @@ namespace velora
         camera_transform_component->mutable_position()->set_z(camera_position.z);
     }
 
+    // TODO
     void movePlayer(const std::chrono::duration<double> & delta, game::TransformComponent * player_transform_component)
     {
         static float pitch = 45.0f; // X axis
@@ -189,18 +69,18 @@ namespace velora
 
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
-        // create system objects
-
         spdlog::debug(std::format("[t:{}] Velora main started", std::this_thread::get_id()));
-
-        auto window = co_await Window::construct<winapi::WinapiWindow>(asio::use_awaitable, io_context, process, "Velora", Resolution{256, 512});
+        
+        // create system objects
+        Window window = co_await Window::construct<winapi::WinapiWindow>(
+            asio::use_awaitable, io_context, process, "Velora", Resolution{512, 256});
         if (window->good() == false)
         {
             spdlog::error("Failed to create window");
             co_return -1;
         }
 
-        auto renderer = co_await Renderer::construct<opengl::OpenGLRenderer>(asio::use_awaitable, *window, 4, 0);
+        Renderer renderer = co_await Renderer::construct<opengl::OpenGLRenderer>(asio::use_awaitable, *window, 4, 0);
         if (renderer->good() == false)
         {
             spdlog::error("Failed to create renderer");
@@ -211,23 +91,23 @@ namespace velora
 
         // create input system
         auto input_strand = asio::make_strand(io_context);
-
         game::InputSystem input_system(io_context);
 
+        // connect input system to window and setup system objects callbacks
         co_await process.setWindowCallbacks(window->getHandle(), 
             WindowCallbacks{.executor = input_strand,
                 // process notifies us when the window is destroyed
                 .onDestroy = [&window, &renderer]() -> asio::awaitable<void>
                 {
-                    spdlog::info(std::format("WindowCallbacks Destroyed [{}]", std::this_thread::get_id()));
+                    spdlog::info(std::format("[t:{}] Window callback onDestroy", std::this_thread::get_id()));
                     co_await renderer->close(); // so we notify process to close the renderer
                     co_await window->close(); // and destroy window object
                     co_return;
                 },
                 .onResize = [&window, &renderer](int width, int height) -> asio::awaitable<void>
                 {
-                    spdlog::info(std::format("WindowCallbacks Resized {}x{}", width, height));
-                    //co_await window->resize(width, height);
+                    spdlog::info(std::format("[t:{}] Window callback onResize {}x{}", std::this_thread::get_id(),  width, height));
+                    //co_await window->resize(width, height); is it even needed?
                     co_await renderer->updateViewport(Resolution{(std::size_t)width, (std::size_t)height});
                     co_return;
                 },
@@ -249,22 +129,18 @@ namespace velora
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING ASSETS
         // ---------------------------------------------------------------------------------------------------------------------------------------------
-        auto vb_id = co_await renderer->constructVertexBuffer("vertex_buffer_0", getCubePrefab());
-
-        if(!vb_id)
+        if((co_await renderer->constructVertexBuffer("vertex_buffer_0", getCubePrefab())) == std::nullopt)
         {
             spdlog::error("Failed to create vertex buffer");
             co_return -1;
         }
 
-
-        auto sh_id = co_await loadShaderFromFile(*renderer, "shaders/glsl/basic_shader");
-
-        if(!sh_id)
+        if((co_await loadShaderFromFile(*renderer, "shaders/glsl/basic_shader")) == std::nullopt)
         {
             spdlog::error("Failed to create Shader");
             co_return -1;
         }
+
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -276,7 +152,7 @@ namespace velora
 
         // then update all subsystems
         // input is handled in other thread
-        // it calls callbacks in main_strand
+        // it calls callbacks in strand
         // 
         // callbacks are connected to controller component
         // controller component stores actions
@@ -286,15 +162,13 @@ namespace velora
         // then Visual Component uses Transform component to calculate matrices and draw entity
         // then Physics component uses Transform component to move entity
 
-        // Create game subsystems
-
-        // create world
-
-
-        game::World world(io_context, *renderer);
-
+        // Create rendering systems
         game::CameraSystem camera_system(io_context, *renderer);
-        game::VisualSystem visual_system(io_context, *renderer, camera_system);
+        game::LightSystem light_system(io_context, *renderer);
+        game::VisualSystem visual_system(io_context, *renderer, camera_system, light_system);
+
+        // create world - will create logic systems
+        game::World world(io_context, *renderer);
 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING LEVEL
@@ -307,49 +181,91 @@ namespace velora
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // --- TODO --- 
         auto player_entity = world.getCurrentLevel().getEntity("player");
         auto camera_entity = world.getCurrentLevel().getEntity("camera");
-
         if(!player_entity || !camera_entity)
         {
             spdlog::error("Failed to find entities");
             co_return -1;
         }
-        
-        auto player_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
+        //auto player_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
         auto player_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
-        auto player_visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
-        auto player_health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
+        //auto player_visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
+        //auto player_health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
         
         auto camera_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*camera_entity);
         auto camera_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*camera_entity);
-        auto camera_camera_component = world.getCurrentLevel().getComponent<game::CameraComponent>(*camera_entity);
+        //auto camera_camera_component = world.getCurrentLevel().getComponent<game::CameraComponent>(*camera_entity);
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
+        // 
+        // ---------------------------------------------------------------------------------------------------------------------------------------------
 
         co_await window->show();
 
-        FixedStepLoop loop(io_context, 33.33ms, // fixed logic step 30 HZ update 
-            [&window, &renderer]() -> bool // condition
+        FpsCounter priority_fps_counter;
+        FpsCounter logic_fps_counter;
+        std::chrono::high_resolution_clock::time_point last_log_time = std::chrono::high_resolution_clock::now();
+
+        FixedStepLoop loop(io_context, 
+            // fixed logic step 30 HZ update 
+            33.33ms, 
+            
+            // loop condition
+            [&window, &renderer]() -> bool 
             {
                 return window->good() && renderer->good();
             },
-            [&world, &input_system, &camera_transform_component, &camera_input_component, &player_transform_component]
-            (std::chrono::duration<double> delta) -> asio::awaitable<void>  // logic
+
+            // logic loop to be executed at fixed time step 
+            [&world, &input_system, &camera_transform_component, &camera_input_component, &player_transform_component, &last_log_time, &logic_fps_counter, &priority_fps_counter]
+            (std::chrono::duration<double> delta) -> asio::awaitable<void>  
             {
+                logic_fps_counter.frame();
+
+                //track fps frames for profiling
+                if (std::chrono::high_resolution_clock::now() - last_log_time >= std::chrono::seconds(5)) 
+                {
+                        spdlog::info(std::format(
+                            "[t:{}]\n\tPriority FPS: {:.1f}\n\tLogic FPS:{:.1f}", 
+                                std::this_thread::get_id(),
+                                priority_fps_counter.getFPS(), 
+                                logic_fps_counter.getFPS()
+                            )
+                        );
+                    last_log_time = std::chrono::high_resolution_clock::now();
+                }
+
+                // update fetched input actions in entities
+                // input itself is recorded asynchronousy in window callbacks
                 co_await world.getCurrentLevel().runSystem(input_system);
+
+                // world has topologicaly sorted graph of systems
+                // and will execute them in layers which are independent of each other
+                // this way we can run them in parallel
                 co_await world.update(delta);
+
                 // TODO
                 moveCamera(delta, camera_transform_component, camera_input_component);
                 movePlayer(delta, player_transform_component);
 
                 co_return;
             },
-            [&renderer, &world, &camera_system, &visual_system](float alpha) -> asio::awaitable<void> // priority as fast as possible
+
+            // priority loop to be executed as soon as possible
+            [&renderer, &world, &camera_system, &light_system, &visual_system, &priority_fps_counter]
+            (float alpha) -> asio::awaitable<void> 
             {
+                priority_fps_counter.frame();
+
+                // execute camera calculation in parallel with light calculation
                 co_await (
-                    world.getCurrentLevel().runSystem(camera_system, alpha) && 
-                    renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f})
+                    world.getCurrentLevel().runSystem(light_system) && 
+                    world.getCurrentLevel().runSystem(camera_system, alpha) 
                 );
                 
+                co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});
+
                 // visual system will render entities with visual component
                 // interpolate between current and previous transform using alpha
                 co_await world.getCurrentLevel().runSystem(visual_system, alpha);
@@ -361,6 +277,7 @@ namespace velora
             }
         );
 
+        // start fixed step loop
         co_await loop.run();
         
         spdlog::debug("joining renderer thread");
