@@ -71,11 +71,41 @@ namespace velora::opengl
             void assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs);
 
         private:
-            IWindow & _window;
+            struct RenderThreadContext
+            {
+                RenderThreadContext(
+                        IWindow & window,
+                        native::device_context * device,
+                        native::opengl_context_handle * oglctx);
 
-            std::unique_ptr<asio::io_context> _render_context; // dedicated single thread
-            asio::executor_work_guard<asio::io_context::executor_type> _render_context_work_guard;
-            asio::strand<asio::io_context::executor_type> _render_context_strand;
+                ~RenderThreadContext();
+                
+                void join();
+
+                const asio::strand<asio::io_context::executor_type> & getStrand() const;
+
+                asio::awaitable<void> ensureOnStrand();
+                
+                void signalClose();
+
+                bool running() const;
+
+                private:
+                    void workerThread();
+
+
+                    asio::io_context _io_context;
+                    asio::executor_work_guard<asio::io_context::executor_type> _work_guard;
+                    asio::strand<asio::io_context::executor_type> _strand;
+
+                    IWindow & _window;
+                    native::device_context * _device_context;
+                    native::opengl_context_handle * _oglctx_handle;
+
+                    std::thread _worker_thread;
+            };
+
+            IWindow & _window;
 
             std::unique_ptr<native::opengl_context_handle> _oglctx_handle;
             std::unique_ptr<native::device_context> _device_context;
@@ -89,6 +119,6 @@ namespace velora::opengl
             absl::flat_hash_map<std::string, std::size_t> _shader_names;
 
             // Render thread initialized at the end of the constructor
-            std::thread _render_thread;
+            std::unique_ptr<RenderThreadContext> _render_context; // dedicated single thread
     };
 }

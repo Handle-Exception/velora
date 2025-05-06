@@ -2,6 +2,96 @@
 
 namespace velora::opengl
 {
+    OpenGLRenderer::RenderThreadContext::RenderThreadContext(IWindow & window, native::device_context * device, native::opengl_context_handle * oglctx)
+    :   _io_context(1),
+        _work_guard(asio::make_work_guard(_io_context.get_executor())),
+        _strand(asio::make_strand(_io_context)), 
+        _window(window), 
+        _device_context(device),
+        _oglctx_handle(oglctx), 
+        _worker_thread(&OpenGLRenderer::RenderThreadContext::workerThread, this)
+    {}
+
+    OpenGLRenderer::RenderThreadContext::~RenderThreadContext()
+    {
+        join();
+    }
+
+    void OpenGLRenderer::RenderThreadContext::join()
+    {
+        if(_worker_thread.joinable() == false)return;
+
+        spdlog::debug(std::format("[opengl] [t:{}] Render thread waiting to finish ... ", std::this_thread::get_id()));
+        
+        signalClose();
+        _worker_thread.join();
+        
+        spdlog::debug(std::format("[opengl] [t:{}] Render thread finished", std::this_thread::get_id()));
+    }
+
+    const asio::strand<asio::io_context::executor_type> & OpenGLRenderer::RenderThreadContext::getStrand() const
+    {
+        return _strand;
+    }
+
+    asio::awaitable<void> OpenGLRenderer::RenderThreadContext::ensureOnStrand()
+    {
+        if(!_strand.running_in_this_thread()) {
+            co_return co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
+        co_return;
+    }
+
+    void OpenGLRenderer::RenderThreadContext::signalClose()
+    {
+        if(_work_guard.owns_work() == false)return;
+        spdlog::debug(std::format("[opengl] [t:{}] Render thread signaled to close", std::this_thread::get_id()));
+        _work_guard.reset();
+    }
+
+
+    bool OpenGLRenderer::RenderThreadContext::running() const
+    {
+        if(_work_guard.owns_work() == false)return false;
+        if(_worker_thread.joinable() == false)return false;
+        return true;
+    }
+
+    void OpenGLRenderer::RenderThreadContext::workerThread()
+    {
+        #ifdef WIN32 //TODO
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+        #endif
+
+        spdlog::debug(std::format("[opengl] [t:{}] Render thread started", std::this_thread::get_id()));
+                
+        *(_device_context) = _window.acquireDeviceContext();
+                
+        // bind context
+        if(wglMakeCurrent(*(_device_context), *(_oglctx_handle)) == FALSE)
+        {
+            spdlog::error(std::format("[t:{}] Cannot activate OpenGL context", std::this_thread::get_id()));
+            return;
+        }
+
+        try
+        {
+            _io_context.run();
+        }
+        catch(const std::exception & e)
+        {
+            spdlog::error("[render] OpenGL render thread exception: {}", e.what());
+        }
+    
+        // unbind context
+        wglMakeCurrent(0, 0);
+        _window.releaseDeviceContext(*(_device_context));
+
+        spdlog::debug(std::format("[opengl] [t:{}] Render thread ended", std::this_thread::get_id()));
+    }
+
+
     asio::awaitable<OpenGLRenderer> OpenGLRenderer::asyncConstructor(IWindow & window, int major_version, int minor_version)
     {
         auto window_handle = window.getHandle();
@@ -13,9 +103,6 @@ namespace velora::opengl
     OpenGLRenderer::OpenGLRenderer(IWindow & window, native::opengl_context_handle oglctx_handle)
     :   _window(window),
         
-        _render_context(std::make_unique<asio::io_context>(1)),
-        _render_context_work_guard(asio::make_work_guard(_render_context->get_executor())),
-        _render_context_strand(asio::make_strand(*_render_context)),
         _oglctx_handle(std::make_unique<native::opengl_context_handle>(oglctx_handle)),
         _device_context(std::make_unique<native::device_context>(nullptr)),
 
@@ -23,45 +110,8 @@ namespace velora::opengl
         _shaders(),
 
         _viewport_resolution(0, 0),
-        _render_thread(
-            [
-                &window,
-                render_context = _render_context.get(), 
-                device_context = _device_context.get(),
-                oglctx_handle = _oglctx_handle.get()
-            ]()
-            {
-                #ifdef WIN32 //TODO
-                SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-                #endif
-                
-                spdlog::info(std::format("[render] OpenGL renderer thread started: {}", std::this_thread::get_id()));
-                
-                *device_context = window.acquireDeviceContext();
-                
-                // bind context
-                if(wglMakeCurrent(*device_context, *oglctx_handle) == FALSE)
-                {
-                    spdlog::error(std::format("[t:{}] Cannot activate OpenGL context", std::this_thread::get_id()));
-                    return;
-                }
 
-                try
-                {
-                    render_context->run();
-                }
-                catch(const std::exception & e)
-                {
-                    spdlog::error("[render] OpenGL renderer exception: {}", e.what());
-                }
-                
-                spdlog::info(std::format("[render] OpenGL renderer thread ended: {}", std::this_thread::get_id()));
-
-                // unbind context
-                wglMakeCurrent(0, 0);
-                window.releaseDeviceContext(*device_context);
-            }
-        )
+        _render_context(std::make_unique<RenderThreadContext>(_window, _device_context.get(), _oglctx_handle.get()))
     {
         spdlog::info("[render] OpenGL renderer created");
     }
@@ -70,16 +120,13 @@ namespace velora::opengl
     :   _window(other._window),
         
         _render_context(std::move(other._render_context)),
-        _render_context_work_guard(std::move(other._render_context_work_guard)),
-        _render_context_strand(std::move(other._render_context_strand)),
         _oglctx_handle(std::move(other._oglctx_handle)),
         _device_context(std::move(other._device_context)),
 
         _vertex_buffers(std::move(other._vertex_buffers)),
         _shaders(std::move(other._shaders)),
 
-        _viewport_resolution(std::move(other._viewport_resolution)),
-        _render_thread(std::move(other._render_thread))
+        _viewport_resolution(std::move(other._viewport_resolution))
     {
         other._oglctx_handle = nullptr;
     }
@@ -88,10 +135,9 @@ namespace velora::opengl
     OpenGLRenderer::~OpenGLRenderer()
     {
         join();
-
-        assert(_render_thread.joinable() == false && "OpenGL context should be closed before destruction" );
-        assert(_oglctx_handle == nullptr && "OpenGL context should be closed before destruction" );
+        
         assert(_render_context == nullptr && "OpenGL context should be closed before destruction" );
+        assert(_oglctx_handle == nullptr && "OpenGL context should be closed before destruction" );
         assert(_device_context == nullptr && "OpenGL context should be closed before destruction" );
     }
 
@@ -99,40 +145,35 @@ namespace velora::opengl
     {
         if(_render_context == nullptr) return;
 
-        spdlog::debug(std::format("[opengl] [t:{}] join", std::this_thread::get_id()));
+        spdlog::debug(std::format("[opengl] [t:{}] OpenGL renderer join", std::this_thread::get_id()));
         
-        if(_render_context->stopped() == false)
-        {
-            asio::co_spawn(*_render_context, close(),
+        asio::co_spawn(_render_context->getStrand(), close(),
             // when close finishes, we know that oglcontext is unbinded and unregistered from process,
             // and device context is released
-            [this](std::exception_ptr e)
-            {
-                // then we signal renderer thread to stop
-                _render_context_work_guard.reset();
-                _render_context->stop();
-            });
-        }
+            asio::detached
+        );
+        
+        // wait for render thread to finish
+        _render_context->join();
 
-        // and wait for it to finish
-        if(_render_thread.joinable()){
-            _render_thread.join();
-        }
-
-        _oglctx_handle.reset();
-        _device_context.reset();
+        // destroy render thread context
         _render_context.reset();
+
+        // destroy device context
+        _device_context.reset();
     }
 
     asio::awaitable<void> OpenGLRenderer::close()
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         spdlog::debug(std::format("[opengl] [t:{}] close", std::this_thread::get_id()));
+
+        // set render_context to closed such that we won't accept any new 
+        // rendering tasks
+        _render_context->signalClose();
 
         _vertex_buffers.clear();
         _shaders.clear();
@@ -141,26 +182,29 @@ namespace velora::opengl
         wglMakeCurrent(0, 0);
         _window.releaseDeviceContext(*_device_context);
 
-        co_await _window.getProcess().unregisterOGLContext(*_oglctx_handle);
-        
+        // save handle value to be sent to winapi process for unregistration
+        auto handle = *_oglctx_handle;
+
+        // we can be certain that no other rendering task is currently running
+        // since we are in the render thread strand, we can safely reset oglctx_handle
         _oglctx_handle.reset();
 
+        co_await _window.getProcess().unregisterOGLContext(handle);
+        
         co_return;
     }
 
     bool OpenGLRenderer::good() const
     {
         return  _oglctx_handle != nullptr && _render_context != nullptr && _device_context != nullptr &&
-                _render_context->stopped() == false;
+                _render_context != nullptr && _render_context->running();
     }
 
     asio::awaitable<void> OpenGLRenderer::enableVSync()
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         wglSwapIntervalEXT(1);
         co_return;
@@ -170,9 +214,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         wglSwapIntervalEXT(0);
         co_return;
@@ -182,9 +224,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return std::nullopt;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         if(_vertex_buffer_names.contains(name))
         {
@@ -208,9 +248,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return false;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         if(_vertex_buffers.contains(id) == false)
         {
@@ -248,9 +286,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return std::nullopt;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         if(_shader_names.contains(name))
         {
@@ -275,9 +311,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return std::nullopt;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         if(_shader_names.contains(name))
         {
@@ -301,9 +335,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return false;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         if(_shaders.contains(id) == false)
         {
@@ -384,9 +416,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         glClearColor(color.r, color.g, color.b, color.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -398,9 +428,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         auto shader_it = _shaders.find(shader_ID);
         if(shader_it == _shaders.end()){
@@ -436,9 +464,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
 
         glFlush();
         SwapBuffers(*_device_context);
@@ -450,9 +476,7 @@ namespace velora::opengl
     {
         if(good() == false)co_return;
 
-        if(!_render_context_strand.running_in_this_thread()){
-            co_await asio::dispatch(asio::bind_executor(_render_context_strand, asio::use_awaitable));
-        }
+        co_await _render_context->ensureOnStrand();
         
         _viewport_resolution = resolution;
 

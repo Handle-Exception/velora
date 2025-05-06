@@ -223,19 +223,6 @@ namespace velora
             {
                 logic_fps_counter.frame();
 
-                //track fps frames for profiling
-                if (std::chrono::high_resolution_clock::now() - last_log_time >= std::chrono::seconds(5)) 
-                {
-                        spdlog::info(std::format(
-                            "[t:{}]\n\tPriority FPS: {:.1f}\n\tLogic FPS:{:.1f}", 
-                                std::this_thread::get_id(),
-                                priority_fps_counter.getFPS(), 
-                                logic_fps_counter.getFPS()
-                            )
-                        );
-                    last_log_time = std::chrono::high_resolution_clock::now();
-                }
-
                 // update fetched input actions in entities
                 // input itself is recorded asynchronousy in window callbacks
                 co_await world.getCurrentLevel().runSystem(input_system);
@@ -248,6 +235,19 @@ namespace velora
                 // TODO
                 moveCamera(delta, camera_transform_component, camera_input_component);
                 movePlayer(delta, player_transform_component);
+
+                //track fps frames for profiling
+                if (std::chrono::high_resolution_clock::now() - last_log_time >= std::chrono::seconds(5)) 
+                {
+                        spdlog::info(std::format(
+                            "[t:{}]\n\tPriority FPS: {:.1f}\n\tLogic FPS:{:.1f}", 
+                                std::this_thread::get_id(),
+                                priority_fps_counter.getFPS(), 
+                                logic_fps_counter.getFPS()
+                            )
+                        );
+                    last_log_time = std::chrono::high_resolution_clock::now();
+                }
 
                 co_return;
             },
@@ -280,7 +280,6 @@ namespace velora
         // start fixed step loop
         co_await loop.run();
         
-        spdlog::debug("joining renderer thread");
         renderer->join();
 
         if(window->good())co_await window->close();
