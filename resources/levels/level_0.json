@@ -1,14 +1,14 @@
 {
-    "name": "level_0",
-    "entities": [
+   "name": "level_0",
+   "entities": [
       {
-         "name":"terrain",
+         "name": "terrain",
          "transform": {
             "position": {
-                "x": 0,
-                "y": -15,
-                "z": 0
-             },
+               "x": 0,
+               "y": -15,
+               "z": 0
+            },
             "scale": {
                "x": "100.0",
                "y": "0.1",
@@ -26,83 +26,86 @@
             "tile_size": 10
          }
       },
-     {
-      "name": "player",
-      "transform": {
-       "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-       }
+      {
+         "name": "player",
+         "transform": {
+            "scale": {
+               "x": 1,
+               "y": 1,
+               "z": 1
+            }
+         },
+         "health": {
+            "health": 100,
+            "alive": false
+         },
+         "visual": {
+            "visible": true,
+            "vertex_buffer_name": "vertex_buffer_0",
+            "shader_name": "basic_shader"
+         },
+         "input": {
+            "tick": "0"
+         }
       },
-      "health": {
-       "health": 100,
-       "alive": false
+      {
+         "name": "camera",
+         "input": {
+            "tick": "0"
+         },
+         "transform": {
+            "position": {
+               "x": 0,
+               "y": 0,
+               "z": 15
+            }
+         },
+         "camera": {
+            "fov": "60.0",
+            "near_plane": "0.1",
+            "far_plane": "1000.0",
+            "is_primary": true
+         }
       },
-      "visual": {
-       "visible": true,
-       "vertex_buffer_name": "vertex_buffer_0",
-       "shader_name": "basic_shader"
+      {
+         "name": "enemy0",
+         "transform": {
+            "position": {
+               "x": 10,
+               "y": -3,
+               "z": 0
+            },
+            "scale": {
+               "x": 1,
+               "y": 1,
+               "z": 1
+            }
+         },
+         "visual": {
+            "visible": true,
+            "vertex_buffer_name": "vertex_buffer_0",
+            "shader_name": "basic_shader"
+         }
       },
-      "input": {
-       "tick": "0"
+      {
+         "name": "enemy1",
+         "transform": {
+            "position": {
+               "x": -5,
+               "y": 1,
+               "z": 3
+            },
+            "scale": {
+               "x": 1,
+               "y": 2,
+               "z": 1
+            }
+         },
+         "visual": {
+            "visible": true,
+            "vertex_buffer_name": "vertex_buffer_0",
+            "shader_name": "basic_shader"
+         }
       }
-     },
-     {
-       "name": "camera",
-       "input": {
-           "tick": "0"
-       },
-       "transform": {
-   
-       },
-       "camera": {
-           "fov": "60.0",
-           "near_plane": "0.1",
-           "far_plane": "1000.0",
-           "is_primary": true
-       }
-     },
-     {
-        "name": "enemy0",
-        "transform": {
-         "position": {
-            "x": 10,
-            "y": -3,
-            "z": 0
-         },
-         "scale": {
-            "x": 1,
-            "y": 1,
-            "z": 1
-         }
-        },
-        "visual": {
-         "visible": true,
-         "vertex_buffer_name": "vertex_buffer_0",
-         "shader_name": "basic_shader"
-        }
-     },
-     {
-        "name": "enemy1",
-        "transform": {
-         "position": {
-            "x": -5,
-            "y": 1,
-            "z": 3
-         },
-         "scale": {
-            "x": 1,
-            "y": 2,
-            "z": 1
-         }
-        },
-        "visual": {
-         "visible": true,
-         "vertex_buffer_name": "vertex_buffer_0",
-         "shader_name": "basic_shader"
-        }
-     }
-    ]
-   }
-   
+   ]
+}

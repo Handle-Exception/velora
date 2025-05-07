@@ -82,7 +82,7 @@ namespace velora
         }
     }
 
-    asio::awaitable<std::optional<std::string>> loadLevelFromFile(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& path)
+    asio::awaitable<std::optional<std::string>> loadLevelFromFile(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& path, use_json_t)
     {
         std::ifstream in(path);
         if (!in.is_open()) 
@@ -119,10 +119,88 @@ namespace velora
             registry.loadComponents(entity_def, *entity, level);
         }
 
+        spdlog::debug(std::format("Loaded level: {} from {}", level_name, path.string()));
+
         co_return level_name;
     }
 
-    asio::awaitable<bool> saveLevelToFile(std::string level_name, game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& path)
+    asio::awaitable<bool> loadWorldFromFiles(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_json_t)
+    {
+        if (!std::filesystem::exists(load_dir)  || !std::filesystem::is_directory(load_dir)) {
+            spdlog::error("Load directory does not exist: {}", load_dir.string());
+            co_return false;
+        }
+
+        spdlog::info("Loading world from {}", load_dir.string());
+
+        for (const std::filesystem::path & level_path : std::filesystem::directory_iterator(load_dir)) {
+            auto level_name_res = co_await loadLevelFromFile(world, registry, level_path, use_json);
+            if (!level_name_res) {
+                spdlog::warn(std::format("Failed to load level from {}", level_path.string()) );
+                continue;
+            }
+        }
+
+        co_return true;
+    }
+
+    asio::awaitable<std::optional<std::string>> loadLevelFromFile(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& path, use_binary_t)
+    {
+        std::ifstream in(path, std::ios::binary);
+        if (!in.is_open()) 
+        {
+            spdlog::error("Failed to open level file: {}", path.string());
+            co_return std::nullopt;
+        }
+
+        game::LevelDefinition level_data;
+        if (!level_data.ParseFromIstream(&in)) 
+        {
+            spdlog::error("Failed to parse binary level file: {}", path.string());
+            co_return std::nullopt;
+        }
+
+        std::string level_name = level_data.name();
+        world.constructLevel(level_name);
+
+        auto& level = world.getLevel(level_name);
+        for (const auto& entity_def : level_data.entities())
+        {
+            auto entity = level.spawnEntity(entity_def.name());
+
+            if (entity == std::nullopt) {
+                spdlog::error("Failed to spawn entity: {}", entity_def.name());
+                continue;
+            }
+
+            registry.loadComponents(entity_def, *entity, level);
+        }
+        
+        spdlog::debug(std::format("Loaded level: {} from {}", level_name, path.string()));
+
+        co_return level_name;
+    }
+
+    asio::awaitable<bool> loadWorldFromFiles(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_binary_t)
+    {
+        if (!std::filesystem::exists(load_dir)  || !std::filesystem::is_directory(load_dir)) {
+            spdlog::error("Load directory does not exist: {}", load_dir.string());
+            co_return false;
+        }
+
+        spdlog::info("Loading world from {}", load_dir.string());
+
+        for (const std::filesystem::path & level_path : std::filesystem::directory_iterator(load_dir)) {
+            auto level_name_res = co_await loadLevelFromFile(world, registry, level_path, use_binary);
+            if (!level_name_res) {
+                spdlog::warn(std::format("Failed to load level from {}", level_path.string()));
+                continue;
+            }
+        }
+    }
+
+
+    asio::awaitable<bool> saveLevelToFile(std::string level_name, game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& path, use_json_t)
     {
         game::LevelDefinition level_data;
         level_data.set_name(level_name);
@@ -161,12 +239,14 @@ namespace velora
             co_return false;
         }
 
+        spdlog::debug("Saved level: {} to {}", level_name, path.string());
+
         out << json_out;
 
         co_return true;
     }
 
-    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir)
+    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_json_t)
     {
         if (!std::filesystem::exists(save_dir)) {
             spdlog::warn("Save directory does not exist: {}. Creating one ...", save_dir.string());
@@ -176,17 +256,99 @@ namespace velora
                 co_return false;
             }
         }
-
-        for (const auto& level_name : world.getLevelNames()) {
-            std::filesystem::path level_path = save_dir / (level_name + "_save.json");
-            bool success = co_await saveLevelToFile(level_name, world, registry, level_path);
-            if (!success) {
-                spdlog::error("Failed to save level: {}", level_name);
+        else
+        {
+            if (!std::filesystem::is_directory(save_dir)) {
+                spdlog::error("Save directory is not a directory: {}", save_dir.string());
                 co_return false;
             }
         }
 
+        spdlog::debug("Saving world to {}", save_dir.string());
+
+        bool success = true;
+        for (const auto& level_name : world.getLevelNames()) {
+            std::filesystem::path level_path = save_dir / (level_name + "_save.json");
+            if ((co_await saveLevelToFile(level_name, world, registry, level_path, use_json)) == false) {
+                spdlog::error("Failed to save level: {}", level_name);
+                success = false;
+                continue;
+            }
+        }
+
+        co_return success;
+    }
+
+    asio::awaitable<bool> saveLevelToFile(std::string level_name, game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& path, use_binary_t)
+    {
+        game::LevelDefinition level_data;
+        level_data.set_name(level_name);
+
+        auto& level = world.getLevel(level_data.name());
+        for (const auto& [entity, mask] : level.getEntityManager().getAllEntities())
+        {
+            auto name_res = level.getName(entity);
+            if (name_res == std::nullopt) {
+                spdlog::error("Failed to get entity name for serialization");
+                continue;
+            }
+
+            auto entity_def = registry.serializeEntity(level, entity);
+            entity_def.set_name(*name_res);
+
+            *level_data.add_entities() = entity_def;
+        }
+
+        std::ofstream out(path, std::ios::binary);
+        if (!out.is_open())
+        {
+            spdlog::error("Failed to open level file for writing: {}", path.string());
+            co_return false;
+        }
+
+        if (!level_data.SerializeToOstream(&out)) 
+        {
+            spdlog::error("Failed to serialize level data to binary: {}", path.string());
+            co_return false;
+        }
+
+        spdlog::debug("Saved level: {} to {}", level_name, path.string());
+
         co_return true;
+    }
+
+    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_binary_t)
+    {
+        if (!std::filesystem::exists(save_dir)) {
+            spdlog::warn("Save directory does not exist: {}. Creating one ...", save_dir.string());
+            // create 
+            if (!std::filesystem::create_directories(save_dir)) {
+                spdlog::error("Failed to create save directory: {}", save_dir.string());
+                co_return false;
+            }
+        }
+        else
+        {
+            if (!std::filesystem::is_directory(save_dir)) {
+                spdlog::error("Save directory is not a directory: {}", save_dir.string());
+                co_return false;
+            }
+        }
+
+        spdlog::debug("Saving world to {}", save_dir.string());
+
+        bool success = true;
+        for (const auto& level_name : world.getLevelNames()) {
+            std::filesystem::path level_path = save_dir / (level_name + "_save.bin");
+            if ((co_await saveLevelToFile(level_name, world, registry, level_path, use_binary)) == false) 
+            {
+                spdlog::error("Failed to save level: {}", level_name);
+                success = false;
+                continue;
+            }
+        }
+
+        co_return success;
     }
 
     void ComponentLoaderRegistry::registerLoader(const std::string& name, ComponentLoader loader) 

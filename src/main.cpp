@@ -5,7 +5,11 @@ namespace velora
     // TODO
     void moveCamera(const std::chrono::duration<double> & delta, game::TransformComponent * camera_transform_component, game::InputComponent * camera_input_component)
     {
-        static glm::vec3 camera_position{0,0,0};
+        static glm::vec3 camera_position{
+                camera_transform_component->position().x(),
+                camera_transform_component->position().y(),
+                camera_transform_component->position().z()};
+
         static const float speed = 5.0f;
         
         if(isInputPresent(game::InputCode::KEY_A, camera_input_component->pressed()) ||
@@ -46,8 +50,16 @@ namespace velora
         static float yaw_speed   = 20.0f; // Y axis
         static float roll_speed  = 30.0f; // Z axis
 
-        static glm::quat player_rotation;
-        static glm::vec3 player_position{0,0,0};
+        static glm::quat player_rotation{
+                player_transform_component->rotation().w(),
+                player_transform_component->rotation().x(),
+                player_transform_component->rotation().y(),
+                player_transform_component->rotation().z()};
+
+        static glm::vec3 player_position{
+                player_transform_component->position().x(),
+                player_transform_component->position().y(),
+                player_transform_component->position().z()};
 
         pitch += pitch_speed * (float)delta.count();
         yaw   += yaw_speed * (float)delta.count();
@@ -176,7 +188,7 @@ namespace velora
         ComponentLoaderRegistry components_loader_reg = constructComponentLoaderRegistry();
         ComponentSerializerRegistry components_serializer_reg = constructComponentSerializerRegistry();
 
-        co_await loadLevelFromFile(world, components_loader_reg, getResourcesPath() / "levels/level_0.json" );
+        co_await loadWorldFromFiles(world, components_loader_reg, getResourcesPath() / "levels", use_json);
         world.setCurrentLevel("level_0");
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
@@ -279,12 +291,12 @@ namespace velora
 
         // start fixed step loop
         co_await loop.run();
-        
+
         renderer->join();
 
         if(window->good())co_await window->close();
 
-        co_await saveWorldToFiles(world, components_serializer_reg, getResourcesPath() / "saves" );
+        co_await saveWorldToFiles(world, components_serializer_reg, getResourcesPath() / "saves", use_binary);
 
         spdlog::debug("Velora main finished with code {}", 0);
 

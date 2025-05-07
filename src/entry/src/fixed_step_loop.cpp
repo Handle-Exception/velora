@@ -15,7 +15,13 @@ namespace velora
 
     asio::awaitable<void> FixedStepLoop::run()
     {
-        spdlog::debug("Starting fixed step loop");
+        // make sure to start executing loop from strand associated to provided io_context
+        if(_strand.running_in_this_thread() == false)
+        {
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
+        spdlog::debug(std::format("[t:{}] Fixed step loop started", std::this_thread::get_id())); 
 
         _previous_alpha = 0.0f;
         _raw_alpha = 0.0f;
@@ -61,7 +67,13 @@ namespace velora
             _total_time.end = clock::now();
         }
 
-        spdlog::debug("fixed step loop ended");
+        // make sure to end executing loop from strand associated to provided io_context
+        if(_strand.running_in_this_thread() == false)
+        {
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+
+        spdlog::debug(std::format("[t:{}] Fixed step loop ended", std::this_thread::get_id())); 
 
         co_return;
     }
