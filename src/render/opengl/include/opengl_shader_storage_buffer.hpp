@@ -11,7 +11,7 @@ namespace velora::opengl
     class OpenGLShaderStorageBuffer
     {
         public:
-            OpenGLShaderStorageBuffer(GLsizeiptr size, const void * data);
+            OpenGLShaderStorageBuffer(std::size_t size, const void * data);
             
             ~OpenGLShaderStorageBuffer();
 
@@ -25,7 +25,7 @@ namespace velora::opengl
             //
             void disable() const;
 
-            void update(GLsizeiptr size, const void * data);
+            void update(std::size_t size, const void * data);
 
         protected:
             bool setGPUAttributes();

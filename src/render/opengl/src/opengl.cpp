@@ -368,6 +368,83 @@ namespace velora::opengl
         return id;
     }
 
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShaderStorageBuffer(std::string name, const std::size_t size, const void * data)
+    {
+        if(good() == false)co_return std::nullopt;
+
+        co_await _render_context->ensureOnStrand();
+
+        if(_shader_storage_buffer_names.contains(name))
+        {
+            spdlog::warn(std::format("[t:{}] Shader storage buffer {} already exists", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+
+        ShaderStorageBuffer shader_storage_buffer = ShaderStorageBuffer::construct<OpenGLShaderStorageBuffer>(std::move(size), std::move(data));
+
+        std::size_t id = shader_storage_buffer->ID();
+
+        if(_shader_storage_buffers.contains(id))co_return std::nullopt;
+
+        _shader_storage_buffers.try_emplace(id, std::move(shader_storage_buffer));
+        _shader_storage_buffer_names.try_emplace(std::move(name), id);
+
+        co_return id;
+    }
+
+    asio::awaitable<bool> OpenGLRenderer::eraseShaderStorageBuffer(std::size_t id)
+    {
+        if(good() == false)co_return false;
+
+        co_await _render_context->ensureOnStrand();
+
+        if(_shader_storage_buffers.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), id));
+            co_return false;
+        }
+
+        _shader_storage_buffers.erase(id);
+
+        spdlog::info(std::format("[t:{}] Shader storage buffer {} erased", std::this_thread::get_id(), id));
+
+        co_return true;
+    }
+
+    std::optional<std::size_t> OpenGLRenderer::getShaderStorageBuffer(std::string name) const
+    {
+        if(good() == false)return std::nullopt;
+
+        if(_shader_storage_buffer_names.contains(name) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), name));
+            return std::nullopt;
+        }
+        auto id = _shader_storage_buffer_names.at(name);
+        if(_shader_storage_buffers.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), id));
+            return std::nullopt;
+        }
+        return id;
+    }
+    
+    asio::awaitable<bool> OpenGLRenderer::updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data)
+    {
+        if(good() == false)co_return false;
+        
+        co_await _render_context->ensureOnStrand();
+        
+        if(_shader_storage_buffers.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), id));
+            co_return false;
+        }
+
+        _shader_storage_buffers.at(id)->update(std::move(size), std::move(data));
+        co_return true;
+    }
+
 
     void OpenGLRenderer::assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs)
     {

@@ -6,6 +6,7 @@
 
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
+#include "shader_storage_buffer.hpp"
 
 #include "shader.hpp"
 
@@ -81,19 +82,21 @@ namespace velora
         
         virtual asio::awaitable<void> enableVSync() = 0;
         virtual asio::awaitable<void> disableVSync() = 0;
-        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) = 0;
-        
-        virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0;
 
+        virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) = 0;
+        virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0;
         virtual std::optional<std::size_t> getVertexBuffer(std::string name) const = 0;
 
         virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code) = 0;
         virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code) = 0;
-
         virtual asio::awaitable<bool> eraseShader(std::size_t id) = 0;
-        
         virtual std::optional<std::size_t> getShader(std::string name) const = 0;
         
+        virtual asio::awaitable<std::optional<std::size_t>> constructShaderStorageBuffer(std::string name, const std::size_t size, const void * data) = 0;
+        virtual asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data) = 0;
+        virtual asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id) = 0;
+        virtual std::optional<std::size_t> getShaderStorageBuffer(std::string name) const = 0;
+
     };
 
     template<class RendererImplType>
@@ -113,35 +116,35 @@ namespace velora
 
             inline asio::awaitable<void> clearScreen(glm::vec4 color) override { 
                 co_return co_await dispatch::getImpl().clearScreen(std::move(color));
-            };
+            }
 
             inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs) override { 
                 co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID), std::move(shader_inputs));
-            };
+            }
 
             inline asio::awaitable<void> present() override { 
                 co_return co_await dispatch::getImpl().present();
-            };
+            }
 
             inline asio::awaitable<void> updateViewport(Resolution resolution) override { 
                 co_return co_await dispatch::getImpl().updateViewport(std::move(resolution));
-            };
+            }
 
             constexpr inline Resolution getViewport() const override { 
                 return dispatch::getImpl().getViewport();
-            };
+            }
 
             inline asio::awaitable<void> enableVSync() override { 
                 co_return co_await dispatch::getImpl().enableVSync();
-            };
+            }
 
             inline asio::awaitable<void> disableVSync() override { 
                 co_return co_await dispatch::getImpl().disableVSync();
-            };
+            }
 
             inline asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) override{ 
                 co_return co_await dispatch::getImpl().constructVertexBuffer(std::move(name), mesh);
-            };
+            }
         
             inline asio::awaitable<bool> eraseVertexBuffer(std::size_t id) override {
                 co_return co_await dispatch::getImpl().eraseVertexBuffer(std::move(id));
@@ -166,6 +169,23 @@ namespace velora
             constexpr inline std::optional<std::size_t> getShader(std::string name) const override{
                 return  dispatch::getImpl().getShader(std::move(name));
             }
+
+            inline asio::awaitable<std::optional<std::size_t>> constructShaderStorageBuffer(std::string name, const std::size_t size, const void * data) override{ 
+                co_return co_await dispatch::getImpl().constructShaderStorageBuffer(std::move(name), std::move(size), std::move(data));
+            }
+
+            inline asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data) override {
+                co_return co_await dispatch::getImpl().updateShaderStorageBuffer(std::move(id), std::move(size), std::move(data));
+            }
+
+            inline asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id) override {
+                co_return co_await dispatch::getImpl().eraseShaderStorageBuffer(std::move(id));
+            }
+
+            constexpr inline std::optional<std::size_t> getShaderStorageBuffer(std::string name) const override{
+                return dispatch::getImpl().getShaderStorageBuffer(std::move(name));
+            }
+
     };
 
     template<class RendererImplType>

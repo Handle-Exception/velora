@@ -2,7 +2,7 @@
 
 namespace velora::opengl
 {
-    OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(GLsizeiptr size, const void * data)
+    OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(std::size_t size, const void * data)
     :   _size(std::move(size)),
         _data(std::move(data)),
         _SSBO(0)
@@ -56,7 +56,7 @@ namespace velora::opengl
         return _SSBO != 0;
     }
 
-    void OpenGLShaderStorageBuffer::update(GLsizeiptr size, const void * data)
+    void OpenGLShaderStorageBuffer::update(std::size_t size, const void * data)
     {
         if(_size == 0 || _data == nullptr)
         {
@@ -64,7 +64,7 @@ namespace velora::opengl
             return;
         }
 
-        _size = size;
+        _size = (GLsizeiptr)size;
         _data = data;
         copyDataToGPU();
     }
