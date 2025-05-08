@@ -100,8 +100,6 @@ namespace velora::opengl
         }
         
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-        logOpenGLState();
     }
 
     bool OpenGLShaderStorageBuffer::enable() const

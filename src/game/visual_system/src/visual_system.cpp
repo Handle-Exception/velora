@@ -122,7 +122,7 @@ namespace velora::game
                         ShaderInputs{
                             .in_bool = {{"useTexture", false}},
                             .in_int = {{"lightCount", (int)_light_system.getLightCount()}},
-                            .in_vec4 = {{"uColor", glm::vec4(1, 0, 0, 1)}},
+                            .in_vec4 = {{"uColor", glm::vec4(0.5, 0.5, 0.5, 1)}},
                             .in_mat4 = {
                                 {"uModel", model_matrix},
                                 {"uView", view_matrix},

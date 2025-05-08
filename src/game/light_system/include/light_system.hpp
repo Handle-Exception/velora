@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "light_component.pb.h"
-#include "transform_component.pb.h"
+#include "transform_system.hpp"
 
 #include "ecs.hpp"
 #include "render.hpp"
@@ -16,17 +16,16 @@
 
 namespace velora::game
 {
+    #pragma pack(push, 1)
     struct GPULight {
         glm::vec4 position;     // w unused
         glm::vec4 direction;    // w = type
         glm::vec4 color;        // w = intensity
         glm::vec4 attenuation;  // x=constant, y=linear, z=quadratic, w=unused
         glm::vec2 cutoff;       // x=inner, y=outer
-        uint32_t castShadows;
-        uint32_t pad0;
-        uint32_t pad1;
-        uint32_t pad2;
+        glm::vec2 castShadows;  // vec2 to have natural padding
     };
+    #pragma pack(pop)
 
     class LightSystem 
     {

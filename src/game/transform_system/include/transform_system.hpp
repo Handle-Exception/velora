@@ -11,6 +11,8 @@
 
 namespace velora::game
 {
+    constexpr const glm::vec3 BASE_FORWARD_DIRECTION = glm::vec3(0.0f, 0.0f, -1.0f);
+
     class TransformSystem 
     {
         public:

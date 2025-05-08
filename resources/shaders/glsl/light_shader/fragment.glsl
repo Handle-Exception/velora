@@ -10,10 +10,7 @@ struct GPULight {
     vec4 color;         // rgb: color, w: intensity
     vec4 attenuation;   // x: constant, y: linear, z: quadratic, w: unused
     vec2 cutoff;        // x: inner cos, y: outer cos
-    uint castShadows;
-    uint pad0;
-    uint pad1;
-    uint pad2;
+    vec2 castShadows;   // vec2 to have natural padding
 };
 
 layout(std430, binding = 2) buffer LightBuffer {
