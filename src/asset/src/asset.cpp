@@ -426,6 +426,11 @@ namespace velora
                 &game::EntityDefinition::has_terrain, &game::EntityDefinition::terrain)
         );
 
+        components_loader_registry.registerLoader("LightComponent", 
+            constructComponentLoader<game::LightComponent>(
+                &game::EntityDefinition::has_light, &game::EntityDefinition::light)
+        );
+
         return components_loader_registry;
     }
 
@@ -468,6 +473,10 @@ namespace velora
 
         components_serializer_registry.registerSerializer("TerrainComponent", 
             constructComponentSerializer<game::TerrainComponent>(&game::EntityDefinition::mutable_terrain)
+        );
+
+        components_serializer_registry.registerSerializer("LightComponent", 
+            constructComponentSerializer<game::LightComponent>(&game::EntityDefinition::mutable_light)
         );
 
         return components_serializer_registry;

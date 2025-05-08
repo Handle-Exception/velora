@@ -19,6 +19,7 @@ struct GPULight {
 layout(std430, binding = 2) buffer LightBuffer {
     GPULight lights[];
 };
+uniform int lightCount;
 
 in vec3 FragPos;
 in vec3 Normal;
@@ -30,8 +31,44 @@ uniform vec4 uColor;
 uniform sampler2D uTexture;
 uniform bool useTexture;
 
+vec3 calculateLight(GPULight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+    vec3 lightDir;
+    float attenuation = 1.0;
+    float diff = 0.0;
+
+    if (int(light.direction.w) == LIGHT_TYPE_DIRECTIONAL) {
+        lightDir = normalize(-light.direction.xyz);
+    } else {
+        lightDir = normalize(light.position.xyz - fragPos);
+
+        float dist = length(light.position.xyz - fragPos);
+        attenuation = 1.0 / (light.attenuation.x + light.attenuation.y * dist + light.attenuation.z * dist * dist);
+
+        if (int(light.direction.w) == LIGHT_TYPE_SPOT) {
+            float theta = dot(lightDir, normalize(-light.direction.xyz));
+            float epsilon = light.cutoff.x - light.cutoff.y;
+            float intensity = clamp((theta - light.cutoff.y) / epsilon, 0.0, 1.0);
+            attenuation *= intensity;
+        }
+    }
+
+    diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = light.color.rgb * light.color.w * diff * attenuation;
+    return diffuse;
+}
+
 void main()
 {
+    vec3 norm = normalize(Normal);
+    vec3 viewDir = normalize(-FragPos); // Assuming camera at origin
+
     vec4 baseColor = useTexture ? texture(uTexture, TexCoord) : uColor;
-    FragColor = baseColor;
+    vec3 lighting = vec3(0.0);
+
+    for (int i = 0; i < lightCount; ++i) {
+        lighting += calculateLight(lights[i], norm, FragPos, viewDir);
+    }
+
+    vec3 resultColor = baseColor.rgb * lighting;
+    FragColor = vec4(resultColor, baseColor.a);
 }

@@ -6,4 +6,5 @@ add_module(NAME "LightSystem"
 
         "${PROJECT_PREFIX}::ECS"
         "${PROJECT_PREFIX}::Render"
+        "${PROJECT_PREFIX}::TransformSystem"
 )

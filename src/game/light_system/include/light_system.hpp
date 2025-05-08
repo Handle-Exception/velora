@@ -1,6 +1,10 @@
 #pragma once
 
+#include <array>
+#include <vector>
+
 #include "light_component.pb.h"
+#include "transform_component.pb.h"
 
 #include "ecs.hpp"
 #include "render.hpp"
@@ -28,6 +32,7 @@ namespace velora::game
     {
     public:
         static const uint32_t MASK_POSITION_BIT;
+        static constexpr const uint16_t MAX_LIGHTS = 256;
 
         constexpr static const char * NAME = "LightSystem";
         constexpr static inline const char * getName() { return NAME; }
@@ -35,7 +40,8 @@ namespace velora::game
         constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem"};
         constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-        LightSystem(asio::io_context & io_context, IRenderer & renderer);
+        static asio::awaitable<LightSystem> asyncConstructor(asio::io_context & io_context, IRenderer & renderer);
+
         LightSystem(const LightSystem&) = delete;
         LightSystem(LightSystem&&) = default;
         LightSystem& operator=(const LightSystem&) = delete;
@@ -44,7 +50,13 @@ namespace velora::game
 
         asio::awaitable<void> run(const ComponentManager& components, const EntityManager& entities);
 
+        std::size_t getShaderBufferID() const;
+
+        std::size_t getLightCount() const;
+
     protected:
+        LightSystem(asio::io_context & io_context, IRenderer & renderer, std::size_t light_shader_buffer_id);
+
         void collectLights(const ComponentManager& components, const EntityManager& entities);
 
     private:
@@ -52,5 +64,6 @@ namespace velora::game
         IRenderer & _renderer;
 
         std::vector<GPULight> _gpu_lights;
+        std::size_t _light_shader_buffer_id;
     };
 }

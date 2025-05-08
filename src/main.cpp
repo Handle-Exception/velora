@@ -153,6 +153,12 @@ namespace velora
             co_return -1;
         }
 
+        if((co_await loadShaderFromFile(*renderer, "shaders/glsl/light_shader")) == std::nullopt)
+        {
+            spdlog::error("Failed to create Shader");
+            co_return -1;
+        }
+
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -176,7 +182,8 @@ namespace velora
 
         // Create rendering systems
         game::CameraSystem camera_system(io_context, *renderer);
-        game::LightSystem light_system(io_context, *renderer);
+        // async constructor because light system must allocate shader input buffer in renderer thread asynchronously :/
+        game::LightSystem light_system = co_await game::LightSystem::asyncConstructor(io_context, *renderer);
         game::VisualSystem visual_system(io_context, *renderer, camera_system, light_system);
 
         // create world - will create logic systems

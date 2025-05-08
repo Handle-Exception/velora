@@ -7,12 +7,6 @@ namespace velora::opengl
         _data(std::move(data)),
         _SSBO(0)
     {
-        if(_size == 0 || _data == nullptr)
-        {
-            spdlog::error("OpenGL shader storage buffer empty data source");
-            return;
-        }
-
         if(generateBuffer() == false) 
         { 
             spdlog::error("OpenGL shader storage buffer creation failed");
@@ -58,12 +52,6 @@ namespace velora::opengl
 
     void OpenGLShaderStorageBuffer::update(std::size_t size, const void * data)
     {
-        if(_size == 0 || _data == nullptr)
-        {
-            spdlog::error("OpenGL shader storage buffer empty data source");
-            return;
-        }
-
         _size = (GLsizeiptr)size;
         _data = data;
         copyDataToGPU();
@@ -166,12 +154,10 @@ namespace velora::opengl
             return false;
         }
 
-        spdlog::debug(std::format("Sending {} bytes, from {} address to GPU GL_SHADER_STORAGE_BUFFER {}", _size, _data, _SSBO));
-
         glBufferData(GL_SHADER_STORAGE_BUFFER, _size, _data, GL_DYNAMIC_DRAW);
         
         disable();
 
-        return logOpenGLState();
+        return true;
     }
 }

@@ -75,6 +75,8 @@ namespace velora::opengl
             return;
         }
 
+        glEnable(GL_DEPTH_TEST);
+
         try
         {
             _io_context.run();
@@ -177,6 +179,7 @@ namespace velora::opengl
 
         _vertex_buffers.clear();
         _shaders.clear();
+        _shader_storage_buffers.clear();
 
         // unbind context before unregistering in winapi process
         wglMakeCurrent(0, 0);
@@ -501,7 +504,7 @@ namespace velora::opengl
         co_return;
     }
 
-    asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs)
+    asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs, std::optional<std::size_t> shader_storage_buffer_ID)
     {
         if(good() == false)co_return;
 
@@ -531,6 +534,20 @@ namespace velora::opengl
         }
 
         assignShaderInputs(shader_ID, shader_inputs);
+
+        if(shader_storage_buffer_ID)
+        {
+            auto shader_storage_buffer_it = _shader_storage_buffers.find(*shader_storage_buffer_ID);
+            if(shader_storage_buffer_it == _shader_storage_buffers.end()){
+                spdlog::warn("Rendering: Shader storage buffer not found");
+                co_return;
+            }
+            if(shader_storage_buffer_it->second->enable() == false)
+            {
+                spdlog::error("Cannot enable shader storage buffer");
+                co_return;
+            }
+        }
 
         glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
 

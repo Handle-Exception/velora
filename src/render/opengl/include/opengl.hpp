@@ -45,7 +45,7 @@ namespace velora::opengl
             asio::awaitable<void> close();
 
             asio::awaitable<void> clearScreen(glm::vec4 color);
-            asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs);
+            asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs, std::optional<std::size_t> shader_storage_buffer_ID);
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
             Resolution getViewport() const;
