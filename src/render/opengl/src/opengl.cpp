@@ -449,6 +449,68 @@ namespace velora::opengl
     }
 
 
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructFrameBufferObject(std::string name)
+    {
+        if(good() == false)co_return std::nullopt;
+
+        co_await _render_context->ensureOnStrand();
+
+        if(_frame_buffer_object_names.contains(name))
+        {
+            spdlog::warn(std::format("[t:{}] Frame buffer object {} already exists", std::this_thread::get_id(), name));
+            co_return std::nullopt;
+        }
+
+        FrameBufferObject frame_buffer_object = FrameBufferObject::construct<OpenGLFrameBufferObject>();
+
+        std::size_t id = frame_buffer_object->ID();
+
+        if(_frame_buffer_objects.contains(id))co_return std::nullopt;
+
+        _frame_buffer_objects.try_emplace(id, std::move(frame_buffer_object));
+        _frame_buffer_object_names.try_emplace(std::move(name), id);
+
+        co_return id;
+    }
+
+    asio::awaitable<bool> OpenGLRenderer::eraseFrameBufferObject(std::size_t id)
+    {
+        if(good() == false)co_return false;
+
+        co_await _render_context->ensureOnStrand();
+
+        if(_frame_buffer_objects.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Frame buffer object {} does not exist", std::this_thread::get_id(), id));
+            co_return false;
+        }
+
+        _frame_buffer_objects.erase(id);
+
+        spdlog::info(std::format("[t:{}] Frame buffer object {} erased", std::this_thread::get_id(), id));
+
+        co_return true;
+    }
+
+    std::optional<std::size_t> OpenGLRenderer::getFrameBufferObject(std::string name) const
+    {
+        if(good() == false)return std::nullopt;
+
+        if(_frame_buffer_object_names.contains(name) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Frame buffer object {} does not exist", std::this_thread::get_id(), name));
+            return std::nullopt;
+        }
+        auto id = _frame_buffer_object_names.at(name);
+        if(_frame_buffer_objects.contains(id) == false)
+        {
+            spdlog::warn(std::format("[t:{}] Frame buffer object {} does not exist", std::this_thread::get_id(), id));
+            return std::nullopt;
+        }
+        return id;
+    }
+
+
     void OpenGLRenderer::assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs)
     {
         for(const auto & [name, val] : shader_inputs.in_bool)

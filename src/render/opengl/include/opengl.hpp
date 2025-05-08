@@ -10,6 +10,7 @@
 #include "vertex_buffer.hpp"
 #include "shader.hpp"
 #include "shader_storage_buffer.hpp"
+#include "frame_buffer_object.hpp"
 
 #include <GL/glew.h>
 #ifdef WIN32
@@ -29,6 +30,7 @@
 #include "opengl_vertex_buffer.hpp"
 #include "opengl_shader.hpp"
 #include "opengl_shader_storage_buffer.hpp"
+#include "opengl_frame_buffer_object.hpp"
 
 namespace velora::opengl
 {
@@ -65,6 +67,10 @@ namespace velora::opengl
             asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id);
             std::optional<std::size_t> getShaderStorageBuffer(std::string name) const;
             asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data);
+            
+            asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name);
+            asio::awaitable<bool> eraseFrameBufferObject(std::size_t id);
+            std::optional<std::size_t> getFrameBufferObject(std::string name) const;
 
             void join();
 
@@ -118,10 +124,12 @@ namespace velora::opengl
             absl::flat_hash_map<std::size_t, VertexBuffer> _vertex_buffers;
             absl::flat_hash_map<std::size_t, Shader> _shaders;
             absl::flat_hash_map<std::size_t, ShaderStorageBuffer> _shader_storage_buffers;
+            absl::flat_hash_map<std::size_t, FrameBufferObject> _frame_buffer_objects;
 
             absl::flat_hash_map<std::string, std::size_t> _vertex_buffer_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_storage_buffer_names;
+            absl::flat_hash_map<std::string, std::size_t> _frame_buffer_object_names;
 
             // Render thread initialized at the end of the constructor
             std::unique_ptr<RenderThreadContext> _render_context; // dedicated single thread

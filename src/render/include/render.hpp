@@ -7,6 +7,7 @@
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 #include "shader_storage_buffer.hpp"
+#include "frame_buffer_object.hpp"
 
 #include "shader.hpp"
 
@@ -97,6 +98,9 @@ namespace velora
         virtual asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id) = 0;
         virtual std::optional<std::size_t> getShaderStorageBuffer(std::string name) const = 0;
 
+        virtual asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name) = 0;
+        virtual asio::awaitable<bool> eraseFrameBufferObject(std::size_t id) = 0;
+        virtual std::optional<std::size_t> getFrameBufferObject(std::string name) const = 0;
     };
 
     template<class RendererImplType>
@@ -184,6 +188,18 @@ namespace velora
 
             constexpr inline std::optional<std::size_t> getShaderStorageBuffer(std::string name) const override{
                 return dispatch::getImpl().getShaderStorageBuffer(std::move(name));
+            }
+
+            inline asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name) override{ 
+                co_return co_await dispatch::getImpl().constructFrameBufferObject(std::move(name));
+            }
+
+            inline asio::awaitable<bool> eraseFrameBufferObject(std::size_t id) override {
+                co_return co_await dispatch::getImpl().eraseFrameBufferObject(std::move(id));
+            }
+
+            constexpr inline std::optional<std::size_t> getFrameBufferObject(std::string name) const override{
+                return dispatch::getImpl().getFrameBufferObject(std::move(name));
             }
 
     };
