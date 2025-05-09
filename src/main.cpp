@@ -2,37 +2,6 @@
 
 namespace velora
 {
-    // TODO
-    void movePlayer(const std::chrono::duration<double> & delta, game::TransformComponent * player_transform_component)
-    {
-        static float pitch = 45.0f; // X axis
-        static float yaw   = 90.0f; // Y axis
-        static float roll  = 30.0f; // Z axis
-
-        static float pitch_speed = 10.0f; // X axis
-        static float yaw_speed   = 20.0f; // Y axis
-        static float roll_speed  = 30.0f; // Z axis
-
-        static glm::quat player_rotation{
-                player_transform_component->rotation().w(),
-                player_transform_component->rotation().x(),
-                player_transform_component->rotation().y(),
-                player_transform_component->rotation().z()};
-
-        pitch += pitch_speed * (float)delta.count();
-        yaw   += yaw_speed * (float)delta.count();
-        roll  += roll_speed * (float)delta.count();
-
-        player_rotation = glm::radians(glm::vec3(pitch, yaw, roll));
-
-        player_transform_component->mutable_rotation()->set_w(player_rotation.w);
-        player_transform_component->mutable_rotation()->set_x(player_rotation.x);
-        player_transform_component->mutable_rotation()->set_y(player_rotation.y);
-        player_transform_component->mutable_rotation()->set_z(player_rotation.z);
-    }
-
-
-
     asio::awaitable<int> main(asio::io_context & io_context, IProcess & process)
     {
         spdlog::debug(std::format("[t:{}] Velora main started", std::this_thread::get_id()));
@@ -162,8 +131,8 @@ namespace velora
 
         // create scripts system
         game::ScriptSystem script_system(io_context);
-        script_system.loadScript(getResourcesPath() / "scripts/move_script.lua");
-        script_system.loadScript(getResourcesPath() / "scripts/camera_movement_script.lua");
+        script_system.loadScript(getResourcesPath() / "scripts/player_script.lua");
+        script_system.loadScript(getResourcesPath() / "scripts/camera_script.lua");
 
 
         // create world - will create logic systems
@@ -225,9 +194,6 @@ namespace velora
                 co_await world.update(delta);
                 
                 co_await world.getCurrentLevel().runSystem(script_system, delta, world.getCurrentLevel());
-
-                // TODO
-                movePlayer(delta, player_transform_component);
 
                 //track fps frames for profiling
                 if (std::chrono::high_resolution_clock::now() - last_log_time >= std::chrono::seconds(5)) 

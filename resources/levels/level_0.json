@@ -69,7 +69,7 @@
           "input": {
           },
           "script" : {
-            "name" : "move_script"
+            "name" : "player_script"
           }
        },
        {
@@ -90,7 +90,7 @@
              "is_primary": true
           },
           "script":{
-            "name": "camera_movement_script"
+            "name": "camera_script"
           }
        },
        {

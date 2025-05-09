@@ -52,6 +52,7 @@ namespace velora::game
         private:
             asio::strand<asio::io_context::executor_type> _strand;
             sol::state _lua;
+            sol::table _glm_namespace; 
 
             absl::flat_hash_map<std::filesystem::path, std::string> _loaded_script_sources; // only store raw text
 

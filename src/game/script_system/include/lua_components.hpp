@@ -17,6 +17,28 @@ namespace velora::game
 
         float get_z() const { return ref->position().z(); }
         void set_z(float z) { ref->mutable_position()->set_z(z);}
+
+        void set_rotation(float w, float x, float y, float z) 
+        { 
+            ref->mutable_rotation()->set_w(w);
+            ref->mutable_rotation()->set_x(x);
+            ref->mutable_rotation()->set_y(y);
+            ref->mutable_rotation()->set_z(z);
+        }
+
+        void set_rotation(const glm::quat & quat) 
+        { 
+            ref->mutable_rotation()->set_w(quat.w);
+            ref->mutable_rotation()->set_x(quat.x);
+            ref->mutable_rotation()->set_y(quat.y);
+            ref->mutable_rotation()->set_z(quat.z);
+        }
+
+        glm::quat get_rotation() const 
+        {
+            return glm::quat(ref->rotation().w(), ref->rotation().x(), ref->rotation().y(), ref->rotation().z());
+        }
+
     };
 
     struct LuaInputRef 

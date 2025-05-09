@@ -18,30 +18,66 @@ namespace velora::game
         // bind lua types
         
         //https://github.com/ThePhD/sol2/issues/547
-        auto mult_overloads = sol::overload(
+        auto vec3_mult_overloads = sol::overload(
             [](const glm::vec3& v1, const glm::vec3& v2) -> glm::vec3 { return v1*v2; },
             [](const glm::vec3& v1, float f) -> glm::vec3 { return v1*f; },
             [](float f, const glm::vec3& v1) -> glm::vec3 { return f*v1; }
         );
         _lua.new_usertype<glm::vec3>("vec3",
 	        sol::constructors<glm::vec3(), glm::vec3(float), glm::vec3(float, float, float)>(),
+            sol::call_constructor, sol::constructors<glm::vec3(float, float, float)>(),
 		    "x", &glm::vec3::x,
 		    "y", &glm::vec3::y,
 		    "z", &glm::vec3::z,
             
-            sol::meta_function::multiplication, mult_overloads
+            sol::meta_function::multiplication, vec3_mult_overloads
 	    );
 
+        _lua.new_usertype<glm::quat>("quat",
+        sol::constructors<glm::quat(), glm::quat(float, float, float, float)>(),
+        sol::call_constructor, sol::constructors<glm::quat(const glm::vec3&)>(),  // overload
+        "w", &glm::quat::w,
+        "x", &glm::quat::x,
+        "y", &glm::quat::y,
+        "z", &glm::quat::z
+        );
 
+        _lua.set_function("radians", [](const glm::vec3& degrees) -> glm::vec3 {
+            return glm::radians(degrees);
+        });
+
+        _lua.set_function("degrees", [](const glm::vec3& radians) -> glm::vec3 {
+            return glm::degrees(radians);
+        });
+
+        _lua.set_function("eulerAngles", [](const glm::quat & quat) -> glm::vec3 {
+            return glm::eulerAngles(quat);
+        });
+
+        //Namespace under glm for clarity
+        _glm_namespace = _lua.create_table();
+        _glm_namespace["vec3"] = _lua["vec3"];
+        _glm_namespace["quat"] = _lua["quat"];
+        _glm_namespace["radians"] = _lua["radians"];
+        _glm_namespace["degrees"] = _lua["degrees"];
+        _glm_namespace["eulerAngles"] = _lua["eulerAngles"];
+
+        //transform component
         _lua.new_usertype<LuaTransformRef>("Transform",
             "get_x", &LuaTransformRef::get_x,
             "set_x", &LuaTransformRef::set_x,
             "get_y", &LuaTransformRef::get_y,
             "set_y", &LuaTransformRef::set_y,
             "get_z", &LuaTransformRef::get_z,
-            "set_z", &LuaTransformRef::set_z
+            "set_z", &LuaTransformRef::set_z,
+            "set_rotation", sol::overload(
+                static_cast<void(LuaTransformRef::*)(float, float, float, float)>(&LuaTransformRef::set_rotation),
+                static_cast<void(LuaTransformRef::*)(const glm::quat&)>(&LuaTransformRef::set_rotation)
+            ),
+            "get_rotation", &LuaTransformRef::get_rotation
         );
 
+        //input component
         _lua.new_usertype<LuaInputRef>("Input",
             "is_pressed", &LuaInputRef::is_pressed,
             "just_pressed", &LuaInputRef::just_pressed,
@@ -147,8 +183,13 @@ namespace velora::game
             co_await asio::dispatch(_strand, asio::use_awaitable);
         
         sol::environment env(_lua, sol::create, _lua.globals());  // sandboxed
+
+        // bind the level pointer to the environment
         env["__level_ptr"]      = reinterpret_cast<uintptr_t>(&current_level);
-        env["print"]            = _lua["print"];  // rebind print into sandbox
+
+        // rebind from global state into sandbox enviroment
+        env["print"]            = _lua["print"];
+        env["glm"]              = _glm_namespace;
         env["get_transform"]    = _lua["get_transform"];
         env["get_input"]        = _lua["get_input"];
         env["delta"]            = delta.count();
