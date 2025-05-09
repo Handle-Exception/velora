@@ -8,7 +8,7 @@ namespace velora::game
         : _strand(asio::make_strand(io_context)), _renderer(renderer)
     {}
 
-    asio::awaitable<void> TerrainSystem::run(ComponentManager& components, EntityManager& entities)
+    asio::awaitable<void> TerrainSystem::run(ComponentManager& components, EntityManager& entities, std::chrono::duration<double> delta)
     {
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));

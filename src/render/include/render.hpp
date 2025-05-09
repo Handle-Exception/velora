@@ -4,6 +4,7 @@
 
 #include "resolution.hpp"
 
+#include "render_mode.hpp"
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 #include "shader_storage_buffer.hpp"
@@ -57,7 +58,12 @@ namespace velora
          * @param shader_inputs Inputs for the shader
          * @return asio::awaitable<void> 
          */
-        virtual asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs = ShaderInputs{}, std::optional<std::size_t> shader_storage_buffer_ID = std::nullopt) = 0;
+        virtual asio::awaitable<void> render(
+                std::size_t vertex_buffer_ID,
+                std::size_t shader_ID,
+                ShaderInputs shader_inputs = ShaderInputs{},
+                std::optional<std::size_t> shader_storage_buffer_ID = std::nullopt,
+                RenderMode mode = RenderMode::Solid) = 0;
         
         /**
          * @brief Present the rendered frame
@@ -122,8 +128,8 @@ namespace velora
                 co_return co_await dispatch::getImpl().clearScreen(std::move(color));
             }
 
-            inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs, std::optional<std::size_t> shader_storage_buffer_ID) override { 
-                co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID), std::move(shader_inputs), std::move(shader_storage_buffer_ID));
+            inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs, std::optional<std::size_t> shader_storage_buffer_ID, RenderMode mode) override { 
+                co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID), std::move(shader_inputs), std::move(shader_storage_buffer_ID), mode);
             }
 
             inline asio::awaitable<void> present() override { 

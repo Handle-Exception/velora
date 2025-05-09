@@ -1,8 +1,9 @@
 #pragma once
 
-#include <unordered_map>
 #include <typeindex>
 #include <memory>
+
+#include <absl/container/flat_hash_map.h>
 
 #include "entity.hpp"
 #include "entity_manager.hpp"
@@ -31,6 +32,13 @@ namespace velora
     class ComponentStorage : public IComponentStorage 
     {
         public:
+            ComponentStorage() = default;
+            ComponentStorage(const ComponentStorage&) = delete;
+            ComponentStorage& operator=(const ComponentStorage&) = delete;
+            ComponentStorage(ComponentStorage&&) = default;
+            ComponentStorage& operator=(ComponentStorage&&) = default;
+            ~ComponentStorage() = default;
+
             /**
              * @brief Adds a component to the storage.
              * 
@@ -66,7 +74,7 @@ namespace velora
             }
 
         private:
-            std::unordered_map<Entity, Component> _components;
+            absl::flat_hash_map<Entity, Component> _components;
     };
 
     /**
@@ -78,9 +86,16 @@ namespace velora
     class ComponentManager
     {
         public:
-            ComponentManager(EntityManager& entity_manager) 
-            : _entity_manager(entity_manager)
-            {}
+            ComponentManager(EntityManager& entity_manager);
+            ComponentManager(EntityManager& entity_manager, ComponentManager && other);
+
+            ComponentManager(ComponentManager&&);
+            ComponentManager& operator=(ComponentManager&&);
+
+            ComponentManager(const ComponentManager&) = delete;
+            ComponentManager& operator=(const ComponentManager&) = delete;
+
+            ~ComponentManager() = default;
 
             /**
              * @brief Adds a component to an entity.
@@ -98,7 +113,8 @@ namespace velora
                 // Update entity mask
                 uint32_t type_ID = ComponentTypeManager::getTypeID<Component>();
                 assert(type_ID < MAX_COMPONENT_TYPES);
-                _entity_manager.addComponentBit(entity, type_ID);
+                assert(_entity_manager != nullptr);
+                _entity_manager->addComponentBit(entity, type_ID);
             }
 
             /**
@@ -170,7 +186,7 @@ namespace velora
                 return storage;
             }
 
-            std::unordered_map<std::type_index, std::unique_ptr<IComponentStorage>> _storages;
-            EntityManager& _entity_manager;
+            EntityManager* _entity_manager;
+            absl::flat_hash_map<std::type_index, std::unique_ptr<IComponentStorage>> _storages;
     };
 }

@@ -4,9 +4,9 @@ namespace velora
 {
     std::vector<std::vector<ISystem*>> topologicalSortLayers(const std::vector<System> & systems)
     {
-        std::unordered_map<std::string_view, ISystem*> system_map;
-        std::unordered_map<std::string_view, int> in_degree;
-        std::unordered_map<std::string_view, std::vector<std::string_view>> adj;
+        absl::flat_hash_map<std::string_view, ISystem*> system_map;
+        absl::flat_hash_map<std::string_view, int> in_degree;
+        absl::flat_hash_map<std::string_view, std::vector<std::string_view>> adj;
 
         for (const auto& sys : systems)
         {

@@ -36,6 +36,8 @@ namespace velora::game
         glm::vec3 interpolated_pos;
         glm::quat interpolated_rot;
         glm::vec3 interpolated_scale;
+        
+        RenderMode mode;
 
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
@@ -116,6 +118,7 @@ namespace velora::game
                 model_matrix = glm::mat4(1.0f);
             }
 
+            mode = RenderMode::Solid;
 
             // render
             co_await _renderer.render(*vb_id, *sh_id, 

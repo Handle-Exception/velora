@@ -13,5 +13,5 @@ add_module(NAME "Asset"
         "${PROJECT_PREFIX}::Entry"
         "${PROJECT_PREFIX}::Render"
         "${PROJECT_PREFIX}::ECS"
-        "${PROJECT_PREFIX}::World"
+        "${PROJECT_PREFIX}::Game"
 )

@@ -9,7 +9,7 @@ namespace velora::game
     {
     }
 
-    asio::awaitable<void> TransformSystem::run(ComponentManager& components, EntityManager& entities)
+    asio::awaitable<void> TransformSystem::run(ComponentManager& components, EntityManager& entities, std::chrono::duration<double> delta)
     {
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));

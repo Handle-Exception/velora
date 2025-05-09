@@ -17,7 +17,7 @@
 #include "entity_definition.pb.h"
 #include "level_definition.pb.h"
 
-#include "world.hpp"
+#include "game.hpp"
 
 namespace velora
 {

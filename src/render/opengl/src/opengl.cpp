@@ -566,7 +566,12 @@ namespace velora::opengl
         co_return;
     }
 
-    asio::awaitable<void> OpenGLRenderer::render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs, std::optional<std::size_t> shader_storage_buffer_ID)
+    asio::awaitable<void> OpenGLRenderer::render(
+            std::size_t vertex_buffer_ID,
+            std::size_t shader_ID,
+            ShaderInputs shader_inputs,
+            std::optional<std::size_t> shader_storage_buffer_ID,
+            RenderMode mode)
     {
         if(good() == false)co_return;
 
@@ -611,7 +616,11 @@ namespace velora::opengl
             }
         }
 
+        if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
         glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
+        
+        if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // restore default
 
         co_return;
     }

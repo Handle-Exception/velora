@@ -10,16 +10,6 @@ add_module(NAME "World"
         "${PROJECT_PREFIX}::Native"
 
         "${PROJECT_PREFIX}::ECS"
-        "${PROJECT_PREFIX}::Render"
-
-        "${PROJECT_PREFIX}::TransformSystem"
-        "${PROJECT_PREFIX}::VisualSystem"
-        "${PROJECT_PREFIX}::HealthSystem"
-        "${PROJECT_PREFIX}::InputSystem"
-        "${PROJECT_PREFIX}::CameraSystem"
-        "${PROJECT_PREFIX}::TerrainSystem"
-        "${PROJECT_PREFIX}::LightSystem"
-        "${PROJECT_PREFIX}::ScriptSystem"
         
         "${PROJECT_PREFIX}::Level"
 )

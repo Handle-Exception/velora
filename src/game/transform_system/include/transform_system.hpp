@@ -32,7 +32,7 @@ namespace velora::game
             TransformSystem& operator=(TransformSystem&&) = default;
             ~TransformSystem() = default;
 
-            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
+            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, std::chrono::duration<double> delta);
 
         private:
             asio::strand<asio::io_context::executor_type> _strand;

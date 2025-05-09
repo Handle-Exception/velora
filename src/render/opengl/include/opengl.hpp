@@ -6,6 +6,7 @@
 #include "window.hpp"
 #include "process.hpp"
 
+#include "render_mode.hpp"
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 #include "shader.hpp"
@@ -47,7 +48,12 @@ namespace velora::opengl
             asio::awaitable<void> close();
 
             asio::awaitable<void> clearScreen(glm::vec4 color);
-            asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, ShaderInputs shader_inputs, std::optional<std::size_t> shader_storage_buffer_ID);
+            asio::awaitable<void> render(std::size_t vertex_buffer_ID,
+                std::size_t shader_ID,
+                ShaderInputs shader_inputs,
+                std::optional<std::size_t> shader_storage_buffer_ID,
+                RenderMode mode);
+                
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
             Resolution getViewport() const;

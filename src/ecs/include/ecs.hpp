@@ -4,11 +4,12 @@
 #include "component_manager.hpp"
 #include "entity_manager.hpp"
 
+#include <absl/container/flat_hash_map.h>
+
 #include <ranges>
 #include <vector>
 #include <string>
 #include <queue>
-#include <unordered_map>
 
 namespace velora
 {

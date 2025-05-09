@@ -6,5 +6,4 @@ add_module(NAME "Level"
         absl::hash
         absl::flat_hash_map
         "${PROJECT_PREFIX}::ECS"
-        "${PROJECT_PREFIX}::Render"
 )

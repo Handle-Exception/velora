@@ -228,7 +228,7 @@ namespace velora
             {4, 9, 5}, {2, 4, 11}, {6, 2, 10}, {8, 6, 7}, {9, 8, 1}
         };
 
-        std::unordered_map<std::pair<uint32_t, uint32_t>, uint32_t, detail::VertexHasher> midpoint_cache;
+        absl::flat_hash_map<std::pair<uint32_t, uint32_t>, uint32_t, detail::VertexHasher> midpoint_cache;
 
         auto getMiddlePoint = [&](const uint32_t a, const uint32_t b) -> uint32_t {
             auto key = std::minmax(a, b);

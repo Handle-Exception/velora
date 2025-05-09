@@ -121,7 +121,7 @@ namespace velora
         //
         // then Visual Component uses Transform component to calculate matrices and draw entity
         // then Physics component uses Transform component to move entity
-
+        
         game::TransformSystem transform_system(io_context);
 
         // Create rendering systems
@@ -132,12 +132,16 @@ namespace velora
 
         // create scripts system
         game::ScriptSystem script_system(io_context);
-
         co_await loadScriptsFromDir(script_system, getResourcesPath() / "scripts");
 
+        // create logic systems
+        game::HealthSystem health_system(io_context);
 
-        // create world - will create logic systems
-        game::World world(io_context, *renderer);
+        game::TerrainSystem terrain_system(io_context, *renderer);
+
+
+        // create world
+        game::World world(io_context);
 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING LEVEL
@@ -169,7 +173,10 @@ namespace velora
             },
 
             // logic loop to be executed at fixed time step 
-            [&world, &input_system, &script_system, &last_log_time, &logic_fps_counter, &priority_fps_counter]
+            [   &world,
+                &input_system, &transform_system, &script_system, &health_system,  &terrain_system, 
+                &last_log_time, &logic_fps_counter, &priority_fps_counter
+            ]
             (std::chrono::duration<double> delta) -> asio::awaitable<void>  
             {
                 logic_fps_counter.frame();
@@ -178,12 +185,13 @@ namespace velora
                 // input itself is recorded asynchronousy in window callbacks
                 co_await world.getCurrentLevel().runSystem(input_system);
 
-                // world has topologicaly sorted graph of systems
-                // and will execute them in layers which are independent of each other
-                // this way we can run them in parallel
-                co_await world.update(delta);
+                co_await  world.getCurrentLevel().runSystem(transform_system, delta);
                 
                 co_await world.getCurrentLevel().runSystem(script_system, delta, world.getCurrentLevel());
+                
+                // co_await (
+                //         world.getCurrentLevel().runSystem(health_system, delta) &&
+                //         world.getCurrentLevel().runSystem(terrain_system, delta));
 
                 //track fps frames for profiling
                 if (std::chrono::high_resolution_clock::now() - last_log_time >= std::chrono::seconds(5)) 
