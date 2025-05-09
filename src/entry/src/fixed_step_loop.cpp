@@ -23,13 +23,14 @@ namespace velora
 
         spdlog::debug(std::format("[t:{}] Fixed step loop started", std::this_thread::get_id())); 
 
-        _previous_alpha = 0.0f;
-        _raw_alpha = 0.0f;
+        _alpha = 0.0f;
 
         while (_condition()) 
         {
-            _total_time.duration = _total_time.end - _total_time.start;
+            _total_time.end = _total_time.start;
             _total_time.start = clock::now();
+
+            _total_time.duration = _total_time.start - _total_time.end;
 
             // clamp to avoid spiral of death
             _lag += std::min(_total_time.duration, _MAX_ACCUMULATED_TIME);
@@ -52,19 +53,13 @@ namespace velora
             _priority_time.duration = _priority_time.end - _priority_time.start;
             _priority_time.start = clock::now();
                 
-            _raw_alpha = (float)(_lag / _fixed_logic_step);
-            _raw_alpha  = std::clamp(_raw_alpha, 0.0f, 1.0f);
-            if (std::isnan(_raw_alpha)) _raw_alpha = 0.0f;
-
-            // exponential smoothing
-            _alpha = std::lerp(_previous_alpha, _raw_alpha, _ALPHA_SMOOTHING);
-            // store alpha for next frame
-            _previous_alpha = _alpha;
+            _alpha = (float)(_lag / _fixed_logic_step);
+            _alpha  = std::clamp(_alpha, 0.0f, 1.0f);
+            if (std::isnan(_alpha)) _alpha = 0.0f;
 
             co_await _priority(_alpha);
 
             _priority_time.end = clock::now();
-            _total_time.end = clock::now();
         }
 
         // make sure to end executing loop from strand associated to provided io_context

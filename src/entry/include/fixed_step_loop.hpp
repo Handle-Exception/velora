@@ -47,9 +47,6 @@ namespace velora
 
             std::chrono::duration<double> _lag = std::chrono::duration<double>::zero();
 
-            constexpr static const float _ALPHA_SMOOTHING = 0.5f;
-            float _raw_alpha = 0.0f;
-            float _previous_alpha = 0.0f;
             float _alpha = 0.0f;
     };
 }
