@@ -7,7 +7,7 @@
 
 #include "ecs.hpp"
 #include "camera_component.pb.h"
-#include "transform_component.pb.h"
+#include "transform_system.hpp"
 #include "render.hpp"
 #include "resolution.hpp"
 

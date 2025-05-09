@@ -337,6 +337,11 @@ namespace velora::game
                 input->set_mouse_dx(mouse_dx);
                 input->set_mouse_dy(mouse_dy);
             }
+            else
+            {
+                input->set_mouse_dx(0.0f);
+                input->set_mouse_dy(0.0f);
+            }
         }
 
         co_return;

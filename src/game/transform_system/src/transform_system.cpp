@@ -15,8 +15,11 @@ namespace velora::game
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
 
-        glm::vec3 direction;
         glm::quat rotation;
+
+        glm::vec3 forward;
+        glm::vec3 right;
+        glm::vec3 up;
 
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
@@ -29,14 +32,28 @@ namespace velora::game
             transform_component->mutable_prev_rotation()->CopyFrom(transform_component->rotation());
             transform_component->mutable_prev_scale()->CopyFrom(transform_component->scale());
 
-            // calculate direction
             rotation = glm::quat(transform_component->rotation().w(), transform_component->rotation().x(), transform_component->rotation().y(), transform_component->rotation().z());
-            direction = rotation * BASE_FORWARD_DIRECTION;
-            direction = glm::normalize(direction);
+            
+            // calculate direction vectors
+            forward = rotation * BASE_FORWARD_DIRECTION;
+            forward = glm::normalize(forward);
 
-            transform_component->mutable_direction()->set_x(direction.x);
-            transform_component->mutable_direction()->set_y(direction.y);
-            transform_component->mutable_direction()->set_z(direction.z);
+            up = rotation * BASE_UP_DIRECTION;
+            up = glm::normalize(up);
+
+            right = glm::normalize(glm::cross(forward, up));
+
+            transform_component->mutable_forward()->set_x(forward.x);
+            transform_component->mutable_forward()->set_y(forward.y);
+            transform_component->mutable_forward()->set_z(forward.z);
+
+            transform_component->mutable_up()->set_x(up.x);
+            transform_component->mutable_up()->set_y(up.y);
+            transform_component->mutable_up()->set_z(up.z);
+
+            transform_component->mutable_right()->set_x(right.x);
+            transform_component->mutable_right()->set_y(right.y);
+            transform_component->mutable_right()->set_z(right.z);
         }
         co_return;
     }

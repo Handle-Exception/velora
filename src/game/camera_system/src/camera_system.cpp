@@ -64,8 +64,8 @@ namespace velora::game
             interpolated_pos = glm::mix(prev_position, position, eased_alpha);
             interpolated_rot = glm::slerp(prev_rotation, rotation, eased_alpha);
 
-            _direction = interpolated_rot * glm::vec3(0.0f, 0.0f, -1.0f);
-            _up = interpolated_rot * glm::vec3(0.0f, 1.0f, 0.0f);
+            _direction = interpolated_rot * BASE_FORWARD_DIRECTION;
+            _up = interpolated_rot * BASE_UP_DIRECTION;
 
             _view = glm::lookAt(interpolated_pos, interpolated_pos + _direction, _up);
             _projection = glm::perspective(glm::radians(cam->fov()), aspect, cam->near_plane(), cam->far_plane());

@@ -63,6 +63,10 @@ namespace velora::winapi
             asio::awaitable<native::opengl_context_handle> registerOGLContext(native::window_handle window_handle, unsigned int major_version, unsigned int minor_version);
 
             asio::awaitable<bool> unregisterOGLContext(native::opengl_context_handle oglctx);
+            
+            asio::awaitable<void> showCursor();
+
+            asio::awaitable<void> hideCursor();
 
         protected:
             void messageLoop();
@@ -80,6 +84,8 @@ namespace velora::winapi
 
             native::opengl_context_handle _default_oglctx_handle;
             absl::flat_hash_set<native::opengl_context_handle> _oglctx_handles;
+
+            bool _cursor_visible;
 
             // IO thread initialized at the end of the constructor
             std::thread _io_thread;

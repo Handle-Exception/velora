@@ -17,10 +17,33 @@ namespace velora::winapi
 	    return pfd;
     }
 
+    void lockCursorToCenter(HWND hwnd) 
+    {
+        RECT client_rect;
+        GetClientRect(hwnd, &client_rect);
+
+        POINT center = {
+            (client_rect.right - client_rect.left) / 2,
+            (client_rect.bottom - client_rect.top) / 2
+        };
+
+        // Convert to screen coordinates
+        ClientToScreen(hwnd, &center);
+        SetCursorPos(center.x, center.y);
+
+        // Confine the cursor to the window
+        RECT clip_rect;
+        GetWindowRect(hwnd, &clip_rect);
+        ClipCursor(&clip_rect);
+
+        ShowCursor(FALSE); // Hide the cursor
+    }
+
     WinapiProcess::WinapiProcess()
     :   _io_context(1),
         _strand(asio::make_strand(_io_context)),
         _default_oglctx_handle(nullptr),
+        _cursor_visible(true),
         _io_thread(&WinapiProcess::messageLoop, this)
     {
         spdlog::debug(std::format("[winapi] [t:{}] WinapiProcess constructor called", std::this_thread::get_id()));
@@ -206,6 +229,18 @@ namespace velora::winapi
         _window_handles.try_emplace(window_handle, std::nullopt);
 
         spdlog::info(std::format("[winapi] [t:{}] Window {} created", std::this_thread::get_id(), window_handle));
+
+        RAWINPUTDEVICE rid;
+        rid.usUsagePage = 0x01; // Generic desktop controls
+        rid.usUsage = 0x02;     // Mouse
+        rid.dwFlags = 0; // Receive input only when focused
+        rid.hwndTarget = window_handle;
+
+        if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+            spdlog::error("Failed to register raw input device: {}", GetLastError());
+            DestroyWindow(window_handle);  // clean up
+            co_return nullptr;
+        }
 
         co_return window_handle;
     }
@@ -428,6 +463,24 @@ namespace velora::winapi
         co_return true;
     }
 
+    asio::awaitable<void> WinapiProcess::showCursor()
+    {
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+        _cursor_visible = true;
+        ShowCursor(TRUE);
+    }
+
+    asio::awaitable<void> WinapiProcess::hideCursor()
+    {
+        if(!_strand.running_in_this_thread()){
+            co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+        }
+        _cursor_visible = false;
+        ShowCursor(FALSE);
+    }
+
     LRESULT CALLBACK WinapiProcess::procedure(native::window_handle window, UINT message, WPARAM wparam, LPARAM lparam)
     {
         WinapiProcess * specyfic_process = reinterpret_cast<WinapiProcess *>(GetWindowLongPtrW(window, 0));
@@ -529,19 +582,52 @@ namespace velora::winapi
             return handling_result;
         }
 
-        case WM_MOUSEMOVE:
+        case WM_INPUT:
         {
-            int x = GET_X_LPARAM(lparam);
-            int y = GET_Y_LPARAM(lparam);
+            UINT size = 0;
+            GetRawInputData((HRAWINPUT)lparam, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+            if (size == 0) break;
 
-            float dx = 0.0f;
-            float dy = 0.0f;
+            std::vector<BYTE> buffer(size);
+            if (GetRawInputData((HRAWINPUT)lparam, RID_INPUT, buffer.data(), &size, sizeof(RAWINPUTHEADER)) != size)
+                break;
 
-            if (window_callbacks.onMouseMove)
-            {
-                asio::co_spawn(window_callbacks.executor, window_callbacks.onMouseMove(x, y, dx, dy), asio::detached);
+            RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(buffer.data());
+            if (raw->header.dwType == RIM_TYPEMOUSE) {
+                LONG dx = raw->data.mouse.lLastX;
+                LONG dy = raw->data.mouse.lLastY;
+
+                POINT screen_pos;
+                GetCursorPos(&screen_pos);
+
+                POINT client_pos = screen_pos;
+                ScreenToClient(window, &client_pos);
+
+                asio::co_spawn(
+                    window_callbacks.executor,
+                    window_callbacks.onMouseMove(
+                        (float)client_pos.x, (float)client_pos.y,
+                        (float)dx, (float)dy
+                    ),
+                    asio::detached
+                );
             }
-            return 0;
+
+            if(_cursor_visible == false)
+            {
+                // cursor locked
+                RECT rect;
+                if (GetClientRect(window, &rect)) {
+                    POINT center = {
+                        (rect.right - rect.left) / 2,
+                        (rect.bottom - rect.top) / 2
+                    };
+                    ClientToScreen(window, &center);
+                    SetCursorPos(center.x, center.y);
+                }
+            }
+
+            break;
         }
 
         case WM_LBUTTONDOWN:

@@ -34,9 +34,29 @@ namespace velora::game
             ref->mutable_rotation()->set_z(quat.z);
         }
 
+        glm::vec3 get_position() const 
+        {
+            return glm::vec3(ref->position().x(), ref->position().y(), ref->position().z());
+        }
+
         glm::quat get_rotation() const 
         {
             return glm::quat(ref->rotation().w(), ref->rotation().x(), ref->rotation().y(), ref->rotation().z());
+        }
+
+        glm::vec3 get_forward() const
+        {
+            return glm::vec3(ref->forward().x(), ref->forward().y(), ref->forward().z());
+        }
+
+        glm::vec3 get_up() const
+        {
+            return glm::vec3(ref->up().x(), ref->up().y(), ref->up().z());
+        }
+
+        glm::vec3 get_right() const
+        {
+            return glm::vec3(ref->right().x(), ref->right().y(), ref->right().z());
         }
 
     };

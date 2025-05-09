@@ -31,6 +31,10 @@ namespace velora
         virtual asio::awaitable<native::opengl_context_handle> registerOGLContext(native::window_handle window_handle, unsigned int major_version, unsigned int minor_version) = 0;
 
         virtual asio::awaitable<bool> unregisterOGLContext(native::opengl_context_handle oglctx) = 0;
+
+        virtual asio::awaitable<void> showCursor() = 0;
+
+        virtual asio::awaitable<void> hideCursor() = 0;
     };
 
     template<class ProcessImplType>
@@ -62,6 +66,12 @@ namespace velora
 
             inline asio::awaitable<bool> unregisterOGLContext(native::opengl_context_handle oglctx) override{
                 co_return co_await dispatch::getImpl().unregisterOGLContext(std::move(oglctx));}
+
+            inline asio::awaitable<void> showCursor() override{
+                co_return co_await dispatch::getImpl().showCursor();}
+
+            inline asio::awaitable<void> hideCursor() override{
+                co_return co_await dispatch::getImpl().hideCursor();}
 
     };
 

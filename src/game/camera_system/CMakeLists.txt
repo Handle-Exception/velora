@@ -10,4 +10,6 @@ add_module(NAME "CameraSystem"
 
         "${PROJECT_PREFIX}::ECS"
         "${PROJECT_PREFIX}::Render"
+        "${PROJECT_PREFIX}::TransformSystem"
+
 )

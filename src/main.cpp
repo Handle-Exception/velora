@@ -28,6 +28,8 @@ namespace velora
         auto input_strand = asio::make_strand(io_context);
         game::InputSystem input_system(io_context);
 
+        bool cursor_shown = true;
+
         // connect input system to window and setup system objects callbacks
         co_await process.setWindowCallbacks(window->getHandle(), 
             WindowCallbacks{.executor = input_strand,
@@ -58,9 +60,15 @@ namespace velora
                     co_await input_system.recordKeyReleased(game::keyToInputCode(key));
                     co_return;
                 },
-                .onMouseButtonDown = [&input_system](int key) -> asio::awaitable<void>
+                .onMouseButtonDown = [&process, &input_system, &cursor_shown](int key) -> asio::awaitable<void>
                 {
                     spdlog::debug(std::format("[t:{}] Window callback onMouseButtonDown {}", std::this_thread::get_id(), key));
+                    
+                    cursor_shown = !cursor_shown;
+                    
+                    if(cursor_shown) co_await process.showCursor();
+                    else co_await process.hideCursor();
+
                     // need to propagate this information into InputSystem
                     co_await input_system.recordKeyPressed(game::keyToInputCode(key));
                     co_return;
@@ -72,8 +80,13 @@ namespace velora
                     co_await input_system.recordKeyReleased(game::keyToInputCode(key));
                     co_return;
                 },
-                .onMouseMove = [&input_system](int x, int y, float dx, float dy) -> asio::awaitable<void>
+                .onMouseMove = [&input_system, &cursor_shown](int x, int y, float dx, float dy) -> asio::awaitable<void>
                 {
+                    if(cursor_shown == true)
+                    {
+                        dx = 0.0f;
+                        dy = 0.0f;
+                    }
                     // need to propagate this information into InputSystem
                     co_await input_system.recordMouseMove((float)x, (float)y, dx, dy);
                     co_return;
@@ -145,7 +158,7 @@ namespace velora
 
         FixedStepLoop loop(io_context, 
             // fixed logic step 30 HZ update 
-            100ms, 
+            33.333ms, 
             
             // loop condition
             [&window, &renderer]() -> bool 
