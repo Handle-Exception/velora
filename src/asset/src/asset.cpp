@@ -2,6 +2,17 @@
 
 namespace velora
 {
+    asio::awaitable<bool> loadVertexBuffersPrefabs(IRenderer & renderer)
+    {
+        if((co_await renderer.constructVertexBuffer("cube_prefab", getCubePrefab())) == std::nullopt)
+        {
+            spdlog::error("Failed to create cube_prefab vertex buffer");
+            co_return false;
+        }
+
+        co_return true;
+    }
+
     asio::awaitable<std::optional<std::size_t>> loadShaderFromFile(IRenderer & renderer, std::filesystem::path shader_dir)
     {
         shader_dir = getResourcesPath() / shader_dir;
@@ -82,6 +93,30 @@ namespace velora
         }
     }
 
+    asio::awaitable<bool> loadShadersFromDir(IRenderer & renderer, std::filesystem::path shader_dir)
+    {
+        if(!std::filesystem::exists(shader_dir) || !std::filesystem::is_directory(shader_dir)) {
+            spdlog::error("Shader directory does not exist: {}", shader_dir.string());
+            co_return false;
+        }
+
+        spdlog::info("Loading shaders from {}", shader_dir.string());
+
+        for (const std::filesystem::path & shader_path : std::filesystem::directory_iterator(shader_dir)) {
+            if (!std::filesystem::is_directory(shader_path)) {
+                continue;
+            }
+
+            auto shader_id = co_await loadShaderFromFile(renderer, shader_path);
+            if (!shader_id) {
+                spdlog::warn(std::format("Failed to load shader from {}", shader_path.string()) );
+                continue;
+            }
+        }
+
+        co_return true;
+    }
+
     asio::awaitable<std::optional<std::string>> loadLevelFromFile(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& path, use_json_t)
     {
         std::ifstream in(path);
@@ -124,7 +159,7 @@ namespace velora
         co_return level_name;
     }
 
-    asio::awaitable<bool> loadWorldFromFiles(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_json_t)
+    asio::awaitable<bool> loadWorldFromDir(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_json_t)
     {
         if (!std::filesystem::exists(load_dir)  || !std::filesystem::is_directory(load_dir)) {
             spdlog::error("Load directory does not exist: {}", load_dir.string());
@@ -181,7 +216,7 @@ namespace velora
         co_return level_name;
     }
 
-    asio::awaitable<bool> loadWorldFromFiles(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_binary_t)
+    asio::awaitable<bool> loadWorldFromDir(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_binary_t)
     {
         if (!std::filesystem::exists(load_dir)  || !std::filesystem::is_directory(load_dir)) {
             spdlog::error("Load directory does not exist: {}", load_dir.string());
@@ -246,7 +281,7 @@ namespace velora
         co_return true;
     }
 
-    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_json_t)
+    asio::awaitable<bool> saveWorldToDir(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_json_t)
     {
         if (!std::filesystem::exists(save_dir)) {
             spdlog::warn("Save directory does not exist: {}. Creating one ...", save_dir.string());
@@ -317,7 +352,7 @@ namespace velora
         co_return true;
     }
 
-    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_binary_t)
+    asio::awaitable<bool> saveWorldToDir(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_binary_t)
     {
         if (!std::filesystem::exists(save_dir)) {
             spdlog::warn("Save directory does not exist: {}. Creating one ...", save_dir.string());
@@ -491,4 +526,24 @@ namespace velora
         return components_serializer_registry;
     }
 
+    asio::awaitable<bool> loadScriptsFromDir(game::ScriptSystem & script_system, const std::filesystem::path& load_dir)
+    {
+        if (!std::filesystem::exists(load_dir)) {
+            spdlog::error("Load directory does not exist: {}", load_dir.string());
+            co_return false;
+        }
+
+        if (!std::filesystem::is_directory(load_dir)) {
+            spdlog::error("Load directory is not a directory: {}", load_dir.string());
+            co_return false;
+        }
+
+        for (const auto& entry : std::filesystem::directory_iterator(load_dir)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".lua") {
+                script_system.loadScript(entry.path().string());
+            }
+        }
+
+        co_return true;
+    }
 }

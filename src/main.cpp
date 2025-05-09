@@ -84,23 +84,9 @@ namespace velora
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // LOADING ASSETS
         // ---------------------------------------------------------------------------------------------------------------------------------------------
-        if((co_await renderer->constructVertexBuffer("vertex_buffer_0", getCubePrefab())) == std::nullopt)
-        {
-            spdlog::error("Failed to create vertex buffer");
-            co_return -1;
-        }
+        co_await loadVertexBuffersPrefabs(*renderer);
 
-        if((co_await loadShaderFromFile(*renderer, "shaders/glsl/basic_shader")) == std::nullopt)
-        {
-            spdlog::error("Failed to create Shader");
-            co_return -1;
-        }
-
-        if((co_await loadShaderFromFile(*renderer, "shaders/glsl/light_shader")) == std::nullopt)
-        {
-            spdlog::error("Failed to create Shader");
-            co_return -1;
-        }
+        co_await loadShadersFromDir(*renderer, getResourcesPath() / "shaders" / "glsl");
 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
@@ -131,8 +117,8 @@ namespace velora
 
         // create scripts system
         game::ScriptSystem script_system(io_context);
-        script_system.loadScript(getResourcesPath() / "scripts/player_script.lua");
-        script_system.loadScript(getResourcesPath() / "scripts/camera_script.lua");
+
+        co_await loadScriptsFromDir(script_system, getResourcesPath() / "scripts");
 
 
         // create world - will create logic systems
@@ -144,19 +130,8 @@ namespace velora
         ComponentLoaderRegistry components_loader_reg = constructComponentLoaderRegistry();
         ComponentSerializerRegistry components_serializer_reg = constructComponentSerializerRegistry();
 
-        co_await loadWorldFromFiles(world, components_loader_reg, getResourcesPath() / "levels", use_json);
+        co_await loadWorldFromDir(world, components_loader_reg, getResourcesPath() / "levels", use_json);
         world.setCurrentLevel("level_0");
-        // ---------------------------------------------------------------------------------------------------------------------------------------------
-        // 
-        // ---------------------------------------------------------------------------------------------------------------------------------------------
-        // --- TODO --- 
-        auto player_entity = world.getCurrentLevel().getEntity("player");
-        if(!player_entity)
-        {
-            spdlog::error("Failed to find entities");
-            co_return -1;
-        }
-        auto player_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
         
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
@@ -179,7 +154,7 @@ namespace velora
             },
 
             // logic loop to be executed at fixed time step 
-            [&world, &input_system, &script_system, &player_transform_component, &last_log_time, &logic_fps_counter, &priority_fps_counter]
+            [&world, &input_system, &script_system, &last_log_time, &logic_fps_counter, &priority_fps_counter]
             (std::chrono::duration<double> delta) -> asio::awaitable<void>  
             {
                 logic_fps_counter.frame();
@@ -243,7 +218,7 @@ namespace velora
 
         if(window->good())co_await window->close();
 
-        co_await saveWorldToFiles(world, components_serializer_reg, getResourcesPath() / "saves", use_binary);
+        co_await saveWorldToDir(world, components_serializer_reg, getResourcesPath() / "saves", use_binary);
 
         spdlog::debug("Velora main finished with code {}", 0);
 

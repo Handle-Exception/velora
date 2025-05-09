@@ -67,22 +67,26 @@ namespace velora
     ComponentLoaderRegistry constructComponentLoaderRegistry();
     ComponentSerializerRegistry constructComponentSerializerRegistry();
 
-    asio::awaitable<std::optional<std::size_t>> loadShaderFromFile(IRenderer & renderer, std::filesystem::path shader_dir);
+    asio::awaitable<bool> loadVertexBuffersPrefabs(IRenderer & renderer);
+
+    asio::awaitable<std::optional<std::size_t>> loadShaderFromFile(IRenderer & renderer, std::filesystem::path shader_path);
+    asio::awaitable<bool> loadShadersFromDir(IRenderer & renderer, std::filesystem::path shader_path);
 
     // json load
     asio::awaitable<std::optional<std::string>> loadLevelFromFile(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& path, use_json_t);
-    asio::awaitable<bool> loadWorldFromFiles(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_json_t);
+    asio::awaitable<bool> loadWorldFromDir(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_json_t);
 
     // binary load
     asio::awaitable<std::optional<std::string>> loadLevelFromFile(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& path, use_binary_t);
-    asio::awaitable<bool> loadWorldFromFiles(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_binary_t);
+    asio::awaitable<bool> loadWorldFromDir(game::World & world, const ComponentLoaderRegistry & registry, const std::filesystem::path& load_dir, use_binary_t);
 
     // json save
     asio::awaitable<bool> saveLevelToFile(std::string level_name, game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& path, use_json_t);
-    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_json_t);
+    asio::awaitable<bool> saveWorldToDir(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_json_t);
     
     // binary save
     asio::awaitable<bool> saveLevelToFile(std::string level_name, game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& path, use_binary_t);
-    asio::awaitable<bool> saveWorldToFiles(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_binary_t);
+    asio::awaitable<bool> saveWorldToDir(game::World & world, const ComponentSerializerRegistry & registry, const std::filesystem::path& save_dir, use_binary_t);
 
+    asio::awaitable<bool> loadScriptsFromDir(game::ScriptSystem & script_system, const std::filesystem::path& load_dir);
 }
