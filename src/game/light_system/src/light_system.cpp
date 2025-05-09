@@ -48,8 +48,6 @@ namespace velora::game
 
         GPULight gpu_light{};
         uint16_t light_id = 0;
-        glm::vec3 direction;
-        glm::quat rotation;
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
             if(light_id >= MAX_LIGHTS)return;
@@ -63,21 +61,17 @@ namespace velora::game
             if(transform)
             {
                 gpu_light.position = glm::vec4(transform->position().x(), transform->position().y(), transform->position().z(), 1.0f);
-                rotation = glm::quat(transform->rotation().w(), transform->rotation().x(), transform->rotation().y(), transform->rotation().z());
-                rotation = glm::normalize(rotation);
+                // w component is used to determine the type of light
+                gpu_light.direction = glm::vec4(transform->direction().x(), transform->direction().y(), transform->direction().z(), 
+                    static_cast<float>(light_component->type()));
             }
             else
             {
                 gpu_light.position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-                rotation = glm::quat(1, 0, 0, 0); // Identity quaternion
+                // w component is used to determine the type of light
+                gpu_light.direction = glm::vec4(BASE_FORWARD_DIRECTION.x, BASE_FORWARD_DIRECTION.y, BASE_FORWARD_DIRECTION.z, 
+                    static_cast<float>(light_component->type()));
             }
-            
-            direction = rotation * BASE_FORWARD_DIRECTION;
-            direction = glm::normalize(direction);
-
-            // w component is used to determine the type of light
-            gpu_light.direction = glm::vec4(direction.x, direction.y, direction.z, 
-                static_cast<float>(light_component->type()));
 
             gpu_light.color = glm::vec4(light_component->color_r(), light_component->color_g(), light_component->color_b(), light_component->intensity());
             gpu_light.attenuation = glm::vec4(light_component->constant(), light_component->linear(), light_component->quadratic(), 0.0f);

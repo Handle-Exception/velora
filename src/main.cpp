@@ -3,43 +3,6 @@
 namespace velora
 {
     // TODO
-    void moveCamera(const std::chrono::duration<double> & delta, game::TransformComponent * camera_transform_component, game::InputComponent * camera_input_component)
-    {
-        static glm::vec3 camera_position{
-                camera_transform_component->position().x(),
-                camera_transform_component->position().y(),
-                camera_transform_component->position().z()};
-
-        static const float speed = 5.0f;
-        
-        if(isInputPresent(game::InputCode::KEY_A, camera_input_component->pressed()) ||
-            isInputPresent(game::InputCode::KEY_A, camera_input_component->just_pressed()))
-                camera_position.x -= speed * (float)delta.count();
-        if(isInputPresent(game::InputCode::KEY_D, camera_input_component->pressed()) ||
-            isInputPresent(game::InputCode::KEY_D, camera_input_component->just_pressed()))
-                camera_position.x += speed * (float)delta.count();
-
-        if(isInputPresent(game::InputCode::KEY_W, camera_input_component->pressed()) || 
-            isInputPresent(game::InputCode::KEY_W, camera_input_component->just_pressed()))
-                camera_position.z -= speed * (float)delta.count();
-        if(isInputPresent(game::InputCode::KEY_S, camera_input_component->pressed()) || 
-            isInputPresent(game::InputCode::KEY_S, camera_input_component->just_pressed()))
-                camera_position.z += speed * (float)delta.count();
-
-        if(isInputPresent(game::InputCode::KEY_Q, camera_input_component->pressed()) || 
-            isInputPresent(game::InputCode::KEY_Q, camera_input_component->just_pressed()))
-                camera_position.y += speed * (float)delta.count();
-        if(isInputPresent(game::InputCode::KEY_E, camera_input_component->pressed()) || 
-            isInputPresent(game::InputCode::KEY_E, camera_input_component->just_pressed()))
-                camera_position.y -= speed * (float)delta.count();
-            
-
-        camera_transform_component->mutable_position()->set_x(camera_position.x);
-        camera_transform_component->mutable_position()->set_y(camera_position.y);
-        camera_transform_component->mutable_position()->set_z(camera_position.z);
-    }
-
-    // TODO
     void movePlayer(const std::chrono::duration<double> & delta, game::TransformComponent * player_transform_component)
     {
         static float pitch = 45.0f; // X axis
@@ -56,11 +19,6 @@ namespace velora
                 player_transform_component->rotation().y(),
                 player_transform_component->rotation().z()};
 
-        static glm::vec3 player_position{
-                player_transform_component->position().x(),
-                player_transform_component->position().y(),
-                player_transform_component->position().z()};
-
         pitch += pitch_speed * (float)delta.count();
         yaw   += yaw_speed * (float)delta.count();
         roll  += roll_speed * (float)delta.count();
@@ -71,10 +29,6 @@ namespace velora
         player_transform_component->mutable_rotation()->set_x(player_rotation.x);
         player_transform_component->mutable_rotation()->set_y(player_rotation.y);
         player_transform_component->mutable_rotation()->set_z(player_rotation.z);
-
-        player_transform_component->mutable_position()->set_x(player_position.x);
-        player_transform_component->mutable_position()->set_y(player_position.y);
-        player_transform_component->mutable_position()->set_z(player_position.z);   
     }
 
 
@@ -123,18 +77,38 @@ namespace velora
                     co_await renderer->updateViewport(Resolution{(std::size_t)width, (std::size_t)height});
                     co_return;
                 },
-                .onKeyPress = [&window, &renderer, &input_system](int key) -> asio::awaitable<void>
+                .onKeyPress = [&input_system](int key) -> asio::awaitable<void>
                 {     
                     // need to propagate this information into InputSystem
                     co_await input_system.recordKeyPressed(game::keyToInputCode(key));
                     co_return;
                 },
-                .onKeyRelease = [&window, &input_system](int key) -> asio::awaitable<void>
+                .onKeyRelease = [&input_system](int key) -> asio::awaitable<void>
                 {
                     // need to propagate this information into InputSystem
                     co_await input_system.recordKeyReleased(game::keyToInputCode(key));
                     co_return;
-                }
+                },
+                .onMouseButtonDown = [&input_system](int key) -> asio::awaitable<void>
+                {
+                    spdlog::debug(std::format("[t:{}] Window callback onMouseButtonDown {}", std::this_thread::get_id(), key));
+                    // need to propagate this information into InputSystem
+                    co_await input_system.recordKeyPressed(game::keyToInputCode(key));
+                    co_return;
+                },
+                .onMouseButtonUp = [&input_system](int key) -> asio::awaitable<void>
+                {
+                    spdlog::debug(std::format("[t:{}] Window callback onMouseButtonUp {}", std::this_thread::get_id(), key));
+                    // need to propagate this information into InputSystem
+                    co_await input_system.recordKeyReleased(game::keyToInputCode(key));
+                    co_return;
+                },
+                .onMouseMove = [&input_system](int x, int y, float dx, float dy) -> asio::awaitable<void>
+                {
+                    // need to propagate this information into InputSystem
+                    co_await input_system.recordMouseMove((float)x, (float)y, dx, dy);
+                    co_return;
+                },
             });
 
 
@@ -186,6 +160,12 @@ namespace velora
         game::LightSystem light_system = co_await game::LightSystem::asyncConstructor(io_context, *renderer);
         game::VisualSystem visual_system(io_context, *renderer, camera_system, light_system);
 
+        // create scripts system
+        game::ScriptSystem script_system(io_context);
+        script_system.loadScript(getResourcesPath() / "scripts/move_script.lua");
+        script_system.loadScript(getResourcesPath() / "scripts/camera_movement_script.lua");
+
+
         // create world - will create logic systems
         game::World world(io_context, *renderer);
 
@@ -202,20 +182,13 @@ namespace velora
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // --- TODO --- 
         auto player_entity = world.getCurrentLevel().getEntity("player");
-        auto camera_entity = world.getCurrentLevel().getEntity("camera");
-        if(!player_entity || !camera_entity)
+        if(!player_entity)
         {
             spdlog::error("Failed to find entities");
             co_return -1;
         }
-        //auto player_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*player_entity);
         auto player_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*player_entity);
-        //auto player_visual_component = world.getCurrentLevel().getComponent<game::VisualComponent>(*player_entity);
-        //auto player_health_component = world.getCurrentLevel().getComponent<game::HealthComponent>(*player_entity);
         
-        auto camera_input_component = world.getCurrentLevel().getComponent<game::InputComponent>(*camera_entity);
-        auto camera_transform_component = world.getCurrentLevel().getComponent<game::TransformComponent>(*camera_entity);
-        //auto camera_camera_component = world.getCurrentLevel().getComponent<game::CameraComponent>(*camera_entity);
         // ---------------------------------------------------------------------------------------------------------------------------------------------
         // 
         // ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -237,7 +210,7 @@ namespace velora
             },
 
             // logic loop to be executed at fixed time step 
-            [&world, &input_system, &camera_transform_component, &camera_input_component, &player_transform_component, &last_log_time, &logic_fps_counter, &priority_fps_counter]
+            [&world, &input_system, &script_system, &player_transform_component, &last_log_time, &logic_fps_counter, &priority_fps_counter]
             (std::chrono::duration<double> delta) -> asio::awaitable<void>  
             {
                 logic_fps_counter.frame();
@@ -250,9 +223,10 @@ namespace velora
                 // and will execute them in layers which are independent of each other
                 // this way we can run them in parallel
                 co_await world.update(delta);
+                
+                co_await world.getCurrentLevel().runSystem(script_system, delta, world.getCurrentLevel());
 
                 // TODO
-                moveCamera(delta, camera_transform_component, camera_input_component);
                 movePlayer(delta, player_transform_component);
 
                 //track fps frames for profiling

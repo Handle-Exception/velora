@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package velora.game;
+
+message ScriptComponent {
+  string name = 1;
+}

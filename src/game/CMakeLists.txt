@@ -8,6 +8,7 @@ add_subdirectory(input_system)
 add_subdirectory(camera_system)
 add_subdirectory(terrain_system)
 add_subdirectory(light_system)
+add_subdirectory(script_system)
 
 add_subdirectory(world)
 
@@ -20,6 +21,7 @@ add_module(NAME "Game"
         "${PROJECT_PREFIX}::CameraSystem"
         "${PROJECT_PREFIX}::TerrainSystem"
         "${PROJECT_PREFIX}::LightSystem"
+        "${PROJECT_PREFIX}::ScriptSystem"
 
         "${PROJECT_PREFIX}::World"
 )

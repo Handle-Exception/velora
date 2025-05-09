@@ -18,5 +18,8 @@ namespace velora
         std::function<asio::awaitable<void>()> onUnfocus;
         std::function<asio::awaitable<void>(int)> onKeyPress;
         std::function<asio::awaitable<void>(int)> onKeyRelease;
+        std::function<asio::awaitable<void>(int)> onMouseButtonDown;
+        std::function<asio::awaitable<void>(int)> onMouseButtonUp;
+        std::function<asio::awaitable<void>(int, int, float, float)> onMouseMove;
     };
 }

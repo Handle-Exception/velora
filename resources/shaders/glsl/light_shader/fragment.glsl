@@ -1,8 +1,9 @@
 #version 450
 
-#define LIGHT_TYPE_DIRECTIONAL 0
-#define LIGHT_TYPE_POINT 1
-#define LIGHT_TYPE_SPOT 2
+#define UNKNOWN_LIGHT_TYPE 0
+#define LIGHT_TYPE_DIRECTIONAL 1
+#define LIGHT_TYPE_POINT 2
+#define LIGHT_TYPE_SPOT 3
 
 struct GPULight {
     vec4 position;      // xyz: position, w: unused

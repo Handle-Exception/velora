@@ -24,7 +24,7 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON -DCMAKE
 - `-DBUILD_TESTING=ON` : Enables tests.
 - `-DCMAKE_INSTALL_PREFIX=install` : Specifies install directory.
 
-## 🛠️ Building the project (Debug Mode)
+## 🛠️ Building the project
 
 To build the project in **Debug Mode**, use:
 
@@ -34,13 +34,19 @@ cmake --build build --config Debug
 
 This will compile the project with debugging enabled.
 
+To build the project in **Release Mode with Debug info enabled**, use:
+
+```sh
+cmake --build build --config RelWithDebInfo
+```
+
 To build the project in **Release Mode**, use:
 
 ```sh
 cmake --build build --config Release
 ```
 
-## 🛠️ Installing the Project (Debug Mode)
+## 🛠️ Installing the Project
 
 To install project in **Debug Mode**, use:
 

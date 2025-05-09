@@ -7,17 +7,20 @@ import "health_component.proto";
 import "camera_component.proto";
 import "terrain_component.proto";
 import "light_component.proto";
+import "script_component.proto";
 
 package velora.game;
 
 message EntityDefinition
 {
-  string name = 1;
-  optional TransformComponent transform = 2;
-  optional HealthComponent health = 3;
-  optional VisualComponent visual = 4;
-  optional InputComponent input = 5;
-  optional CameraComponent camera = 6;
-  optional TerrainComponent terrain = 7;
-  optional LightComponent light = 8;
+    string name = 1;
+
+    optional TransformComponent transform = 2;
+    optional HealthComponent health = 3;
+    optional VisualComponent visual = 4;
+    optional InputComponent input = 5;
+    optional CameraComponent camera = 6;
+    optional TerrainComponent terrain = 7;
+    optional LightComponent light = 8;
+    optional ScriptComponent script = 9;
 }

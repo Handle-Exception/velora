@@ -14,17 +14,15 @@
 
 namespace velora::game
 {
-    enum class InputEventType 
-    {
-        Pressed,
-        Released
-    };
+    game::InputCode keyToInputCode(int key_code);
+    game::InputCode keyToInputCode(const std::string & key_name);
 
     struct InputEvent 
     {
-        InputCode key;
         InputEventType type;
-        std::chrono::steady_clock::time_point timestamp;
+        InputCode key;
+        float mouse_x, mouse_y;
+        float mouse_dx, mouse_dy;
     };
 
     class InputSystem
@@ -49,6 +47,9 @@ namespace velora::game
 
             asio::awaitable<void> recordKeyReleased(InputCode key);
 
+            asio::awaitable<void> recordMouseMove(float x, float y, float dx, float dy);
+
+
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities);
 
         private:
@@ -64,6 +65,4 @@ namespace velora::game
     {
         return std::find(keys_set.begin(), keys_set.end(), code) != keys_set.end();
     }
-
-    game::InputCode keyToInputCode(int key);
 }

@@ -16,15 +16,24 @@ function(silence_warnings)
         else()
             set(real_target ${tgt})
         endif()
-        if(TARGET ${real_target})
-            target_compile_options(${real_target} PRIVATE /W0)
-        else()
+
+        if(NOT TARGET ${real_target})
             message(FATAL_ERROR "Target ${real_target} not found, cannot silence warnings.")
+        endif()
+
+        get_target_property(type ${real_target} TYPE)
+
+        if("${type}" STREQUAL "INTERFACE_LIBRARY")
+            target_compile_options(${real_target} INTERFACE /W0)
+        else()
+            target_compile_options(${real_target} PRIVATE /W0)
         endif()
     endforeach()
 endfunction()
 
-
+# ---------------------------------------------------------
+# GLEW
+# ---------------------------------------------------------
 message(STATUS "Fetching dependency `GLEW` ...")
 ExternalProject_Add(glew_build
     URL https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.tgz
@@ -77,6 +86,9 @@ add_dependencies(glew glew_build)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/_deps/glew/install/include/ DESTINATION include)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/_deps/glew/install/lib/     DESTINATION lib)
 
+# ---------------------------------------------------------
+# spdlog
+# ---------------------------------------------------------
 message(STATUS "Fetching dependency `spdlog` ...")
 FetchContent_Declare(
     spdlog
@@ -86,6 +98,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+# ---------------------------------------------------------
+# asio
+# ---------------------------------------------------------
 message(STATUS "Fetching dependency `asio` ...")
 FetchContent_Declare(
     asio
@@ -99,6 +114,9 @@ target_compile_options(asio INTERFACE /wd4459)
 target_include_directories(asio INTERFACE "${asio_SOURCE_DIR}/asio/include")
 install(DIRECTORY ${asio_SOURCE_DIR}/asio/include/asio DESTINATION include)
 
+# ---------------------------------------------------------
+# glm
+# ---------------------------------------------------------
 message(STATUS "Fetching dependency `glm` ...")
 FetchContent_Declare(
     glm
@@ -108,58 +126,103 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+# ---------------------------------------------------------
+# abseil
+# ---------------------------------------------------------
 message(STATUS "Fetching dependency `abseil` ...")
-find_package(absl CONFIG QUIET)
-if(NOT absl_FOUND)
-  message(STATUS "Abseil not found, falling back to FetchContent")
-  FetchContent_Declare(
+FetchContent_Declare(
     abseil
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
     GIT_TAG "20250127.1"
     SYSTEM
-  )
-  set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
-  set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(abseil)
-endif()
+)
+set(ABSL_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
+set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(abseil)
 
+silence_warnings(TARGETS 
+    absl::algorithm
+    absl::base
+    absl::debugging
+    absl::flat_hash_map
+    absl::flags
+    absl::memory
+    absl::meta
+    absl::numeric
+    absl::random_random
+    absl::strings
+    absl::synchronization
+    absl::time
+    absl::utility
+)
+# ---------------------------------------------------------
+# protobuf
+# ---------------------------------------------------------
 message(STATUS "Fetching dependency `protobuf` ...")
-find_package(Protobuf CONFIG QUIET)
-if(NOT Protobuf_FOUND)
-    message(STATUS "Protobuf not found, falling back to FetchContent")
-    FetchContent_Declare(
-            protobuf
-            GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
-            GIT_TAG        "v30.2"
-            SYSTEM
-    )
-    set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
-    set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-    set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
-    set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
-    set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "" FORCE)
-    set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+        protobuf
+        GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
+        GIT_TAG        "v30.2"
+        SYSTEM
+)
+set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
+set(absl_DIR "${abseil_SOURCE_DIR}" CACHE PATH "")
+set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "" FORCE)
+set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         
-    FetchContent_MakeAvailable(protobuf)
+FetchContent_MakeAvailable(protobuf)
         
-    # Suppress warnings for building protobuf
-    silence_warnings(TARGETS 
-        protobuf::libprotobuf
-        protobuf::libprotoc
-        protobuf::protoc
-        protobuf::protoc-gen-upb
-        protobuf::protoc-gen-upb_minitable
-        protobuf::protoc-gen-upbdefs
-        protobuf::libupb
-        protobuf::libprotobuf-lite
-        utf8_range
-        utf8_validity
-    )
+# Suppress warnings for building protobuf
+silence_warnings(TARGETS 
+    protobuf::libprotobuf
+    protobuf::libprotoc
+    protobuf::protoc
+    protobuf::protoc-gen-upb
+    protobuf::protoc-gen-upb_minitable
+    protobuf::protoc-gen-upbdefs
+    protobuf::libupb
+    protobuf::libprotobuf-lite
+    utf8_range
+    utf8_validity
+)
+# set protobuf protoc executable location
+set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc> CACHE FILEPATH "" FORCE)
 
-    set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc> CACHE FILEPATH "" FORCE)
-endif()
+# ---------------------------------------------------------
+# LUA
+# ---------------------------------------------------------
+include(FetchContent)
 
+FetchContent_Declare(
+    lua
+    GIT_REPOSITORY https://github.com/walterschell/Lua.git
+    GIT_TAG v5.4.5
+)
+set(LUA_SUPPORT_DL OFF CACHE BOOL "" FORCE)
+set(LUA_BUILD_AS_CXX OFF CACHE BOOL "" FORCE) # expose full C LUA API
+set(LUA_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+set(LUA_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(LUA_BUILD_BINARY OFF CACHE BOOL "" FORCE)
+set(LUA_BUILD_COMPILER ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(lua)
+silence_warnings(TARGETS lua_static)
+
+# ---------------------------------------------------------
+# LUA API sol2 v3.5.0
+# ---------------------------------------------------------
+FetchContent_Declare(
+    sol2
+    GIT_REPOSITORY https://github.com/ThePhD/sol2.git
+    GIT_TAG v3.5.0
+)
+FetchContent_MakeAvailable(sol2)
+
+# ---------------------------------------------------------
+# GTest
+# ---------------------------------------------------------
 if(BUILD_TESTING)
     message(STATUS "Fetching dependency `GTest` ...")
     FetchContent_Declare(

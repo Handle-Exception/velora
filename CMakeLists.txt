@@ -40,6 +40,8 @@ target_link_libraries("${PROJECT_NAME}Lib"
         asio
         glm
         glew
+        lua_static
+        sol2::sol2
 
         "${PROJECT_PREFIX}::Version"
         "${PROJECT_PREFIX}::Native"
@@ -61,6 +63,7 @@ target_link_libraries("${PROJECT_NAME}Lib"
         "${PROJECT_PREFIX}::CameraSystem"
         "${PROJECT_PREFIX}::TerrainSystem"
         "${PROJECT_PREFIX}::LightSystem"
+        "${PROJECT_PREFIX}::ScriptSystem"
 
         "${PROJECT_PREFIX}::World"
         "${PROJECT_PREFIX}::Level"

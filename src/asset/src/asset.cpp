@@ -431,6 +431,11 @@ namespace velora
                 &game::EntityDefinition::has_light, &game::EntityDefinition::light)
         );
 
+        components_loader_registry.registerLoader("ScriptComponent", 
+            constructComponentLoader<game::ScriptComponent>(
+                &game::EntityDefinition::has_script, &game::EntityDefinition::script)
+        );
+
         return components_loader_registry;
     }
 
@@ -477,6 +482,10 @@ namespace velora
 
         components_serializer_registry.registerSerializer("LightComponent", 
             constructComponentSerializer<game::LightComponent>(&game::EntityDefinition::mutable_light)
+        );
+
+        components_serializer_registry.registerSerializer("ScriptComponent", 
+            constructComponentSerializer<game::ScriptComponent>(&game::EntityDefinition::mutable_script)
         );
 
         return components_serializer_registry;

@@ -529,6 +529,39 @@ namespace velora::winapi
             return handling_result;
         }
 
+        case WM_MOUSEMOVE:
+        {
+            int x = GET_X_LPARAM(lparam);
+            int y = GET_Y_LPARAM(lparam);
+
+            float dx = 0.0f;
+            float dy = 0.0f;
+
+            if (window_callbacks.onMouseMove)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onMouseMove(x, y, dx, dy), asio::detached);
+            }
+            return 0;
+        }
+
+        case WM_LBUTTONDOWN:
+        {
+            if (window_callbacks.onMouseButtonDown)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onMouseButtonDown(MK_LBUTTON), asio::detached);
+            }
+            return 0;
+        }
+
+        case WM_LBUTTONUP:
+        {
+            if (window_callbacks.onMouseButtonUp)
+            {
+                asio::co_spawn(window_callbacks.executor, window_callbacks.onMouseButtonUp(MK_LBUTTON), asio::detached);
+            }
+            return 0;
+        }
+
         default:
             return DefWindowProc(window, message, wparam, lparam);
         }

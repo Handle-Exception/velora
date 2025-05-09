@@ -13,4 +13,6 @@ message TransformComponent
     Vec3 prev_position = 4;
     Quat prev_rotation = 5;
     Vec3 prev_scale = 6;
+
+    Vec3 direction = 7;
 }
