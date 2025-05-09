@@ -145,7 +145,7 @@ namespace velora
 
         FixedStepLoop loop(io_context, 
             // fixed logic step 30 HZ update 
-            33.33ms, 
+            100ms, 
             
             // loop condition
             [&window, &renderer]() -> bool 
@@ -194,7 +194,7 @@ namespace velora
 
                 // execute camera calculation in parallel with light calculation
                 co_await (
-                    world.getCurrentLevel().runSystem(light_system) && 
+                    world.getCurrentLevel().runSystem(light_system, alpha) && 
                     world.getCurrentLevel().runSystem(camera_system, alpha) 
                 );
                 

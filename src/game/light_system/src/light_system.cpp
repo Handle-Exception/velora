@@ -30,21 +30,34 @@ namespace velora::game
         return _gpu_lights.size();
     }
 
-    asio::awaitable<void> LightSystem::run(const ComponentManager& components, const EntityManager& entities)
+    asio::awaitable<void> LightSystem::run(const ComponentManager& components, const EntityManager& entities, float alpha)
     {
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
         
-        collectLights(components, entities);
+        collectLights(components, entities, alpha);
 
         co_await _renderer.updateShaderStorageBuffer(_light_shader_buffer_id, sizeof(GPULight) * _gpu_lights.size(), _gpu_lights.data());
         co_return;
     }
 
-    void LightSystem::collectLights(const ComponentManager& components, const EntityManager& entities)
+    void LightSystem::collectLights(const ComponentManager& components, const EntityManager& entities, float alpha)
     {
         _gpu_lights.clear();
+
+        float eased_alpha = glm::smoothstep(0.0f, 1.0f, alpha);
+
+        glm::vec3 position;
+        glm::quat rotation;
+
+        glm::vec3 prev_position;
+        glm::quat prev_rotation;
+
+        glm::vec3 interpolated_pos;
+        glm::quat interpolated_rot;
+
+        glm::vec3 direction;
 
         GPULight gpu_light{};
         uint16_t light_id = 0;
@@ -60,9 +73,24 @@ namespace velora::game
             auto* transform = components.getComponent<TransformComponent>(entity);
             if(transform)
             {
-                gpu_light.position = glm::vec4(transform->position().x(), transform->position().y(), transform->position().z(), 1.0f);
+                position = glm::vec3{transform->position().x(), transform->position().y(), transform->position().z()};
+                rotation = glm::quat{transform->rotation().w(), transform->rotation().x(), transform->rotation().y(), transform->rotation().z()};
+                rotation = glm::normalize(rotation);
+
+                prev_position = glm::vec3{transform->prev_position().x(), transform->prev_position().y(), transform->prev_position().z()};
+
+                prev_rotation = glm::quat{transform->prev_rotation().w(), transform->prev_rotation().x(), transform->prev_rotation().y(), transform->prev_rotation().z()};
+                prev_rotation = glm::normalize(prev_rotation);
+
+                interpolated_pos = glm::mix(prev_position, position, eased_alpha);
+                interpolated_rot = glm::slerp(prev_rotation, rotation, eased_alpha);
+
+                direction = glm::normalize(interpolated_rot * BASE_FORWARD_DIRECTION);
+                
+                gpu_light.position = glm::vec4(interpolated_pos.x, interpolated_pos.y, interpolated_pos.z, 1.0f);
+
                 // w component is used to determine the type of light
-                gpu_light.direction = glm::vec4(transform->direction().x(), transform->direction().y(), transform->direction().z(), 
+                gpu_light.direction = glm::vec4(direction.x, direction.y, direction.z, 
                     static_cast<float>(light_component->type()));
             }
             else

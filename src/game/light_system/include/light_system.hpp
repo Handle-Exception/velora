@@ -47,7 +47,7 @@ namespace velora::game
         LightSystem& operator=(LightSystem&&) = default;
         ~LightSystem() = default;
 
-        asio::awaitable<void> run(const ComponentManager& components, const EntityManager& entities);
+        asio::awaitable<void> run(const ComponentManager& components, const EntityManager& entities, float alpha);
 
         std::size_t getShaderBufferID() const;
 
@@ -56,7 +56,7 @@ namespace velora::game
     protected:
         LightSystem(asio::io_context & io_context, IRenderer & renderer, std::size_t light_shader_buffer_id);
 
-        void collectLights(const ComponentManager& components, const EntityManager& entities);
+        void collectLights(const ComponentManager& components, const EntityManager& entities, float alpha);
 
     private:
         asio::strand<asio::io_context::executor_type> _strand;

@@ -55,7 +55,8 @@ namespace velora::game
             sol::table _glm_namespace; 
 
             absl::flat_hash_map<std::filesystem::path, std::string> _loaded_script_sources; // only store raw text
-
+            absl::flat_hash_map<Entity, sol::environment> _loaded_environments;
+            
             void bindFunctions();
     };
 }

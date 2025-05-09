@@ -10,7 +10,6 @@ namespace velora::game
         _lua.open_libraries(sol::lib::base, sol::lib::math);
 
         bindFunctions();
-
     }
 
     void ScriptSystem::bindFunctions()
@@ -181,18 +180,6 @@ namespace velora::game
     {
         if (!_strand.running_in_this_thread())
             co_await asio::dispatch(_strand, asio::use_awaitable);
-        
-        sol::environment env(_lua, sol::create, _lua.globals());  // sandboxed
-
-        // bind the level pointer to the environment
-        env["__level_ptr"]      = reinterpret_cast<uintptr_t>(&current_level);
-
-        // rebind from global state into sandbox enviroment
-        env["print"]            = _lua["print"];
-        env["glm"]              = _glm_namespace;
-        env["get_transform"]    = _lua["get_transform"];
-        env["get_input"]        = _lua["get_input"];
-        env["delta"]            = delta.count();
 
         for (const auto& [entity, mask] : entities.getAllEntities()) {
             if (!mask.test(ComponentTypeManager::getTypeID<ScriptComponent>())) continue;
@@ -213,12 +200,29 @@ namespace velora::game
                 continue;
             }
 
-            env["entity"] = entity;
+            if(_loaded_environments.find(entity) == _loaded_environments.end())
+            {
+                // create new environment
+                sol::environment env(_lua, sol::create, _lua.globals());  // sandboxed
+
+                // bind the level pointer to the environment
+                env["__level_ptr"]      = reinterpret_cast<uintptr_t>(&current_level);
+
+                // rebind from global state into sandbox enviroment
+                env["print"]            = _lua["print"];
+                env["glm"]              = _glm_namespace;
+                env["get_transform"]    = _lua["get_transform"];
+                env["get_input"]        = _lua["get_input"];
+                env["delta"]            = delta.count();
+                env["entity"]           = entity;
+
+                _loaded_environments.try_emplace(entity, std::move(env));
+            }
 
             try 
             {
                 sol::function f = loaded;
-                env.set_on(f);
+                _loaded_environments.at(entity).set_on(f);
                 f(); // execute inline
             }
             catch (const std::exception& e) 

@@ -57,13 +57,12 @@ namespace velora::game
             rotation = glm::normalize(rotation);
 
             prev_position = glm::vec3{transform->prev_position().x(), transform->prev_position().y(), transform->prev_position().z()};
-            prev_rotation = glm::normalize(prev_rotation);
 
             prev_rotation = glm::quat{transform->prev_rotation().w(), transform->prev_rotation().x(), transform->prev_rotation().y(), transform->prev_rotation().z()};
+            prev_rotation = glm::normalize(prev_rotation);
 
             interpolated_pos = glm::mix(prev_position, position, eased_alpha);
             interpolated_rot = glm::slerp(prev_rotation, rotation, eased_alpha);
-
 
             _direction = interpolated_rot * glm::vec3(0.0f, 0.0f, -1.0f);
             _up = interpolated_rot * glm::vec3(0.0f, 1.0f, 0.0f);
