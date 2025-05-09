@@ -12,7 +12,6 @@
 
 namespace velora
 {
-
     class ISystem
     {
         public:

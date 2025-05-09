@@ -36,6 +36,7 @@ namespace velora::game
 
         private:
             asio::strand<asio::io_context::executor_type> _strand;
+            absl::flat_hash_map<Entity, TransformComponent> _last_states;
 
     };
 }

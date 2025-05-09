@@ -27,6 +27,8 @@ namespace velora::game
 
             TransformComponent * transform_component = components.getComponent<TransformComponent>(entity);
             assert(transform_component != nullptr);
+            
+            _last_states[entity].CopyFrom(*transform_component);
 
             transform_component->mutable_prev_position()->CopyFrom(transform_component->position());
             transform_component->mutable_prev_rotation()->CopyFrom(transform_component->rotation());
@@ -54,6 +56,7 @@ namespace velora::game
             transform_component->mutable_right()->set_x(right.x);
             transform_component->mutable_right()->set_y(right.y);
             transform_component->mutable_right()->set_z(right.z);
+
         }
         co_return;
     }

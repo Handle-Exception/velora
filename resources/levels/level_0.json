@@ -126,7 +126,7 @@
           },
           "visual": {
              "visible": true,
-             "vertex_buffer_name": "cube_prefab",
+             "vertex_buffer_name": "cylinder_prefab",
              "shader_name": "light_shader"
           },
           "light":{
@@ -159,7 +159,7 @@
           },
           "visual": {
              "visible": true,
-             "vertex_buffer_name": "cube_prefab",
+             "vertex_buffer_name": "cone_prefab",
              "shader_name": "light_shader"
           },
           "light":{
@@ -175,6 +175,26 @@
              "linear": 0.09,
              "quadratic": 0.032
           }
-       }
+       },
+       {
+        "name": "enemy2",
+        "transform": {
+           "position": {
+              "x": 5,
+              "y": 3,
+              "z": 7
+           },
+           "scale": {
+              "x": 2,
+              "y": 2,
+              "z": 2
+           }
+        },
+        "visual": {
+           "visible": true,
+           "vertex_buffer_name": "icosphere3_prefab",
+           "shader_name": "light_shader"
+        }
+     }
     ]
  }

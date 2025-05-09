@@ -122,6 +122,8 @@ namespace velora
         // then Visual Component uses Transform component to calculate matrices and draw entity
         // then Physics component uses Transform component to move entity
 
+        game::TransformSystem transform_system(io_context);
+
         // Create rendering systems
         game::CameraSystem camera_system(io_context, *renderer);
         // async constructor because light system must allocate shader input buffer in renderer thread asynchronously :/
@@ -211,7 +213,7 @@ namespace velora
                     world.getCurrentLevel().runSystem(camera_system, alpha) 
                 );
                 
-                co_await renderer->clearScreen({1.0f, 1.0f, 1.0f, 1.0f});
+                co_await renderer->clearScreen({0.8f, 0.8f, 0.8f, 1.0f});
 
                 // visual system will render entities with visual component
                 // interpolate between current and previous transform using alpha

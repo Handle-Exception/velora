@@ -1,8 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <array>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 namespace velora
 {
@@ -24,4 +28,10 @@ namespace velora
     };
 
     const Mesh & getCubePrefab();
+
+    const Mesh& getIcoSpherePrefab(unsigned int subdivisions = 1);
+
+    const Mesh& getConePrefab(unsigned int segments = 32);
+
+    const Mesh& getCylinderPrefab(unsigned int segments = 32);
 }

@@ -4,13 +4,44 @@ namespace velora
 {
     asio::awaitable<bool> loadVertexBuffersPrefabs(IRenderer & renderer)
     {
+        bool success = true;
+
         if((co_await renderer.constructVertexBuffer("cube_prefab", getCubePrefab())) == std::nullopt)
         {
             spdlog::error("Failed to create cube_prefab vertex buffer");
-            co_return false;
+            success = false;
         }
 
-        co_return true;
+        if((co_await renderer.constructVertexBuffer("cone_prefab", getConePrefab())) == std::nullopt)
+        {
+            spdlog::error("Failed to create cone_prefab vertex buffer");
+            success = false;
+        }
+
+        if((co_await renderer.constructVertexBuffer("cylinder_prefab", getCylinderPrefab())) == std::nullopt)
+        {
+            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            success = false;
+        }
+
+        if((co_await renderer.constructVertexBuffer("icosphere1_prefab", getIcoSpherePrefab(1))) == std::nullopt)
+        {
+            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            success = false;
+        }
+
+        if((co_await renderer.constructVertexBuffer("icosphere2_prefab", getIcoSpherePrefab(2))) == std::nullopt)
+        {
+            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            success = false;
+        }
+        
+        if((co_await renderer.constructVertexBuffer("icosphere3_prefab", getIcoSpherePrefab(3))) == std::nullopt)
+        {
+            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            success = false;
+        }
+        co_return success;
     }
 
     asio::awaitable<std::optional<std::size_t>> loadShaderFromFile(IRenderer & renderer, std::filesystem::path shader_dir)

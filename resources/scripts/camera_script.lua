@@ -60,6 +60,12 @@ if camera_input:is_pressed("KEY_E") or camera_input:just_pressed("KEY_E") then
     movement = movement - up
 end
 
+if acc_movement == nil then
+    acc_movement = movement
+end
+
+acc_movement = (0.1 * acc_movement) + (0.9 * movement)
+
 -- Normalize and apply movement
 if glm.length(movement) > 0.0 then
     local position = camera_transform:get_position()
