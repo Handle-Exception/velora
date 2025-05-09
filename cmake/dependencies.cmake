@@ -194,8 +194,7 @@ set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc> CACHE FILEPATH ""
 # ---------------------------------------------------------
 # LUA
 # ---------------------------------------------------------
-include(FetchContent)
-
+message(STATUS "Fetching dependency `lua` ...")
 FetchContent_Declare(
     lua
     GIT_REPOSITORY https://github.com/walterschell/Lua.git
@@ -207,12 +206,14 @@ set(LUA_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
 set(LUA_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(LUA_BUILD_BINARY OFF CACHE BOOL "" FORCE)
 set(LUA_BUILD_COMPILER ON CACHE BOOL "" FORCE)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 FetchContent_MakeAvailable(lua)
 silence_warnings(TARGETS lua_static)
 
 # ---------------------------------------------------------
 # LUA API sol2 v3.5.0
 # ---------------------------------------------------------
+message(STATUS "Fetching dependency `sol2` ...")
 FetchContent_Declare(
     sol2
     GIT_REPOSITORY https://github.com/ThePhD/sol2.git
