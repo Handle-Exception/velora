@@ -25,6 +25,9 @@ namespace velora
         absl::flat_hash_map<std::string, glm::mat2> in_mat2;
         absl::flat_hash_map<std::string, glm::mat3> in_mat3;
         absl::flat_hash_map<std::string, glm::mat4> in_mat4;
+
+
+        std::optional<std::size_t> storage_buffer = std::nullopt;
     };
 
 

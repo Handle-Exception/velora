@@ -162,6 +162,14 @@ namespace velora
         FpsCounter logic_fps_counter;
         std::chrono::high_resolution_clock::time_point last_log_time = std::chrono::high_resolution_clock::now();
 
+        // create main screen fbo
+        auto main_fbo = co_await renderer->constructFrameBufferObject("main_fbo", {1280, 720}, 
+            {
+                {0, FBOAttachment::Type::Texture},
+                {1, FBOAttachment::Type::Texture},
+                {2, FBOAttachment::Type::Texture}
+            });
+
         FixedStepLoop loop(io_context, 
             // fixed logic step 30 HZ update 
             33.333ms, 

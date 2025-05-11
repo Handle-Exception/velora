@@ -39,7 +39,7 @@ namespace velora::game
             ~VisualSystem() = default;
 
             // interpolated run
-            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha);
+            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha,  std::optional<std::size_t> fbo = std::nullopt);
 
         private:
             asio::strand<asio::io_context::executor_type> _strand;

@@ -7,6 +7,18 @@
 
 namespace velora
 {
+    struct FBOAttachment
+    {
+        enum class Type
+        {
+            Texture,
+            RenderBuffer
+        };
+
+        std::size_t index;
+        Type type;
+    };
+
     class IFrameBufferObject : public type::Interface
     {
         public:

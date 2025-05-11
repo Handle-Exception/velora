@@ -18,10 +18,7 @@ namespace velora::opengl
 
             OpenGLTexture(OpenGLTexture && other) = default;
 
-            std::size_t ID() const
-            {
-                return 0;
-            }
+            std::size_t ID() const;
 
             bool good() const
             {
@@ -29,11 +26,13 @@ namespace velora::opengl
             }
             bool enable() const
             {
+                glBindTexture(GL_TEXTURE_2D, _ID);
+
                 return false;
             }
             void disable() const
             {
-
+                glBindTexture(GL_TEXTURE_2D, 0);
             }
 
         private:

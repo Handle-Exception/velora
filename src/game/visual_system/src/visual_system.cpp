@@ -8,7 +8,7 @@ namespace velora::game
         :   _strand(asio::make_strand(io_context)), _renderer(renderer), _camera_system(camera_system), _light_system(light_system)
     {}
 
-    asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha)
+    asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha, std::optional<std::size_t> fbo)
     {
         if(_renderer.good() == false)co_return;
 
@@ -128,10 +128,11 @@ namespace velora::game
                                 {"uModel", model_matrix},
                                 {"uView", view_matrix},
                                 {"uProjection", proj_matrix}
-                            }
+                            },
+                            .storage_buffer = _light_system.getShaderBufferID()
                         }, 
-                        _light_system.getShaderBufferID(),
-                        mode);
+                        mode,
+                        std::move(fbo));
         }
         co_return;
     }

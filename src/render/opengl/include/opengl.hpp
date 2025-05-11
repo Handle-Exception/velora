@@ -54,8 +54,8 @@ namespace velora::opengl
             asio::awaitable<void> render(std::size_t vertex_buffer_ID,
                 std::size_t shader_ID,
                 ShaderInputs shader_inputs,
-                std::optional<std::size_t> shader_storage_buffer_ID,
-                RenderMode mode);
+                RenderMode mode,
+                std::optional<std::size_t> frame_buffer_object_ID);
                 
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
@@ -77,7 +77,7 @@ namespace velora::opengl
             std::optional<std::size_t> getShaderStorageBuffer(std::string name) const;
             asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data);
             
-            asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution);
+            asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution, std::initializer_list<FBOAttachment> attachments);
             asio::awaitable<bool> eraseFrameBufferObject(std::size_t id);
             std::optional<std::size_t> getFrameBufferObject(std::string name) const;
 

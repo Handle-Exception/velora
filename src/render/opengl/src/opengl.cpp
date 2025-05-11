@@ -300,11 +300,11 @@ namespace velora::opengl
     }
 
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructFrameBufferObject(std::string name, Resolution resolution)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructFrameBufferObject(std::string name, Resolution resolution, std::initializer_list<FBOAttachment> attachments)
     {
         co_return co_await (constructInternalObject<OpenGLFrameBufferObject>(
             _frame_buffer_objects, _frame_buffer_object_names, std::move(name),
-            std::move(resolution)));
+            std::move(resolution), std::move(attachments)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseFrameBufferObject(std::size_t id)
@@ -396,12 +396,26 @@ namespace velora::opengl
             std::size_t vertex_buffer_ID,
             std::size_t shader_ID,
             ShaderInputs shader_inputs,
-            std::optional<std::size_t> shader_storage_buffer_ID,
-            RenderMode mode)
+            RenderMode mode,
+            std::optional<std::size_t> frame_buffer_object_ID)
     {
         if(good() == false)co_return;
 
         co_await _render_context->ensureOnStrand();
+
+        if(frame_buffer_object_ID)
+        {
+            if(_frame_buffer_objects.contains(*frame_buffer_object_ID) == false)
+            {
+                spdlog::error("Frame buffer object not found");
+                co_return;
+            }
+            if(_frame_buffer_objects.at(*frame_buffer_object_ID)->enable() == false)
+            {
+                spdlog::error("Cannot enable frame buffer object");
+                co_return;
+            }
+        }
 
         auto shader_it = _shaders.find(shader_ID);
         if(shader_it == _shaders.end()){
@@ -428,9 +442,9 @@ namespace velora::opengl
 
         assignShaderInputs(shader_ID, shader_inputs);
 
-        if(shader_storage_buffer_ID)
+        if(shader_inputs.storage_buffer.has_value())
         {
-            auto shader_storage_buffer_it = _shader_storage_buffers.find(*shader_storage_buffer_ID);
+            auto shader_storage_buffer_it = _shader_storage_buffers.find(*shader_inputs.storage_buffer);
             if(shader_storage_buffer_it == _shader_storage_buffers.end()){
                 spdlog::warn("Rendering: Shader storage buffer not found");
                 co_return;
@@ -447,6 +461,11 @@ namespace velora::opengl
         glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
         
         if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // restore default
+
+        if(frame_buffer_object_ID)
+        {
+            _frame_buffer_objects.at(*frame_buffer_object_ID)->disable();
+        }
 
         co_return;
     }

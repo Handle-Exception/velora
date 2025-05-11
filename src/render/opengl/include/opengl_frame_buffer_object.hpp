@@ -1,25 +1,23 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-#include <GL/glew.h>
 #include <utility>
 
+#include <spdlog/spdlog.h>
+
+#include <absl/container/flat_hash_map.h>
+
+#include <GL/glew.h>
+
+#include "frame_buffer_object.hpp"
+#include "texture.hpp"
 #include "resolution.hpp"
+
 #include "opengl_debug.hpp"
 #include "opengl_texture.hpp"
 #include "opengl_render_buffer_object.hpp"
 
 namespace velora::opengl
 {
-
-    struct FBOAttachement
-    {
-        GLuint ID;
-        GLenum attachment;
-        GLenum type;
-    };
-
-
     /**
      * @brief OpenGL Frame Buffer Object
      * 
@@ -29,7 +27,7 @@ namespace velora::opengl
     class OpenGLFrameBufferObject
     {
         public:
-            OpenGLFrameBufferObject(Resolution resolution);
+            OpenGLFrameBufferObject(Resolution resolution, std::initializer_list<FBOAttachment> attachments);
             
             ~OpenGLFrameBufferObject();
 
@@ -44,13 +42,13 @@ namespace velora::opengl
             void disable() const;
 
         protected:
-            bool setGPUAttributes();
             bool generateBuffer();
             bool removeBuffer();
-            bool copyDataToGPU() const;
 
         private:
             GLuint _FBO;
             Resolution _resolution;
+
+            absl::flat_hash_map<std::size_t, Texture> _attached_textures;
     };
 }

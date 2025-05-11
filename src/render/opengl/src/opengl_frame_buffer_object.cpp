@@ -2,7 +2,7 @@
 
 namespace velora::opengl
 {
-    OpenGLFrameBufferObject::OpenGLFrameBufferObject(Resolution resolution)
+    OpenGLFrameBufferObject::OpenGLFrameBufferObject(Resolution resolution, std::initializer_list<FBOAttachment> attachments)
     :  _FBO(0), _resolution(std::move(resolution))
     {
         if(generateBuffer() == false) 
@@ -12,8 +12,55 @@ namespace velora::opengl
         }
 
         enable();
-        setGPUAttributes();
-        copyDataToGPU();
+        std::vector<GLenum> draw_buffers;
+        for(const auto & att : attachments)
+        {
+            if(att.type == FBOAttachment::Type::Texture)
+            {
+                // calculate attachement point
+                assert(att.index < 8);
+                GLenum attachment_point = GL_COLOR_ATTACHMENT0;
+
+                if(att.index == 1)attachment_point = GL_COLOR_ATTACHMENT1;
+                if(att.index == 2)attachment_point = GL_COLOR_ATTACHMENT2;
+                if(att.index == 3)attachment_point = GL_COLOR_ATTACHMENT3;
+                if(att.index == 4)attachment_point = GL_COLOR_ATTACHMENT4;
+                if(att.index == 5)attachment_point = GL_COLOR_ATTACHMENT5;
+                if(att.index == 6)attachment_point = GL_COLOR_ATTACHMENT6;
+                if(att.index == 7)attachment_point = GL_COLOR_ATTACHMENT7;
+
+                // construct new texture
+                Texture t = Texture::construct<OpenGLTexture>(_resolution);
+                const std::size_t id = t->ID(); 
+                _attached_textures.try_emplace(id, std::move(t)); 
+
+                // attach texture to FBO
+                glFramebufferTexture2D(GL_FRAMEBUFFER, attachment_point, GL_TEXTURE_2D, id, 0);
+
+                draw_buffers.emplace_back(attachment_point);
+            }
+            else if(att.type == FBOAttachment::Type::RenderBuffer)
+            {
+                throw std::runtime_error("UNIMPLEMENTED");
+                //glFramebufferRenderbuffer(GL_FRAMEBUFFER, att.attachment, GL_RENDERBUFFER, att.ID);
+            }
+            else
+            {
+                spdlog::error("Unknown FBO attachment type");
+                throw std::runtime_error("Unknown FBO attachment type");
+            }
+        }
+        
+        glDrawBuffers(draw_buffers.size(), draw_buffers.data());
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            spdlog::error("FBO validation failed");
+            throw std::runtime_error("FBO validation failed");
+        }
+
+
+        disable();
 
         logOpenGLState();
     }
@@ -105,7 +152,7 @@ namespace velora::opengl
         if(currently_bound_FBO == (GLint)_FBO) return true;
         
         // try to bind
-        glBindBuffer(GL_FRAMEBUFFER, _FBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currently_bound_FBO);
 
@@ -119,42 +166,5 @@ namespace velora::opengl
         }
         
         return true;
-    }
-
-    bool OpenGLFrameBufferObject::setGPUAttributes()
-    {
-        FBOAttachement att;
-        // can be render object or texture
-
-        if(att.type == GL_TEXTURE_2D)
-        {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, att.attachment, att.type, att.ID, 0);
-        }
-        else if(att.type == GL_RENDERBUFFER)
-        {
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, att.attachment, att.type, att.ID);
-        }
-        else
-        {
-            spdlog::error("Unknown FBO attachment type");
-            return false;
-        }
-
-        return false;
-    }
-
-    bool OpenGLFrameBufferObject::copyDataToGPU() const
-    {
-        if(enable() == false)
-        {
-            spdlog::error("Cannot enable OpenGL frame buffer object");
-            return false;
-        }
-
-        // TODO
-
-        disable();
-
-        return false;
     }
 }
