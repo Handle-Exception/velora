@@ -7,20 +7,11 @@
 
 namespace velora
 {
-    enum class TextureFormat
-    {
-        RGB,
-        RGB16,
-        RGBA,
-        Depth,
-        Stencil
-    };
-
-    class ITexture : public type::Interface
+    class IRenderBuffer : public type::Interface
     {
         public:
         //
-        virtual ~ITexture() = default;
+        virtual ~IRenderBuffer() = default;
 
         virtual std::size_t ID() const = 0;
 
@@ -31,16 +22,16 @@ namespace velora
         virtual void disable() const = 0;
     };
 
-    template<class TextureImplType>
-    class TextureDispatcher final : public type::Dispatcher<ITexture, TextureImplType>
+    template<class RenderBufferImplType>
+    class RenderBufferDispatcher final : public type::Dispatcher<IRenderBuffer, RenderBufferImplType>
     {
         public:
-            using dispatch = type::Dispatcher<ITexture, TextureImplType>;
+            using dispatch = type::Dispatcher<IRenderBuffer, RenderBufferImplType>;
 
-            inline TextureDispatcher(TextureImplType && obj) : dispatch(std::move(obj)){}
+            inline RenderBufferDispatcher(RenderBufferImplType && obj) : dispatch(std::move(obj)){}
             template<class... Args>                                                                             
-            inline TextureDispatcher(Args && ... args) : dispatch(std::forward<Args>(args)...){} 
-            inline ~TextureDispatcher() = default;
+            inline RenderBufferDispatcher(Args && ... args) : dispatch(std::forward<Args>(args)...){} 
+            inline ~RenderBufferDispatcher() = default;
 
             constexpr inline std::size_t ID() const override { return dispatch::getImpl().ID();}
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
@@ -48,32 +39,32 @@ namespace velora
             constexpr inline void disable() const override { return dispatch::getImpl().disable();}
     };
 
-    template<class TextureImplType>
-    TextureDispatcher(TextureImplType && ) -> TextureDispatcher<TextureImplType>;
+    template<class RenderBufferImplType>
+    RenderBufferDispatcher(RenderBufferImplType && ) -> RenderBufferDispatcher<RenderBufferImplType>;
 
-    class Texture : public type::Implementation<ITexture, TextureDispatcher> 
+    class RenderBuffer : public type::Implementation<IRenderBuffer, RenderBufferDispatcher> 
     {                                                                   
         public:
             /* move ctor */
-            Texture(Texture && other) = default;
-            Texture & operator=(Texture && other) = default;
+            RenderBuffer(RenderBuffer && other) = default;
+            RenderBuffer & operator=(RenderBuffer && other) = default;
 
             /* dtor */
-            virtual ~Texture() = default;
+            virtual ~RenderBuffer() = default;
         
             /* ctor */
-            template<class TextureImplType>
-            Texture(TextureImplType && impl)
+            template<class RenderBufferImplType>
+            RenderBuffer(RenderBufferImplType && impl)
             : Implementation(std::move(impl))
             {}                                                          
     };
 
     template <typename H>
-    constexpr inline H AbslHashValue(H h, const Texture & vb) {
+    constexpr inline H AbslHashValue(H h, const RenderBuffer & vb) {
         return H::combine(std::move(h), vb->ID());
     }
 
-    constexpr inline bool operator==(const Texture & lhs, const Texture & rhs){
+    constexpr inline bool operator==(const RenderBuffer & lhs, const RenderBuffer & rhs){
         return lhs->ID() == rhs->ID();
     }
 }

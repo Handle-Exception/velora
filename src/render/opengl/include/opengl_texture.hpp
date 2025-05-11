@@ -22,13 +22,13 @@ namespace velora::opengl
 
             bool good() const
             {
-                return false;
+                return _ID != 0;
             }
             bool enable() const
             {
                 glBindTexture(GL_TEXTURE_2D, _ID);
 
-                return false;
+                return true;
             }
             void disable() const
             {

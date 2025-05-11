@@ -180,6 +180,9 @@ namespace velora::opengl
         _vertex_buffers.clear();
         _shaders.clear();
         _shader_storage_buffers.clear();
+        _frame_buffer_objects.clear();
+        _textures.clear();
+        _rbos.clear();
 
         // unbind context before unregistering in winapi process
         wglMakeCurrent(0, 0);
@@ -266,11 +269,15 @@ namespace velora::opengl
     }
 
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShaderStorageBuffer(std::string name, const std::size_t size, const void * data)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShaderStorageBuffer(
+                std::string name,
+                unsigned int binding_point,
+                const std::size_t size,
+                const void * data)
     {
         co_return co_await (constructInternalObject<OpenGLShaderStorageBuffer>(
             _shader_storage_buffers, _shader_storage_buffer_names, std::move(name),
-            std::move(size), std::move(data)));
+            binding_point, std::move(size), std::move(data)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseShaderStorageBuffer(std::size_t id)
@@ -302,9 +309,75 @@ namespace velora::opengl
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructFrameBufferObject(std::string name, Resolution resolution, std::initializer_list<FBOAttachment> attachments)
     {
+        if(good() == false)co_return false;
+        
+        co_await _render_context->ensureOnStrand();
+
+        GLenum format;
+        std::vector<std::pair<std::size_t, FBOAttachment>> constructed_attachments;
+
+        // create all attachments
+        for(const auto & att : attachments)
+        {
+            // format needed to create new texture or render buffer
+            switch(att.format)
+            {
+                case TextureFormat::RGBA:
+                    format = GL_RGBA;
+                    break;
+                case TextureFormat::RGB:
+                    format = GL_RGB;
+                    break;
+                case TextureFormat::RGB16:
+                    format = GL_RGB16F;
+                    break;
+                case TextureFormat::Depth:
+                    format = GL_DEPTH_COMPONENT;
+                    break;
+                case TextureFormat::Stencil:
+                    format = GL_STENCIL_INDEX;
+                    break;
+            }
+
+            if(att.type == FBOAttachment::Type::Texture)
+            {
+                // create unnamed texture for FBO
+                Texture tex = Texture::construct<OpenGLTexture>(resolution, format);
+                if(tex->good() == false)
+                {
+                    spdlog::warn(std::format("[t:{}] Failed to construct texture for FBO attachment", std::this_thread::get_id()));
+                    co_return std::nullopt;
+                }
+
+                const auto id = tex->ID();
+                _textures.try_emplace(id, std::move(tex));
+                constructed_attachments.emplace_back(id, att);
+   
+            }
+            else if(att.type == FBOAttachment::Type::RenderBuffer)
+            {
+                // create unnamed RBO for FBO
+                RenderBuffer rbo = RenderBuffer::construct<OpenGLRenderBufferObject>(resolution, format);
+                if(rbo->good() == false)
+                {
+                    spdlog::warn(std::format("[t:{}] Failed to construct render buffer for FBO attachment", std::this_thread::get_id()));
+                    co_return std::nullopt;
+                }
+
+                const auto id = rbo->ID();
+                _rbos.try_emplace(id, std::move(rbo));
+                constructed_attachments.emplace_back(id, att);
+            }
+            else
+            {
+                spdlog::warn(std::format("[t:{}] Unknown FBO attachment type", std::this_thread::get_id()));
+                co_return std::nullopt;
+            }
+        }
+        // create FBO
         co_return co_await (constructInternalObject<OpenGLFrameBufferObject>(
             _frame_buffer_objects, _frame_buffer_object_names, std::move(name),
-            std::move(resolution), std::move(attachments)));
+            std::move(resolution), std::move(constructed_attachments)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseFrameBufferObject(std::size_t id)
@@ -378,16 +451,48 @@ namespace velora::opengl
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
+
+        for(unsigned int unit = 0; unit < shader_inputs.in_samplers.size(); ++unit)
+        {
+            const auto & [name, id] = shader_inputs.in_samplers.at(unit);
+
+            if(_textures.contains(id) == false)
+            {
+                spdlog::warn(std::format("[t:{}] Texture {} does not exist", std::this_thread::get_id(), name));
+                continue;
+            }
+
+            _shaders.at(shader_ID)->setUniform(name, unit, _textures.at(id));
+        }
     }
 
-    asio::awaitable<void> OpenGLRenderer::clearScreen(glm::vec4 color)
+    asio::awaitable<void> OpenGLRenderer::clearScreen(glm::vec4 color, std::optional<std::size_t> fbo)
     {
         if(good() == false)co_return;
 
         co_await _render_context->ensureOnStrand();
 
+        if(fbo)
+        {
+            if(_frame_buffer_objects.contains(*fbo) == false)
+            {
+                spdlog::error("Frame buffer object not found");
+                co_return;
+            }
+            if(_frame_buffer_objects.at(*fbo)->enable() == false)
+            {
+                spdlog::error("Cannot enable frame buffer object");
+                co_return;
+            }
+        }
+
         glClearColor(color.r, color.g, color.b, color.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        if(fbo)
+        {
+            _frame_buffer_objects.at(*fbo)->disable();
+        }
 
         co_return;
     }
@@ -397,20 +502,20 @@ namespace velora::opengl
             std::size_t shader_ID,
             ShaderInputs shader_inputs,
             RenderMode mode,
-            std::optional<std::size_t> frame_buffer_object_ID)
+            std::optional<std::size_t> fbo)
     {
         if(good() == false)co_return;
 
         co_await _render_context->ensureOnStrand();
 
-        if(frame_buffer_object_ID)
+        if(fbo)
         {
-            if(_frame_buffer_objects.contains(*frame_buffer_object_ID) == false)
+            if(_frame_buffer_objects.contains(*fbo) == false)
             {
                 spdlog::error("Frame buffer object not found");
                 co_return;
             }
-            if(_frame_buffer_objects.at(*frame_buffer_object_ID)->enable() == false)
+            if(_frame_buffer_objects.at(*fbo)->enable() == false)
             {
                 spdlog::error("Cannot enable frame buffer object");
                 co_return;
@@ -462,9 +567,9 @@ namespace velora::opengl
         
         if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // restore default
 
-        if(frame_buffer_object_ID)
+        if(fbo)
         {
-            _frame_buffer_objects.at(*frame_buffer_object_ID)->disable();
+            _frame_buffer_objects.at(*fbo)->disable();
         }
 
         co_return;

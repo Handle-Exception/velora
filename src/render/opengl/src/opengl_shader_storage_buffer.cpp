@@ -2,7 +2,7 @@
 
 namespace velora::opengl
 {
-    OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(std::size_t size, const void * data)
+    OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(unsigned int binding_point, std::size_t size, const void * data)
     :   _size(std::move(size)),
         _data(std::move(data)),
         _SSBO(0)
@@ -14,7 +14,7 @@ namespace velora::opengl
         }
 
         enable();
-        setGPUAttributes();
+        setGPUAttributes(binding_point);
         copyDataToGPU();
 
         logOpenGLState();
@@ -134,10 +134,8 @@ namespace velora::opengl
         return true;
     }
 
-    bool OpenGLShaderStorageBuffer::setGPUAttributes()
+    bool OpenGLShaderStorageBuffer::setGPUAttributes(GLuint binding_point)
     {
-        GLuint binding_point = 2;
-
         spdlog::debug(std::format("Setting shader storage buffer {} to be bound at {} binding point", _SSBO, binding_point));
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, _SSBO);
 

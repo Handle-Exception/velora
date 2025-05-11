@@ -28,6 +28,7 @@
 #include "shader_storage_buffer.hpp"
 #include "frame_buffer_object.hpp"
 #include "texture.hpp"
+#include "render_buffer.hpp"
 
 #include "opengl_debug.hpp"
 #include "opengl_vertex_buffer.hpp"
@@ -35,6 +36,7 @@
 #include "opengl_shader_storage_buffer.hpp"
 #include "opengl_frame_buffer_object.hpp"
 #include "opengl_texture.hpp"
+#include "opengl_render_buffer_object.hpp"
 
 namespace velora::opengl
 {
@@ -50,12 +52,12 @@ namespace velora::opengl
 
             asio::awaitable<void> close();
 
-            asio::awaitable<void> clearScreen(glm::vec4 color);
+            asio::awaitable<void> clearScreen(glm::vec4 color, std::optional<std::size_t> fbo);
             asio::awaitable<void> render(std::size_t vertex_buffer_ID,
                 std::size_t shader_ID,
                 ShaderInputs shader_inputs,
                 RenderMode mode,
-                std::optional<std::size_t> frame_buffer_object_ID);
+                std::optional<std::size_t> fbo);
                 
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);
@@ -72,7 +74,7 @@ namespace velora::opengl
             asio::awaitable<bool> eraseShader(std::size_t id);
             std::optional<std::size_t> getShader(std::string name) const;
 
-            asio::awaitable<std::optional<std::size_t>> constructShaderStorageBuffer(std::string name, const std::size_t size, const void * data);
+            asio::awaitable<std::optional<std::size_t>> constructShaderStorageBuffer(std::string name, unsigned int binding_point, const std::size_t size, const void * data);
             asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id);
             std::optional<std::size_t> getShaderStorageBuffer(std::string name) const;
             asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data);
@@ -80,6 +82,16 @@ namespace velora::opengl
             asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution, std::initializer_list<FBOAttachment> attachments);
             asio::awaitable<bool> eraseFrameBufferObject(std::size_t id);
             std::optional<std::size_t> getFrameBufferObject(std::string name) const;
+
+            std::vector<std::size_t> getFrameBufferObjectTextures(std::size_t id) const 
+            {
+                if(good() == false) return {};
+
+                auto it = _frame_buffer_objects.find(id);
+                if(it == _frame_buffer_objects.end()) return {};
+
+                return it->second->getTextures();
+            }
 
             asio::awaitable<std::optional<std::size_t>> constructTexture(std::string name, Resolution resolution);
             asio::awaitable<bool> eraseTexture(std::size_t id);
@@ -213,12 +225,14 @@ namespace velora::opengl
             absl::flat_hash_map<std::size_t, ShaderStorageBuffer> _shader_storage_buffers;
             absl::flat_hash_map<std::size_t, FrameBufferObject> _frame_buffer_objects;
             absl::flat_hash_map<std::size_t, Texture> _textures;
+            absl::flat_hash_map<std::size_t, RenderBuffer> _rbos;
 
             absl::flat_hash_map<std::string, std::size_t> _vertex_buffer_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_storage_buffer_names;
             absl::flat_hash_map<std::string, std::size_t> _frame_buffer_object_names;
             absl::flat_hash_map<std::string, std::size_t> _textures_names;
+            absl::flat_hash_map<std::string, std::size_t> _rbos_names;
 
             // Render thread initialized at the end of the constructor
             std::unique_ptr<RenderThreadContext> _render_context; // dedicated single thread

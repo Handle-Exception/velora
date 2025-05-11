@@ -1,9 +1,11 @@
 
 #pragma once
 
-#include "type.hpp"
 #include <string>
 #include <utility>
+
+#include "type.hpp"
+#include "texture.hpp"
 
 namespace velora
 {
@@ -24,6 +26,7 @@ namespace velora
 
         Type type;
         Point point;
+        TextureFormat format;
     };
 
     class IFrameBufferObject : public type::Interface
@@ -39,6 +42,8 @@ namespace velora
         virtual bool enable() const = 0;
         //
         virtual void disable() const = 0;
+
+        virtual const std::vector<std::size_t> & getTextures() const = 0;
     };
 
     template<class FrameBufferObjectImplType>
@@ -56,6 +61,7 @@ namespace velora
             constexpr inline bool good() const override { return dispatch::getImpl().good();}
             constexpr inline bool enable() const override { return dispatch::getImpl().enable();}
             constexpr inline void disable() const override { return dispatch::getImpl().disable();}
+            constexpr inline const std::vector<std::size_t> & getTextures() const override { return dispatch::getImpl().getTextures();}
     };
 
     template<class FrameBufferObjectImplType>

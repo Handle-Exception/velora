@@ -14,10 +14,10 @@ namespace velora::game
         auto id = co_await renderer.constructFrameBufferObject("visual_system_fbo",
             std::move(resolution), 
             {
-                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color},
-                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color},
-                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color},
-                {FBOAttachment::Type::RenderBuffer, FBOAttachment::Point::Depth}
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGB16}, // gPosition
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGB16}, // gNormal
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGBA}, // gAlbedo
+                {FBOAttachment::Type::RenderBuffer, FBOAttachment::Point::Depth, TextureFormat::Depth}
             }
         );
 
@@ -40,25 +40,38 @@ namespace velora::game
             _light_system(light_system),
             _deferred_fbo(std::move(fbo))
     {
-        const auto id = _renderer.getVertexBuffer("quad_prefab");
-        if(!id)
+        const auto quad_id = _renderer.getVertexBuffer("quad_prefab");
+        if(!quad_id)
         {
             spdlog::error("Failed to get quad prefab vertex buffer");
             throw std::runtime_error("Failed to get quad prefab vertex buffer");
         }
+        _quad_vbo = *quad_id;
 
-        _quad_vbo = *id;
+        const auto _deferred_lighting_pass_id = _renderer.getShader("deferred_lighting_pass");
+        if(!_deferred_lighting_pass_id)
+        {
+            spdlog::error("Failed to get deferred lighting pass shader");
+            throw std::runtime_error("Failed to get deferred lighting pass shader");
+        }
+        _deferred_lighting_pass_shader = *_deferred_lighting_pass_id;
+
+        _deferred_fbo_textures = _renderer.getFrameBufferObjectTextures(*_deferred_fbo);
     }
 
     asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha)
     {
         if(_renderer.good() == false)co_return;
 
+        // clear deferred_fbo (G Buffer)
+        co_await _renderer.clearScreen({0.0f, 0.0f, 0.0f, 1.0f}, _deferred_fbo);
+
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
 
         // get camera system state
+        const glm::vec3 & view_position = _camera_system.getPosition();
         const glm::mat4 & view_matrix = _camera_system.getView();
         const glm::mat4 & proj_matrix = _camera_system.getProjection();
 
@@ -160,7 +173,7 @@ namespace velora::game
 
             mode = RenderMode::Solid;
 
-            // render into _deferred_fbo (G Buffer)
+            // render into deferred_fbo (G Buffer)
             co_await _renderer.render(*vb_id, *sh_id, 
                         ShaderInputs{
                             .in_bool = {{"useTexture", false}},
@@ -175,12 +188,17 @@ namespace velora::game
                         _deferred_fbo);
         }
 
-        // render display quad using lighting pass shader on G Buffer
+        //render display quad using lighting pass shader on G Buffer
         co_await _renderer.render(
-            _quad_vbo, /*Tutaj lighting pass shader*/,
+            _quad_vbo, _deferred_lighting_pass_shader,
             ShaderInputs{
                 .in_int = {{"lightCount", (int)_light_system.getLightCount()}},
-                .in_samplers = {/*tutaj powinny być zbindowane textury z G buffer*/},
+                //.in_vec3 = {{"viewPos", view_position}},
+                .in_samplers = {
+                    {"gPosition", _deferred_fbo_textures.at(0)},
+                    {"gNormal", _deferred_fbo_textures.at(1)},
+                    {"gAlbedoSpec", _deferred_fbo_textures.at(2)}
+                },
                 .storage_buffer = _light_system.getShaderBufferID()
             } 
         );

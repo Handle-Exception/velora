@@ -62,7 +62,9 @@ namespace velora::game
             game::LightSystem & _light_system;
 
             std::optional<std::size_t> _deferred_fbo;
+            std::vector<std::size_t> _deferred_fbo_textures;
             std::size_t _quad_vbo;
+            std::size_t _deferred_lighting_pass_shader;
 
     };
 }

@@ -1,13 +1,14 @@
 
 #pragma once
 
-#include "type.hpp"
 #include <string>
 #include <utility>
 
 #include <glm/glm.hpp>
 #include <absl/container/flat_hash_map.h>
 
+#include "type.hpp"
+#include "texture.hpp"
 
 namespace velora
 {
@@ -26,7 +27,7 @@ namespace velora
         absl::flat_hash_map<std::string, glm::mat3> in_mat3;
         absl::flat_hash_map<std::string, glm::mat4> in_mat4;
 
-        std::vector<std::size_t> in_samplers;
+        std::vector<std::pair<std::string, std::size_t>> in_samplers;
 
         std::optional<std::size_t> storage_buffer = std::nullopt;
 
@@ -57,6 +58,8 @@ namespace velora
         virtual void setUniform(const std::string & name, glm::mat2 value)= 0;
         virtual void setUniform(const std::string & name, glm::mat3 value)= 0;
         virtual void setUniform(const std::string & name, glm::mat4 value)= 0;
+
+        virtual void setUniform(const std::string & name, unsigned int unit, const Texture & value)= 0;
     };
 
     template<class ShaderImplType>
@@ -87,6 +90,8 @@ namespace velora
             constexpr inline void setUniform(const std::string & name, glm::mat2 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
             constexpr inline void setUniform(const std::string & name, glm::mat3 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
             constexpr inline void setUniform(const std::string & name, glm::mat4 value) override { return dispatch::getImpl().setUniform(name, std::move(value));}
+
+            constexpr inline void setUniform(const std::string & name, unsigned int unit, const Texture & value) override { return dispatch::getImpl().setUniform(name, std::move(unit), value);}
     };
 
     template<class ShaderImplType>

@@ -35,11 +35,14 @@ namespace velora::game
 
         const glm::mat4 & getView() const;
         const glm::mat4 & getProjection () const;
+        const glm::vec3 & getPosition() const;
 
     private:
         asio::strand<asio::io_context::executor_type> _strand;
 
         IRenderer & _renderer;
+        
+        glm::vec3 _position;
         glm::mat4 _view;
         glm::mat4 _projection;
     };

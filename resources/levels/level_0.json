@@ -18,7 +18,7 @@
           "visual": {
              "visible": true,
              "vertex_buffer_name": "cube_prefab",
-             "shader_name": "light_shader"
+             "shader_name": "deferred_shader"
           },
           "terrain": {
              "width": 20,
@@ -47,7 +47,7 @@
           "visual": {
              "visible": true,
              "vertex_buffer_name": "cube_prefab",
-             "shader_name": "light_shader"
+             "shader_name": "deferred_shader"
           },
           "light":{
              "type": "SPOT",
@@ -127,7 +127,7 @@
           "visual": {
              "visible": true,
              "vertex_buffer_name": "cylinder_prefab",
-             "shader_name": "light_shader"
+             "shader_name": "deferred_shader"
           },
           "light":{
             "type": "POINT",
@@ -160,7 +160,7 @@
           "visual": {
              "visible": true,
              "vertex_buffer_name": "cone_prefab",
-             "shader_name": "light_shader"
+             "shader_name": "deferred_shader"
           },
           "light":{
              "type": "POINT",
@@ -193,7 +193,7 @@
         "visual": {
            "visible": true,
            "vertex_buffer_name": "icosphere3_prefab",
-           "shader_name": "light_shader"
+           "shader_name": "deferred_shader"
         }
      },
      {
@@ -213,7 +213,7 @@
         "visual": {
            "visible": true,
            "vertex_buffer_name": "icosphere3_prefab",
-           "shader_name": "light_shader"
+           "shader_name": "deferred_shader"
         }
      }
     ]

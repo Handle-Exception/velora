@@ -418,5 +418,19 @@ namespace velora::opengl
         glUniformMatrix4fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
     }
 
+    void OpenGLShader::setUniform(const std::string & name, unsigned int unit, const Texture & value)
+    {
+        if(_uniforms.contains(name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+
+        glActiveTexture(GL_TEXTURE0 + unit);
+
+        value->enable();
+
+        glUniform1i(_uniforms.at(name).first, unit);
+    }
 
 }

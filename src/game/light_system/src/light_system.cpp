@@ -6,7 +6,8 @@ namespace velora::game
 
     asio::awaitable<LightSystem> LightSystem::asyncConstructor(asio::io_context & io_context, IRenderer & renderer)
     {
-        auto id = co_await renderer.constructShaderStorageBuffer("lights", 0, nullptr);
+        // binding point 2 in shader
+        auto id = co_await renderer.constructShaderStorageBuffer("lights", 2, 0, nullptr);
         if(id.has_value() == false)
         {
             throw std::runtime_error("Failed to create light buffer");

@@ -129,7 +129,8 @@ namespace velora
         // async constructor because light system must allocate shader input buffer in renderer thread asynchronously
         game::LightSystem light_system = co_await game::LightSystem::asyncConstructor(io_context, *renderer);
         // asytnc constructor because visual system must allocate fbo in renderer thread asynchronously
-        game::VisualSystem visual_system = co_await game::VisualSystem::asyncConstructor(io_context, *renderer, camera_system, light_system);
+        game::VisualSystem visual_system = co_await game::VisualSystem::asyncConstructor(
+                io_context, *renderer, {1280, 720}, camera_system, light_system);
 
         // create scripts system
         game::ScriptSystem script_system(io_context);

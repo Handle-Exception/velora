@@ -9,8 +9,9 @@
 #include <GL/glew.h>
 
 #include "frame_buffer_object.hpp"
-#include "texture.hpp"
 #include "resolution.hpp"
+#include "texture.hpp"
+#include "render_buffer.hpp"
 
 #include "opengl_debug.hpp"
 #include "opengl_texture.hpp"
@@ -27,7 +28,7 @@ namespace velora::opengl
     class OpenGLFrameBufferObject
     {
         public:
-            OpenGLFrameBufferObject(Resolution resolution, std::initializer_list<FBOAttachment> attachments);
+            OpenGLFrameBufferObject(Resolution resolution, std::vector<std::pair<std::size_t, FBOAttachment>> attachments);
             
             ~OpenGLFrameBufferObject();
 
@@ -41,14 +42,18 @@ namespace velora::opengl
             //
             void disable() const;
 
+            const std::vector<std::size_t> & getTextures() const;
+
         protected:
             bool generateBuffer();
             bool removeBuffer();
+            void processAttachments(const std::vector<std::pair<std::size_t, FBOAttachment>> & attachments);
 
         private:
             GLuint _FBO;
             Resolution _resolution;
 
-            absl::flat_hash_map<std::size_t, Texture> _attached_textures;
+            std::vector<std::size_t> _attached_textures;
+            std::vector<std::size_t> _attached_render_buffers;
     };
 }

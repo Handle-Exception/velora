@@ -11,7 +11,7 @@ namespace velora::opengl
     class OpenGLShaderStorageBuffer
     {
         public:
-            OpenGLShaderStorageBuffer(std::size_t size, const void * data);
+            OpenGLShaderStorageBuffer(unsigned int binding_point, std::size_t size, const void * data);
             
             ~OpenGLShaderStorageBuffer();
 
@@ -28,7 +28,7 @@ namespace velora::opengl
             void update(std::size_t size, const void * data);
 
         protected:
-            bool setGPUAttributes();
+            bool setGPUAttributes(GLuint binding_point);
             bool generateBuffer();
             bool removeBuffer();
             bool copyDataToGPU() const;

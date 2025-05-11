@@ -20,6 +20,11 @@ namespace velora::game
         return _projection;
     }
 
+    const glm::vec3 & CameraSystem::getPosition() const
+    {
+        return _position;
+    }
+
     asio::awaitable<void> CameraSystem::run(const ComponentManager& components, const EntityManager& entities, float alpha)
     {
         if(!_strand.running_in_this_thread()){
@@ -63,6 +68,7 @@ namespace velora::game
             prev_rotation = glm::normalize(prev_rotation);
 
             interpolated_pos = glm::mix(prev_position, position, alpha);
+            _position = interpolated_pos;
             interpolated_rot = glm::slerp(prev_rotation, rotation, alpha);
 
             rotation_matrix = glm::toMat4(glm::conjugate(interpolated_rot));

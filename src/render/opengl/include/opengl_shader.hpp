@@ -12,8 +12,8 @@
 #include "process.hpp"
 #include "vertex.hpp"
 #include "opengl_core.hpp"
-
 #include "glsl_variable.hpp"
+#include "texture.hpp"
 
 namespace velora::opengl
 {
@@ -43,6 +43,8 @@ namespace velora::opengl
         void setUniform(const std::string & name, glm::mat2 value);
         void setUniform(const std::string & name, glm::mat3 value);
         void setUniform(const std::string & name, glm::mat4 value);
+
+        void setUniform(const std::string & name, unsigned int unit, const Texture & value);
 
     protected:
         OpenGLShader();
