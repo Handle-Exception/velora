@@ -134,6 +134,11 @@ namespace velora::opengl
         return _attached_textures;
     }
 
+    const Resolution & OpenGLFrameBufferObject::getResolution() const
+    {
+        return _resolution;
+    }
+
     void OpenGLFrameBufferObject::processAttachments(const std::vector<std::pair<std::size_t, FBOAttachment>> & attachments)
     {
         GLenum attachment_point;

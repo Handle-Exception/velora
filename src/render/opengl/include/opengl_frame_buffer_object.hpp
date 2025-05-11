@@ -43,6 +43,7 @@ namespace velora::opengl
             void disable() const;
 
             const std::vector<std::size_t> & getTextures() const;
+            const Resolution & getResolution() const;
 
         protected:
             bool generateBuffer();

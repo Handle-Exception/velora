@@ -40,7 +40,7 @@ namespace velora::game
             _light_system(light_system),
             _deferred_fbo(std::move(fbo))
     {
-        const auto quad_id = _renderer.getVertexBuffer("quad_prefab");
+        const auto quad_id = _renderer.getVertexBuffer("NDC_quad_prefab");
         if(!quad_id)
         {
             spdlog::error("Failed to get quad prefab vertex buffer");

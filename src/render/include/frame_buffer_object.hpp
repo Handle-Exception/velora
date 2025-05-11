@@ -6,6 +6,7 @@
 
 #include "type.hpp"
 #include "texture.hpp"
+#include "resolution.hpp"
 
 namespace velora
 {
@@ -44,6 +45,8 @@ namespace velora
         virtual void disable() const = 0;
 
         virtual const std::vector<std::size_t> & getTextures() const = 0;
+
+        virtual const Resolution & getResolution() const = 0;
     };
 
     template<class FrameBufferObjectImplType>
@@ -62,6 +65,7 @@ namespace velora
             constexpr inline bool enable() const override { return dispatch::getImpl().enable();}
             constexpr inline void disable() const override { return dispatch::getImpl().disable();}
             constexpr inline const std::vector<std::size_t> & getTextures() const override { return dispatch::getImpl().getTextures();}
+            constexpr inline const Resolution & getResolution() const override { return dispatch::getImpl().getResolution();}
     };
 
     template<class FrameBufferObjectImplType>

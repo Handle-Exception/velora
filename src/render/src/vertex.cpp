@@ -11,6 +11,26 @@ namespace velora
         };
     }
 
+    const Mesh & getNormalizedDeviceCoordinatesQuadPrefab()
+    {
+        static const Mesh quad{
+            // Indices (two triangles)
+            {
+                0, 1, 2,
+                2, 3, 0
+            },
+            // Vertices: position, normal, texcoord
+            {
+                {{-1.0f, -1.0f, 0.0f}, {0, 0, 1}, {0.0f, 0.0f}}, // bottom left
+                {{ 1.0f, -1.0f, 0.0f}, {0, 0, 1}, {1.0f, 0.0f}}, // bottom right
+                {{ 1.0f,  1.0f, 0.0f}, {0, 0, 1}, {1.0f, 1.0f}}, // top right
+                {{-1.0f,  1.0f, 0.0f}, {0, 0, 1}, {0.0f, 1.0f}}, // top left
+            }
+        };
+
+        return quad;
+    }
+
     const Mesh & getQuadPrefab()
     {
         static const Mesh quad{

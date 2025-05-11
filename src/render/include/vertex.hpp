@@ -28,6 +28,8 @@ namespace velora
         std::vector<Vertex> vertices;
     };
 
+    const Mesh & getNormalizedDeviceCoordinatesQuadPrefab();
+
     const Mesh & getQuadPrefab();
 
     const Mesh & getCubePrefab();

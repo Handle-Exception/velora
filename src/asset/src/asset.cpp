@@ -6,6 +6,12 @@ namespace velora
     {
         bool success = true;
 
+        if((co_await renderer.constructVertexBuffer("NDC_quad_prefab", getNormalizedDeviceCoordinatesQuadPrefab())) == std::nullopt)
+        {
+            spdlog::error("Failed to create NDC quad prefab vertex buffer");
+            success = false;
+        }
+
         if((co_await renderer.constructVertexBuffer("quad_prefab", getQuadPrefab())) == std::nullopt)
         {
             spdlog::error("Failed to create quad_prefab vertex buffer");

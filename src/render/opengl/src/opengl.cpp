@@ -484,6 +484,14 @@ namespace velora::opengl
                 spdlog::error("Cannot enable frame buffer object");
                 co_return;
             }
+            const auto & fbo_obj_ref = _frame_buffer_objects.at(*fbo);
+            glViewport(0, 0, (GLsizei)fbo_obj_ref->getResolution().getWidth(),
+                 (GLsizei)fbo_obj_ref->getResolution().getHeight());
+        }
+        else
+        {
+            glViewport(0, 0, (GLsizei)_viewport_resolution.getWidth(), 
+                (GLsizei)_viewport_resolution.getHeight());
         }
 
         glClearColor(color.r, color.g, color.b, color.a);
@@ -520,6 +528,14 @@ namespace velora::opengl
                 spdlog::error("Cannot enable frame buffer object");
                 co_return;
             }
+            const auto & fbo_obj_ref = _frame_buffer_objects.at(*fbo);
+            glViewport(0, 0, (GLsizei)fbo_obj_ref->getResolution().getWidth(),
+                 (GLsizei)fbo_obj_ref->getResolution().getHeight());
+        }
+        else
+        {
+            glViewport(0, 0, (GLsizei)_viewport_resolution.getWidth(), 
+                (GLsizei)_viewport_resolution.getHeight());
         }
 
         auto shader_it = _shaders.find(shader_ID);
@@ -613,8 +629,6 @@ namespace velora::opengl
             spdlog::error(std::format("[t:{}] Cannot activate OpenGL context", std::this_thread::get_id()));
             co_return;
         }
-
-        glViewport(0, 0, (GLsizei)_viewport_resolution.getWidth(), (GLsizei)_viewport_resolution.getHeight());
 
         co_return;
     }
