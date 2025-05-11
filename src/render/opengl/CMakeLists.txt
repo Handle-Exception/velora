@@ -16,6 +16,7 @@ add_module(NAME "RenderOpenGL"
         "${PROJECT_PREFIX}::Process"
         "${PROJECT_PREFIX}::Window"
         "${PROJECT_PREFIX}::Render"
+        "${PROJECT_PREFIX}::Resolution"
 
         "${PROJECT_PREFIX}::OpenGLCore"
 )

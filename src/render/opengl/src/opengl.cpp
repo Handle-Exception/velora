@@ -223,213 +223,64 @@ namespace velora::opengl
         co_return;
     }
 
+
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructVertexBuffer(std::string name,  const Mesh & mesh)
     {
-        if(good() == false)co_return std::nullopt;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_vertex_buffer_names.contains(name))
-        {
-            spdlog::warn(std::format("[t:{}] Vertex buffer {} already exists", std::this_thread::get_id(), name));
-            co_return std::nullopt;
-        }
-
-        VertexBuffer vb = VertexBuffer::construct<OpenGLVertexBuffer>(mesh.indices, mesh.vertices);
-
-        std::size_t id = vb->ID();
-
-        if(_vertex_buffers.contains(id))co_return std::nullopt;
-
-        _vertex_buffers.try_emplace(id, std::move(vb));
-        _vertex_buffer_names.try_emplace(std::move(name), id);
-
-        co_return id;
+        co_return co_await (constructInternalObject<OpenGLVertexBuffer>(
+            _vertex_buffers, _vertex_buffer_names, std::move(name),
+            mesh.indices, mesh.vertices));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseVertexBuffer(std::size_t id)
     {
-        if(good() == false)co_return false;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_vertex_buffers.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
-            co_return false;
-        }
-
-        _vertex_buffers.erase(id);
-
-        spdlog::info(std::format("[t:{}] Vertex buffer {} erased", std::this_thread::get_id(), id));
-
-        co_return true;
-
+        co_return co_await eraseInternalObject(_vertex_buffers, std::move(id));
     }
 
     std::optional<std::size_t> OpenGLRenderer::getVertexBuffer(std::string name) const
     { 
-        if(good() == false)return std::nullopt;
-
-        if(_vertex_buffer_names.contains(name) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), name));
-            return std::nullopt;
-        }
-        auto id = _vertex_buffer_names.at(name);
-        if(_vertex_buffers.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Vertex buffer {} does not exist", std::this_thread::get_id(), id));
-            return std::nullopt;
-        }
-        return id;
+        return getInternalObjectID(_vertex_buffers, _vertex_buffer_names, std::move(name));
     }
+
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code)
     {
-        if(good() == false)co_return std::nullopt;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_shader_names.contains(name))
-        {
-            spdlog::warn(std::format("[t:{}] Shader {} already exists", std::this_thread::get_id(), name));
-            co_return std::nullopt;
-        }
-
-        Shader shader = Shader::construct<OpenGLShader>(std::move(vertex_code));
-
-        std::size_t id = shader->ID();
-
-        if(_shaders.contains(id))co_return std::nullopt;
-
-        _shaders.try_emplace(id, std::move(shader));
-        _shader_names.try_emplace(std::move(name), id);
-
-        co_return id;
+        co_return co_await (constructInternalObject<OpenGLShader>(
+            _shaders, _shader_names, std::move(name), std::move(vertex_code)));
     }
-
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code)
     {
-        if(good() == false)co_return std::nullopt;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_shader_names.contains(name))
-        {
-            spdlog::warn(std::format("[t:{}] Shader {} already exists", std::this_thread::get_id(), name));
-            co_return std::nullopt;
-        }
-
-        Shader shader = Shader::construct<OpenGLShader>(std::move(vertex_code), std::move(fragment_code));
-
-        std::size_t id = shader->ID();
-
-        if(_shaders.contains(id))co_return std::nullopt;
-
-        _shaders.try_emplace(id, std::move(shader));
-        _shader_names.try_emplace(std::move(name), id);
-
-        co_return id;
+        co_return co_await (constructInternalObject<OpenGLShader>(
+            _shaders, _shader_names, std::move(name), std::move(vertex_code),
+            std::move(fragment_code)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseShader(std::size_t id)
     {
-        if(good() == false)co_return false;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_shaders.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), id));
-            co_return false;
-        }
-
-        _shaders.erase(id);
-
-        spdlog::info(std::format("[t:{}] Shader {} erased", std::this_thread::get_id(), id));
-
-        co_return true;
+        co_return co_await eraseInternalObject(_shaders, std::move(id));
     }
 
     std::optional<std::size_t> OpenGLRenderer::getShader(std::string name) const
     {
-        if(good() == false)return std::nullopt;
-
-        if(_shader_names.contains(name) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), name));
-            return std::nullopt;
-        }
-        auto id = _shader_names.at(name);
-        if(_shaders.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Shader {} does not exist", std::this_thread::get_id(), id));
-            return std::nullopt;
-        }
-        return id;
+        return getInternalObjectID(_shaders, _shader_names, std::move(name));
     }
+
 
     asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructShaderStorageBuffer(std::string name, const std::size_t size, const void * data)
     {
-        if(good() == false)co_return std::nullopt;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_shader_storage_buffer_names.contains(name))
-        {
-            spdlog::warn(std::format("[t:{}] Shader storage buffer {} already exists", std::this_thread::get_id(), name));
-            co_return std::nullopt;
-        }
-
-        ShaderStorageBuffer shader_storage_buffer = ShaderStorageBuffer::construct<OpenGLShaderStorageBuffer>(std::move(size), std::move(data));
-
-        std::size_t id = shader_storage_buffer->ID();
-
-        if(_shader_storage_buffers.contains(id))co_return std::nullopt;
-
-        _shader_storage_buffers.try_emplace(id, std::move(shader_storage_buffer));
-        _shader_storage_buffer_names.try_emplace(std::move(name), id);
-
-        co_return id;
+        co_return co_await (constructInternalObject<OpenGLShaderStorageBuffer>(
+            _shader_storage_buffers, _shader_storage_buffer_names, std::move(name),
+            std::move(size), std::move(data)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseShaderStorageBuffer(std::size_t id)
     {
-        if(good() == false)co_return false;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_shader_storage_buffers.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), id));
-            co_return false;
-        }
-
-        _shader_storage_buffers.erase(id);
-
-        spdlog::info(std::format("[t:{}] Shader storage buffer {} erased", std::this_thread::get_id(), id));
-
-        co_return true;
+        co_return co_await eraseInternalObject(_shader_storage_buffers, std::move(id));
     }
 
     std::optional<std::size_t> OpenGLRenderer::getShaderStorageBuffer(std::string name) const
     {
-        if(good() == false)return std::nullopt;
-
-        if(_shader_storage_buffer_names.contains(name) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), name));
-            return std::nullopt;
-        }
-        auto id = _shader_storage_buffer_names.at(name);
-        if(_shader_storage_buffers.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Shader storage buffer {} does not exist", std::this_thread::get_id(), id));
-            return std::nullopt;
-        }
-        return id;
+        return getInternalObjectID(_shader_storage_buffers, _shader_storage_buffer_names, std::move(name));
     }
     
     asio::awaitable<bool> OpenGLRenderer::updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data)
@@ -449,65 +300,40 @@ namespace velora::opengl
     }
 
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructFrameBufferObject(std::string name)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructFrameBufferObject(std::string name, Resolution resolution)
     {
-        if(good() == false)co_return std::nullopt;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_frame_buffer_object_names.contains(name))
-        {
-            spdlog::warn(std::format("[t:{}] Frame buffer object {} already exists", std::this_thread::get_id(), name));
-            co_return std::nullopt;
-        }
-
-        FrameBufferObject frame_buffer_object = FrameBufferObject::construct<OpenGLFrameBufferObject>();
-
-        std::size_t id = frame_buffer_object->ID();
-
-        if(_frame_buffer_objects.contains(id))co_return std::nullopt;
-
-        _frame_buffer_objects.try_emplace(id, std::move(frame_buffer_object));
-        _frame_buffer_object_names.try_emplace(std::move(name), id);
-
-        co_return id;
+        co_return co_await (constructInternalObject<OpenGLFrameBufferObject>(
+            _frame_buffer_objects, _frame_buffer_object_names, std::move(name),
+            std::move(resolution)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseFrameBufferObject(std::size_t id)
     {
-        if(good() == false)co_return false;
-
-        co_await _render_context->ensureOnStrand();
-
-        if(_frame_buffer_objects.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Frame buffer object {} does not exist", std::this_thread::get_id(), id));
-            co_return false;
-        }
-
-        _frame_buffer_objects.erase(id);
-
-        spdlog::info(std::format("[t:{}] Frame buffer object {} erased", std::this_thread::get_id(), id));
-
-        co_return true;
+        co_return co_await eraseInternalObject(_frame_buffer_objects, std::move(id));
     }
 
     std::optional<std::size_t> OpenGLRenderer::getFrameBufferObject(std::string name) const
     {
-        if(good() == false)return std::nullopt;
 
-        if(_frame_buffer_object_names.contains(name) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Frame buffer object {} does not exist", std::this_thread::get_id(), name));
-            return std::nullopt;
-        }
-        auto id = _frame_buffer_object_names.at(name);
-        if(_frame_buffer_objects.contains(id) == false)
-        {
-            spdlog::warn(std::format("[t:{}] Frame buffer object {} does not exist", std::this_thread::get_id(), id));
-            return std::nullopt;
-        }
-        return id;
+        return getInternalObjectID(_frame_buffer_objects, _frame_buffer_object_names, std::move(name));
+    }
+
+
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructTexture(std::string name, Resolution resolution)
+    {
+        co_return co_await (constructInternalObject<OpenGLTexture>(
+            _textures, _textures_names, std::move(name),
+            std::move(resolution)));
+    }
+
+    asio::awaitable<bool> OpenGLRenderer::eraseTexture(std::size_t id)
+    {
+        co_return co_await eraseInternalObject(_textures, std::move(id));
+    }
+
+    std::optional<std::size_t> OpenGLRenderer::getTexture(std::string name) const
+    {
+        return getInternalObjectID(_textures, _textures_names, std::move(name));
     }
 
 

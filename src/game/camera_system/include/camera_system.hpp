@@ -42,7 +42,5 @@ namespace velora::game
         IRenderer & _renderer;
         glm::mat4 _view;
         glm::mat4 _projection;
-        glm::vec3 _direction;
-        glm::vec3 _up;
     };
 }

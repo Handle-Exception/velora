@@ -34,13 +34,14 @@ namespace velora::game
         glm::vec3 position;
         glm::quat rotation;
         
-        float eased_alpha = glm::smoothstep(0.0f, 1.0f, alpha);
-
         glm::vec3 prev_position;
         glm::quat prev_rotation;
 
         glm::vec3 interpolated_pos;
         glm::quat interpolated_rot;
+
+        glm::mat4 rotation_matrix;
+        glm::mat4 translation_matrix;
 
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
@@ -61,13 +62,13 @@ namespace velora::game
             prev_rotation = glm::quat{transform->prev_rotation().w(), transform->prev_rotation().x(), transform->prev_rotation().y(), transform->prev_rotation().z()};
             prev_rotation = glm::normalize(prev_rotation);
 
-            interpolated_pos = glm::mix(prev_position, position, eased_alpha);
-            interpolated_rot = glm::slerp(prev_rotation, rotation, eased_alpha);
+            interpolated_pos = glm::mix(prev_position, position, alpha);
+            interpolated_rot = glm::slerp(prev_rotation, rotation, alpha);
 
-            _direction = interpolated_rot * BASE_FORWARD_DIRECTION;
-            _up = interpolated_rot * BASE_UP_DIRECTION;
+            rotation_matrix = glm::toMat4(glm::conjugate(interpolated_rot));
+            translation_matrix = glm::translate(glm::mat4(1.0f), -interpolated_pos);
+            _view = rotation_matrix * translation_matrix;
 
-            _view = glm::lookAt(interpolated_pos, interpolated_pos + _direction, _up);
             _projection = glm::perspective(glm::radians(cam->fov()), aspect, cam->near_plane(), cam->far_plane());
 
             break; // only first active camera

@@ -3,6 +3,21 @@
 #include <thread>
 
 #include "native.hpp"
+#include <asio.hpp>
+
+#include <GL/glew.h>
+#ifdef WIN32
+    #include <GL/wglew.h>
+#endif
+
+#include <spdlog/spdlog.h>
+
+#include <absl/container/flat_hash_map.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "window.hpp"
 #include "process.hpp"
 
@@ -12,26 +27,14 @@
 #include "shader.hpp"
 #include "shader_storage_buffer.hpp"
 #include "frame_buffer_object.hpp"
-
-#include <GL/glew.h>
-#ifdef WIN32
-    #include <GL/wglew.h>
-#endif
-
-#include <spdlog/spdlog.h>
-#include <asio.hpp>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include <absl/container/flat_hash_map.h>
+#include "texture.hpp"
 
 #include "opengl_debug.hpp"
 #include "opengl_vertex_buffer.hpp"
 #include "opengl_shader.hpp"
 #include "opengl_shader_storage_buffer.hpp"
 #include "opengl_frame_buffer_object.hpp"
+#include "opengl_texture.hpp"
 
 namespace velora::opengl
 {
@@ -74,14 +77,92 @@ namespace velora::opengl
             std::optional<std::size_t> getShaderStorageBuffer(std::string name) const;
             asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data);
             
-            asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name);
+            asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution);
             asio::awaitable<bool> eraseFrameBufferObject(std::size_t id);
             std::optional<std::size_t> getFrameBufferObject(std::string name) const;
+
+            asio::awaitable<std::optional<std::size_t>> constructTexture(std::string name, Resolution resolution);
+            asio::awaitable<bool> eraseTexture(std::size_t id);
+            std::optional<std::size_t> getTexture(std::string name) const;
 
             void join();
 
         protected:
             OpenGLRenderer(IWindow & window, native::opengl_context_handle oglctx_handle);
+
+            template<class ImplType, class T, class ... Args>
+            asio::awaitable<std::optional<std::size_t>> constructInternalObject(
+                absl::flat_hash_map<std::size_t, T> & object_map,
+                absl::flat_hash_map<std::string, std::size_t> & name_map,
+                std::string name,  Args && ... args)
+            {
+                static_assert(requires { T::template construct<ImplType>(std::forward<Args>(args)...); },
+                    "T must have static template method construct<ImplType>(Args&&...)");
+
+                if(good() == false)co_return std::nullopt;
+
+                co_await _render_context->ensureOnStrand();
+
+                if(name_map.contains(name))
+                {
+                    spdlog::warn(std::format("[t:{}] renderer object {} already exists", std::this_thread::get_id(), name));
+                    co_return std::nullopt;
+                }
+
+                T obj = T::template construct<ImplType>(std::forward<Args>(args)...);
+
+                const std::size_t id = obj->ID();
+
+                if(object_map.contains(id))co_return std::nullopt;
+
+                object_map.try_emplace(id, std::move(obj));
+                name_map.try_emplace(std::move(name), id);
+
+                co_return id;
+            }
+
+            template<class T>
+            std::optional<std::size_t> getInternalObjectID(const absl::flat_hash_map<std::size_t, T> & object_map,
+                const absl::flat_hash_map<std::string, std::size_t> & name_map,
+                std::string name) const
+            {
+                if(good() == false)return std::nullopt;
+
+                if(name_map.contains(name) == false)
+                {
+                    spdlog::warn(std::format("[t:{}] renderer object {} does not exist", std::this_thread::get_id(), name));
+                    return std::nullopt;
+                }
+                
+                const auto id = name_map.at(name);
+                if(object_map.contains(id) == false)
+                {
+                    spdlog::warn(std::format("[t:{}] renderer object {} does not exist", std::this_thread::get_id(), id));
+                    return std::nullopt;
+                }
+                return id;
+            }
+
+            template<class T>
+            asio::awaitable<bool> eraseInternalObject(absl::flat_hash_map<std::size_t, T> & object_map, std::size_t id) const
+            {
+                if(good() == false)co_return false;
+
+                co_await _render_context->ensureOnStrand();
+
+                if(object_map.contains(id) == false)
+                {
+                    spdlog::warn(std::format("[t:{}] renderer object {} does not exist", std::this_thread::get_id(), id));
+                    co_return false;
+                }
+
+                object_map.erase(id);
+
+                spdlog::info(std::format("[t:{}] renderer object {} erased", std::this_thread::get_id(), id));
+
+                co_return true;
+            }
+
 
             void assignShaderInputs(const std::size_t & shader_ID, const ShaderInputs & shader_inputs);
 
@@ -131,11 +212,13 @@ namespace velora::opengl
             absl::flat_hash_map<std::size_t, Shader> _shaders;
             absl::flat_hash_map<std::size_t, ShaderStorageBuffer> _shader_storage_buffers;
             absl::flat_hash_map<std::size_t, FrameBufferObject> _frame_buffer_objects;
+            absl::flat_hash_map<std::size_t, Texture> _textures;
 
             absl::flat_hash_map<std::string, std::size_t> _vertex_buffer_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_names;
             absl::flat_hash_map<std::string, std::size_t> _shader_storage_buffer_names;
             absl::flat_hash_map<std::string, std::size_t> _frame_buffer_object_names;
+            absl::flat_hash_map<std::string, std::size_t> _textures_names;
 
             // Render thread initialized at the end of the constructor
             std::unique_ptr<RenderThreadContext> _render_context; // dedicated single thread

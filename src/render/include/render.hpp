@@ -104,7 +104,7 @@ namespace velora
         virtual asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id) = 0;
         virtual std::optional<std::size_t> getShaderStorageBuffer(std::string name) const = 0;
 
-        virtual asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name) = 0;
+        virtual asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution) = 0;
         virtual asio::awaitable<bool> eraseFrameBufferObject(std::size_t id) = 0;
         virtual std::optional<std::size_t> getFrameBufferObject(std::string name) const = 0;
     };
@@ -196,8 +196,8 @@ namespace velora
                 return dispatch::getImpl().getShaderStorageBuffer(std::move(name));
             }
 
-            inline asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name) override{ 
-                co_return co_await dispatch::getImpl().constructFrameBufferObject(std::move(name));
+            inline asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution) override{ 
+                co_return co_await dispatch::getImpl().constructFrameBufferObject(std::move(name), std::move(resolution));
             }
 
             inline asio::awaitable<bool> eraseFrameBufferObject(std::size_t id) override {

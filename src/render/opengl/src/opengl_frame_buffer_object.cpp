@@ -2,8 +2,8 @@
 
 namespace velora::opengl
 {
-    OpenGLFrameBufferObject::OpenGLFrameBufferObject()
-    :  _FBO(0)
+    OpenGLFrameBufferObject::OpenGLFrameBufferObject(Resolution resolution)
+    :  _FBO(0), _resolution(std::move(resolution))
     {
         if(generateBuffer() == false) 
         { 
@@ -19,7 +19,7 @@ namespace velora::opengl
     }
     
     OpenGLFrameBufferObject::OpenGLFrameBufferObject(OpenGLFrameBufferObject && other)
-    :   _FBO(other._FBO)
+    :   _FBO(other._FBO), _resolution(std::move(other._resolution))
     {
         other._FBO = 0;
     }
@@ -123,7 +123,22 @@ namespace velora::opengl
 
     bool OpenGLFrameBufferObject::setGPUAttributes()
     {
-        
+        FBOAttachement att;
+        // can be render object or texture
+
+        if(att.type == GL_TEXTURE_2D)
+        {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, att.attachment, att.type, att.ID, 0);
+        }
+        else if(att.type == GL_RENDERBUFFER)
+        {
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, att.attachment, att.type, att.ID);
+        }
+        else
+        {
+            spdlog::error("Unknown FBO attachment type");
+            return false;
+        }
 
         return false;
     }

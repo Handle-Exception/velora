@@ -27,8 +27,6 @@ namespace velora::game
         glm::vec3 scale = glm::vec3(1.0f);
         glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
         
-        float eased_alpha = glm::smoothstep(0.0f, 1.0f, alpha);
-
         glm::vec3 prev_position = glm::vec3(0.0f);
         glm::vec3 prev_scale = glm::vec3(1.0f);
         glm::quat prev_rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
@@ -103,9 +101,9 @@ namespace velora::game
                                     transform_component->rotation().z());
                 rotation = glm::normalize(rotation);
 
-                interpolated_pos = glm::mix(prev_position, position, eased_alpha);
-                interpolated_rot = glm::slerp(prev_rotation, rotation, eased_alpha);
-                interpolated_scale = glm::mix(prev_scale, scale, eased_alpha);
+                interpolated_pos = glm::mix(prev_position, position, alpha);
+                interpolated_rot = glm::slerp(prev_rotation, rotation, alpha);
+                interpolated_scale = glm::mix(prev_scale, scale, alpha);
 
                 // get model matrix from transform component
                 model_matrix = glm::translate(glm::mat4(1.0f), interpolated_pos)
@@ -132,7 +130,8 @@ namespace velora::game
                                 {"uProjection", proj_matrix}
                             }
                         }, 
-                        _light_system.getShaderBufferID());
+                        _light_system.getShaderBufferID(),
+                        mode);
         }
         co_return;
     }

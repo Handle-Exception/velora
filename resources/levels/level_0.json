@@ -195,6 +195,26 @@
            "vertex_buffer_name": "icosphere3_prefab",
            "shader_name": "light_shader"
         }
+     },
+     {
+        "name": "enemy3",
+        "transform": {
+           "position": {
+              "x": 7,
+              "y": 2,
+              "z": -3
+           },
+           "scale": {
+              "x": 2,
+              "y": 2,
+              "z": 2
+           }
+        },
+        "visual": {
+           "visible": true,
+           "vertex_buffer_name": "icosphere3_prefab",
+           "shader_name": "light_shader"
+        }
      }
     ]
  }

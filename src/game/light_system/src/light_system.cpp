@@ -46,8 +46,6 @@ namespace velora::game
     {
         _gpu_lights.clear();
 
-        float eased_alpha = glm::smoothstep(0.0f, 1.0f, alpha);
-
         glm::vec3 position;
         glm::quat rotation;
 
@@ -82,8 +80,8 @@ namespace velora::game
                 prev_rotation = glm::quat{transform->prev_rotation().w(), transform->prev_rotation().x(), transform->prev_rotation().y(), transform->prev_rotation().z()};
                 prev_rotation = glm::normalize(prev_rotation);
 
-                interpolated_pos = glm::mix(prev_position, position, eased_alpha);
-                interpolated_rot = glm::slerp(prev_rotation, rotation, eased_alpha);
+                interpolated_pos = glm::mix(prev_position, position, alpha);
+                interpolated_rot = glm::slerp(prev_rotation, rotation, alpha);
 
                 direction = glm::normalize(interpolated_rot * BASE_FORWARD_DIRECTION);
                 
