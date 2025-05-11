@@ -15,8 +15,15 @@ namespace velora
             RenderBuffer
         };
 
-        std::size_t index;
+        enum class Point
+        {
+            Color,
+            Depth,
+            Stencil
+        };
+
         Type type;
+        Point point;
     };
 
     class IFrameBufferObject : public type::Interface

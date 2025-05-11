@@ -6,6 +6,12 @@ namespace velora
     {
         bool success = true;
 
+        if((co_await renderer.constructVertexBuffer("quad_prefab", getQuadPrefab())) == std::nullopt)
+        {
+            spdlog::error("Failed to create quad_prefab vertex buffer");
+            success = false;
+        }
+
         if((co_await renderer.constructVertexBuffer("cube_prefab", getCubePrefab())) == std::nullopt)
         {
             spdlog::error("Failed to create cube_prefab vertex buffer");

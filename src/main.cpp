@@ -126,9 +126,10 @@ namespace velora
 
         // Create rendering systems
         game::CameraSystem camera_system(io_context, *renderer);
-        // async constructor because light system must allocate shader input buffer in renderer thread asynchronously :/
+        // async constructor because light system must allocate shader input buffer in renderer thread asynchronously
         game::LightSystem light_system = co_await game::LightSystem::asyncConstructor(io_context, *renderer);
-        game::VisualSystem visual_system(io_context, *renderer, camera_system, light_system);
+        // asytnc constructor because visual system must allocate fbo in renderer thread asynchronously
+        game::VisualSystem visual_system = co_await game::VisualSystem::asyncConstructor(io_context, *renderer, camera_system, light_system);
 
         // create scripts system
         game::ScriptSystem script_system(io_context);
@@ -161,14 +162,6 @@ namespace velora
         FpsCounter priority_fps_counter;
         FpsCounter logic_fps_counter;
         std::chrono::high_resolution_clock::time_point last_log_time = std::chrono::high_resolution_clock::now();
-
-        // create main screen fbo
-        auto main_fbo = co_await renderer->constructFrameBufferObject("main_fbo", {1280, 720}, 
-            {
-                {0, FBOAttachment::Type::Texture},
-                {1, FBOAttachment::Type::Texture},
-                {2, FBOAttachment::Type::Texture}
-            });
 
         FixedStepLoop loop(io_context, 
             // fixed logic step 30 HZ update 

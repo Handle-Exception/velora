@@ -11,24 +11,37 @@ namespace velora::opengl
             return;
         }
 
-        enable();
+        unsigned short color_index = 0;
+        unsigned short depth_index = 0;
+        unsigned short stencil_index = 0;
         std::vector<GLenum> draw_buffers;
+
+        enable();
+        
         for(const auto & att : attachments)
         {
+            // calculate attachement point
+            assert(color_index < 8, "More than 8 color attachments not supported");
+            assert(depth_index < 1, "Multiple depth attachment not supported");
+            assert(stencil_index < 1, "Multiple stencil attachment not supported");
+
+            GLenum attachment_point;
+
+            switch (att.point)
+            {
+                case FBOAttachment::Point::Color:
+                    attachment_point = GL_COLOR_ATTACHMENT0 + (color_index++);
+                    break;
+                case FBOAttachment::Point::Depth:
+                    attachment_point = GL_DEPTH_ATTACHMENT + (depth_index++);
+                    break;
+                case FBOAttachment::Point::Stencil:
+                    attachment_point = GL_STENCIL_ATTACHMENT + (stencil_index++);
+                    break;
+            }
+
             if(att.type == FBOAttachment::Type::Texture)
             {
-                // calculate attachement point
-                assert(att.index < 8);
-                GLenum attachment_point = GL_COLOR_ATTACHMENT0;
-
-                if(att.index == 1)attachment_point = GL_COLOR_ATTACHMENT1;
-                if(att.index == 2)attachment_point = GL_COLOR_ATTACHMENT2;
-                if(att.index == 3)attachment_point = GL_COLOR_ATTACHMENT3;
-                if(att.index == 4)attachment_point = GL_COLOR_ATTACHMENT4;
-                if(att.index == 5)attachment_point = GL_COLOR_ATTACHMENT5;
-                if(att.index == 6)attachment_point = GL_COLOR_ATTACHMENT6;
-                if(att.index == 7)attachment_point = GL_COLOR_ATTACHMENT7;
-
                 // construct new texture
                 Texture t = Texture::construct<OpenGLTexture>(_resolution);
                 const std::size_t id = t->ID(); 
@@ -58,7 +71,6 @@ namespace velora::opengl
             spdlog::error("FBO validation failed");
             throw std::runtime_error("FBO validation failed");
         }
-
 
         disable();
 

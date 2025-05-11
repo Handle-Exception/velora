@@ -31,15 +31,28 @@ namespace velora::game
             constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem", "CameraSystem"};
             constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-            VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system, game::LightSystem & light_system);
             VisualSystem(const VisualSystem&) = delete;
             VisualSystem(VisualSystem&&) = default;
             VisualSystem& operator=(const VisualSystem&) = delete;
             VisualSystem& operator=(VisualSystem&&) = default;
             ~VisualSystem() = default;
 
+            static asio::awaitable<VisualSystem> asyncConstructor(
+                asio::io_context & io_context,
+                IRenderer & renderer,
+                Resolution resolution,
+                game::CameraSystem & camera_system,
+                game::LightSystem & light_system);
+
             // interpolated run
-            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha,  std::optional<std::size_t> fbo = std::nullopt);
+            asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha);
+
+        protected:
+            VisualSystem(asio::io_context & io_context,
+                IRenderer & renderer,
+                game::CameraSystem & camera_system,
+                game::LightSystem & light_system,
+                std::optional<std::size_t> fbo = std::nullopt);
 
         private:
             asio::strand<asio::io_context::executor_type> _strand;
@@ -47,5 +60,9 @@ namespace velora::game
             IRenderer & _renderer;
             game::CameraSystem & _camera_system;
             game::LightSystem & _light_system;
+
+            std::optional<std::size_t> _deferred_fbo;
+            std::size_t _quad_vbo;
+
     };
 }

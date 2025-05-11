@@ -4,11 +4,53 @@ namespace velora::game
 {
     const uint32_t VisualSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<VisualComponent>();
 
-    VisualSystem::VisualSystem(asio::io_context & io_context, IRenderer & renderer, game::CameraSystem & camera_system, game::LightSystem & light_system)
-        :   _strand(asio::make_strand(io_context)), _renderer(renderer), _camera_system(camera_system), _light_system(light_system)
-    {}
+    asio::awaitable<VisualSystem> VisualSystem::asyncConstructor(
+                asio::io_context & io_context,
+                IRenderer & renderer,
+                Resolution resolution,
+                game::CameraSystem & camera_system,
+                game::LightSystem & light_system)
+    {
+        auto id = co_await renderer.constructFrameBufferObject("visual_system_fbo",
+            std::move(resolution), 
+            {
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color},
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color},
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color},
+                {FBOAttachment::Type::RenderBuffer, FBOAttachment::Point::Depth}
+            }
+        );
 
-    asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha, std::optional<std::size_t> fbo)
+        if(id.has_value() == false)
+        {
+            throw std::runtime_error("Failed to create visual system fbo");
+        }
+        co_return VisualSystem(io_context, renderer, camera_system, light_system, *id);
+    }
+
+    VisualSystem::VisualSystem(asio::io_context & io_context,
+                    IRenderer & renderer,
+                    game::CameraSystem & camera_system,
+                    game::LightSystem & light_system,
+                    std::optional<std::size_t> fbo
+        )
+        :   _strand(asio::make_strand(io_context)),
+            _renderer(renderer),
+            _camera_system(camera_system),
+            _light_system(light_system),
+            _deferred_fbo(std::move(fbo))
+    {
+        const auto id = _renderer.getVertexBuffer("quad_prefab");
+        if(!id)
+        {
+            spdlog::error("Failed to get quad prefab vertex buffer");
+            throw std::runtime_error("Failed to get quad prefab vertex buffer");
+        }
+
+        _quad_vbo = *id;
+    }
+
+    asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha)
     {
         if(_renderer.good() == false)co_return;
 
@@ -118,22 +160,30 @@ namespace velora::game
 
             mode = RenderMode::Solid;
 
-            // render
+            // render into _deferred_fbo (G Buffer)
             co_await _renderer.render(*vb_id, *sh_id, 
                         ShaderInputs{
                             .in_bool = {{"useTexture", false}},
-                            .in_int = {{"lightCount", (int)_light_system.getLightCount()}},
                             .in_vec4 = {{"uColor", glm::vec4(0.5, 0.5, 0.5, 1)}},
                             .in_mat4 = {
                                 {"uModel", model_matrix},
                                 {"uView", view_matrix},
                                 {"uProjection", proj_matrix}
                             },
-                            .storage_buffer = _light_system.getShaderBufferID()
                         }, 
                         mode,
-                        std::move(fbo));
+                        _deferred_fbo);
         }
+
+        // render display quad using lighting pass shader on G Buffer
+        co_await _renderer.render(
+            _quad_vbo, /*Tutaj lighting pass shader*/,
+            ShaderInputs{
+                .in_int = {{"lightCount", (int)_light_system.getLightCount()}},
+                .in_samplers = {/*tutaj powinny być zbindowane textury z G buffer*/},
+                .storage_buffer = _light_system.getShaderBufferID()
+            } 
+        );
         co_return;
     }
 }

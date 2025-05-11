@@ -28,6 +28,8 @@ namespace velora
         std::vector<Vertex> vertices;
     };
 
+    const Mesh & getQuadPrefab();
+
     const Mesh & getCubePrefab();
 
     const Mesh& getIcoSpherePrefab(unsigned int subdivisions = 1);
