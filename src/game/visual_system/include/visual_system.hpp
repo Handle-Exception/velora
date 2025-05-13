@@ -1,22 +1,22 @@
 #pragma once
 
-#include "ecs.hpp"
-#include "render.hpp"
-
-#include "visual_component.pb.h"
-#include "transform_component.pb.h"
-
-#include "camera_system.hpp"
-#include "light_system.hpp"
+#include "native.hpp"
+#include <asio.hpp>
+#include <asio/experimental/awaitable_operators.hpp>
+using namespace asio::experimental::awaitable_operators;
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
-#include <asio.hpp>
-#include <asio/experimental/awaitable_operators.hpp>
-using namespace asio::experimental::awaitable_operators;
+#include "ecs.hpp"
+#include "render.hpp"
+
+#include "camera_system.hpp"
+#include "transform_system.hpp"
+
+#include "visual_component.pb.h"
 
 namespace velora::game
 {
@@ -41,17 +41,19 @@ namespace velora::game
                 asio::io_context & io_context,
                 IRenderer & renderer,
                 Resolution resolution,
-                game::CameraSystem & camera_system,
-                game::LightSystem & light_system);
+                game::CameraSystem & camera_system);
 
             // interpolated run
             asio::awaitable<void> run(ComponentManager& components, EntityManager& entities, float alpha);
+
+            IRenderer & getRenderer() const;
+
+            const std::vector<std::size_t> & getDeferredFBOTextures() const;
 
         protected:
             VisualSystem(asio::io_context & io_context,
                 IRenderer & renderer,
                 game::CameraSystem & camera_system,
-                game::LightSystem & light_system,
                 std::optional<std::size_t> fbo = std::nullopt);
 
         private:
@@ -59,12 +61,8 @@ namespace velora::game
 
             IRenderer & _renderer;
             game::CameraSystem & _camera_system;
-            game::LightSystem & _light_system;
 
             std::optional<std::size_t> _deferred_fbo;
             std::vector<std::size_t> _deferred_fbo_textures;
-            std::size_t _quad_vbo;
-            std::size_t _deferred_lighting_pass_shader;
-
     };
 }

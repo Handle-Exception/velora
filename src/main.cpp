@@ -126,11 +126,13 @@ namespace velora
 
         // Create rendering systems
         game::CameraSystem camera_system(io_context, *renderer);
-        // async constructor because light system must allocate shader input buffer in renderer thread asynchronously
-        game::LightSystem light_system = co_await game::LightSystem::asyncConstructor(io_context, *renderer);
-        // asytnc constructor because visual system must allocate fbo in renderer thread asynchronously
+
+        // async constructor because visual system must allocate fbo in renderer thread asynchronously
         game::VisualSystem visual_system = co_await game::VisualSystem::asyncConstructor(
-                io_context, *renderer, {1280, 720}, camera_system, light_system);
+                io_context, *renderer, {1280, 720}, camera_system);
+
+        // async constructor because light system must allocate shader input buffer in renderer thread asynchronously
+        game::LightSystem light_system = co_await game::LightSystem::asyncConstructor(io_context, visual_system);
 
         // create scripts system
         game::ScriptSystem script_system(io_context);
@@ -163,6 +165,25 @@ namespace velora
         FpsCounter priority_fps_counter;
         FpsCounter logic_fps_counter;
         std::chrono::high_resolution_clock::time_point last_log_time = std::chrono::high_resolution_clock::now();
+
+        auto NDC_quad_res = renderer->getVertexBuffer("NDC_quad_prefab");
+        if(!NDC_quad_res)
+        {
+            spdlog::error("Failed to load NDC_quad_prefab");
+            co_return -1;
+        }
+        const std::size_t NDC_quad = NDC_quad_res.value();
+        
+        const auto deferred_lighting_pass_res = renderer->getShader("deferred_lighting_pass");
+        if(!deferred_lighting_pass_res)
+        {
+            spdlog::error("Failed to get deferred lighting pass shader");
+            co_return -1;
+        } 
+        const std::size_t deferred_lighting_pass = *deferred_lighting_pass_res;
+
+        const auto & gbuffer_textures = visual_system.getDeferredFBOTextures();
+
 
         FixedStepLoop loop(io_context, 
             // fixed logic step 30 HZ update 
@@ -212,22 +233,44 @@ namespace velora
             },
 
             // priority loop to be executed as soon as possible
-            [&renderer, &world, &camera_system, &light_system, &visual_system, &priority_fps_counter]
+            [&renderer, &world,
+            &NDC_quad, &deferred_lighting_pass, &gbuffer_textures,
+            &camera_system, &light_system, &visual_system, &priority_fps_counter]
             (float alpha) -> asio::awaitable<void> 
             {
                 priority_fps_counter.frame();
 
                 // execute camera calculation in parallel with light calculation
                 co_await (
-                    world.getCurrentLevel().runSystem(light_system, alpha) && 
                     world.getCurrentLevel().runSystem(camera_system, alpha) 
                 );
                 
                 co_await renderer->clearScreen({0.8f, 0.8f, 0.8f, 1.0f});
 
-                // visual system will render entities with visual component
+                // visual system will render entities with visual component into its GBuffer
                 // interpolate between current and previous transform using alpha
                 co_await world.getCurrentLevel().runSystem(visual_system, alpha);
+                        
+                // light system will render shadows into its FBO
+                // and sends light to its shader storage buffer
+                // interpolate between current and previous light using alpha
+                co_await world.getCurrentLevel().runSystem(light_system, alpha);                
+
+                // render GBuffer to screen
+                co_await renderer->render(NDC_quad, deferred_lighting_pass,
+                    ShaderInputs{
+                        .in_int = {{"lightCount", (int)light_system.getLightCount()}},
+                        //.in_vec3 = {{"viewPos", view_position}},
+                        .in_samplers = {
+                            {"gPosition", gbuffer_textures.at(0)},
+                            {"gNormal", gbuffer_textures.at(1)},
+                            {"gAlbedoSpec", gbuffer_textures.at(2)}
+                            //{"shadowMap", light_system.getShadowMapTexture()}
+                        },
+                        .storage_buffers = {light_system.getLightShaderBufferID()}
+                    },
+                    RenderMode::Solid
+                );
 
                 // swap buffers
                 co_await renderer->present();

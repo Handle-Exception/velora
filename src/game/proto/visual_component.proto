@@ -1,5 +1,7 @@
 syntax="proto3";
 
+import "math.proto";
+
 package velora.game;
 
 message VisualComponent 
@@ -7,4 +9,6 @@ message VisualComponent
     bool visible = 1;
     string vertex_buffer_name = 2;
     string shader_name = 3;
+
+    Mat4 model_matrix = 4;
 }

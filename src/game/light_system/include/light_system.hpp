@@ -3,16 +3,17 @@
 #include <array>
 #include <vector>
 
-#include "light_component.pb.h"
-#include "transform_system.hpp"
-
-#include "ecs.hpp"
-#include "render.hpp"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+
+#include "ecs.hpp"
+#include "render.hpp"
+
+#include "light_component.pb.h"
+#include "transform_system.hpp"
+#include "visual_system.hpp"
 
 namespace velora::game
 {
@@ -25,6 +26,12 @@ namespace velora::game
         glm::vec2 cutoff;       // x=inner, y=outer
         glm::vec2 castShadows;  // vec2 to have natural padding
     };
+
+    struct ShadowCaster {
+        glm::mat4 lightSpaceMatrix;
+        uint32_t shadowMap;
+    };
+
     #pragma pack(pop)
 
     class LightSystem 
@@ -36,10 +43,10 @@ namespace velora::game
         constexpr static const char * NAME = "LightSystem";
         constexpr static inline const char * getName() { return NAME; }
 
-        constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem"};
+        constexpr static const std::initializer_list<const char *> DEPS = {"TransformSystem", "VisualSystem"};
         constexpr static inline const std::initializer_list<const char *> & getDependencies() {return DEPS;}
 
-        static asio::awaitable<LightSystem> asyncConstructor(asio::io_context & io_context, IRenderer & renderer);
+        static asio::awaitable<LightSystem> asyncConstructor(asio::io_context & io_context, VisualSystem & visual_system);
 
         LightSystem(const LightSystem&) = delete;
         LightSystem(LightSystem&&) = default;
@@ -49,20 +56,34 @@ namespace velora::game
 
         asio::awaitable<void> run(const ComponentManager& components, const EntityManager& entities, float alpha);
 
-        std::size_t getShaderBufferID() const;
+        std::size_t getLightShaderBufferID() const;
 
         std::size_t getLightCount() const;
 
+        std::size_t getShadowMapTexture() const;
+
     protected:
-        LightSystem(asio::io_context & io_context, IRenderer & renderer, std::size_t light_shader_buffer_id);
+        LightSystem(
+            asio::io_context & io_context,
+            IRenderer & renderer,
+            VisualSystem & visual_system,
+            std::size_t light_shader_buffer_id,
+            std::size_t shadow_map_fbo);
 
         void collectLights(const ComponentManager& components, const EntityManager& entities, float alpha);
+        asio::awaitable<void> renderShadows(const ComponentManager& components, const EntityManager& entities, float alpha);
 
     private:
         asio::strand<asio::io_context::executor_type> _strand;
         IRenderer & _renderer;
+        VisualSystem & _visual_system;
 
         std::vector<GPULight> _gpu_lights;
         std::size_t _light_shader_buffer_id;
+
+        std::size_t _shadow_map_fbo;
+        std::size_t _shadow_pass_shader;
+
+        std::vector<std::size_t> _shadow_map_textures;
     };
 }

@@ -17,7 +17,13 @@ namespace velora::opengl
         setGPUAttributes(binding_point);
         copyDataToGPU();
 
-        logOpenGLState();
+        disable();
+
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] SSBO validation buffer failed, OpenGL error : {}", check.error());
+        }
     }
     
     OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(OpenGLShaderStorageBuffer && other)
@@ -79,7 +85,11 @@ namespace velora::opengl
 
         glGenBuffers(1, &_SSBO);
 
-        logOpenGLState();
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] SSBO generate buffer failed, OpenGL error : {}", check.error());
+        }
 
         spdlog::debug(std::format("OpenGL shader storage buffer SSBO {}", _SSBO));
         
@@ -152,8 +162,6 @@ namespace velora::opengl
 
         glBufferData(GL_SHADER_STORAGE_BUFFER, _size, _data, GL_DYNAMIC_DRAW);
         
-        disable();
-
         return true;
     }
 }

@@ -29,7 +29,7 @@ namespace velora
 
         std::vector<std::pair<std::string, std::size_t>> in_samplers;
 
-        std::optional<std::size_t> storage_buffer = std::nullopt;
+        std::vector<std::size_t> storage_buffers;
 
     };
 

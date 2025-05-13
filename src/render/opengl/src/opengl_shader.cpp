@@ -109,11 +109,15 @@ namespace velora::opengl
         if(generateProgramID() == false)
         {
             spdlog::error("OpenGL shader program ID generation failed");
-            logOpenGLState();
             return;
         }
         spdlog::info(std::format("OpenGL shader program ID {} generated", _shader_program_ID));
-        logOpenGLState();
+        
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] Shader construction failed, OpenGL error : {}", check.error());
+        }    
     }
 
     OpenGLShader::OpenGLShader(std::vector<std::string> vertex_code)
@@ -190,7 +194,13 @@ namespace velora::opengl
     bool OpenGLShader::generateProgramID()
     {
         _shader_program_ID = glCreateProgram();
-        logOpenGLState();
+
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] Shader generate program id failed, OpenGL error : {}", check.error());
+        }
+
         if(_shader_program_ID == 0)
         { 
             spdlog::error("Cannot create shader program - glCreateProgram error");
@@ -241,7 +251,12 @@ namespace velora::opengl
     {
         GLint result = GL_FALSE;
 		glLinkProgram(_shader_program_ID);
-        logOpenGLState();
+        
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] Shader linking program failed, OpenGL error : {}", check.error());
+        }
 
 		glGetProgramiv(_shader_program_ID, GL_LINK_STATUS, &result);
 		if (result == GL_FALSE) // FAILS
@@ -262,7 +277,12 @@ namespace velora::opengl
     {
         GLint result = GL_FALSE;
         glValidateProgram(_shader_program_ID);
-        logOpenGLState();
+        
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] Shader validating program failed, OpenGL error : {}", check.error());
+        }
 
         glGetProgramiv(_shader_program_ID, GL_VALIDATE_STATUS, &result);
         if(result == GL_FALSE)

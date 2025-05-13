@@ -9,10 +9,22 @@ namespace velora
 {
     enum class TextureFormat
     {
-        RGB,
-        RGB16,
-        RGBA,
+        RGB_8,
+        RGB_16,
+        RGB_32,
+
+        RGB_16F,
+        RGB_32F,
+
+        RGBA_8,
+        RGBA_16,
+        RGBA_32,
+
+        RGBA_16F,
+        RGBA_32F,
+
         Depth,
+        Depth_32F,
         Stencil
     };
 

@@ -24,8 +24,13 @@ namespace velora::opengl
         enable();
         setGPUAttributes();
         copyDataToGPU();
+        disable();
 
-        logOpenGLState();
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] VBO generation failed, OpenGL error : {}", check.error());
+        }
     }
     
     OpenGLVertexBuffer::OpenGLVertexBuffer(OpenGLVertexBuffer && other)
@@ -115,9 +120,14 @@ namespace velora::opengl
         glGenBuffers(1, &_VBO);
         glGenBuffers(1, &_EBO);
 
-        logOpenGLState();
-
-        spdlog::debug(std::format("OpenGL vertex buffer VAO {}, VBO {}, EBO {}", _VAO, _VBO, _EBO));
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] Texture generation buffer failed, OpenGL error : {}", check.error());
+        }else
+        {
+            spdlog::debug(std::format("OpenGL vertex buffer VAO {}, VBO {}, EBO {}", _VAO, _VBO, _EBO));
+        }
         
         return good();
     }
@@ -139,7 +149,11 @@ namespace velora::opengl
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 
-        logOpenGLState();
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] VBO disable failed, OpenGL error : {}", check.error());
+        }
     }
 
     bool OpenGLVertexBuffer::enable() const
@@ -259,7 +273,14 @@ namespace velora::opengl
         spdlog::debug(std::format("Sending {} bytes, from {} address to GPU GL_ARRAY_BUFFER", 
             sizeof(Vertex) *_vertices.size(), (void*)_vertices.data()));
         glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) *_vertices.size(), _vertices.data(), GL_STATIC_DRAW);
-                
-        return logOpenGLState();
+        
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] VBO copying data failed, OpenGL error : {}", check.error());
+            return false;
+        }
+
+        return true;
     }
 }

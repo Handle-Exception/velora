@@ -313,36 +313,15 @@ namespace velora::opengl
         
         co_await _render_context->ensureOnStrand();
 
-        GLenum format;
         std::vector<std::pair<std::size_t, FBOAttachment>> constructed_attachments;
 
         // create all attachments
         for(const auto & att : attachments)
         {
-            // format needed to create new texture or render buffer
-            switch(att.format)
-            {
-                case TextureFormat::RGBA:
-                    format = GL_RGBA;
-                    break;
-                case TextureFormat::RGB:
-                    format = GL_RGB;
-                    break;
-                case TextureFormat::RGB16:
-                    format = GL_RGB16F;
-                    break;
-                case TextureFormat::Depth:
-                    format = GL_DEPTH_COMPONENT;
-                    break;
-                case TextureFormat::Stencil:
-                    format = GL_STENCIL_INDEX;
-                    break;
-            }
-
             if(att.type == FBOAttachment::Type::Texture)
             {
                 // create unnamed texture for FBO
-                Texture tex = Texture::construct<OpenGLTexture>(resolution, format);
+                Texture tex = Texture::construct<OpenGLTexture>(resolution, textureFormatToOpenGLFormat(att.format));
                 if(tex->good() == false)
                 {
                     spdlog::warn(std::format("[t:{}] Failed to construct texture for FBO attachment", std::this_thread::get_id()));
@@ -357,7 +336,7 @@ namespace velora::opengl
             else if(att.type == FBOAttachment::Type::RenderBuffer)
             {
                 // create unnamed RBO for FBO
-                RenderBuffer rbo = RenderBuffer::construct<OpenGLRenderBufferObject>(resolution, format);
+                RenderBuffer rbo = RenderBuffer::construct<OpenGLRenderBufferObject>(resolution, textureFormatToOpenGLFormat(att.format));
                 if(rbo->good() == false)
                 {
                     spdlog::warn(std::format("[t:{}] Failed to construct render buffer for FBO attachment", std::this_thread::get_id()));
@@ -392,11 +371,11 @@ namespace velora::opengl
     }
 
 
-    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructTexture(std::string name, Resolution resolution)
+    asio::awaitable<std::optional<std::size_t>> OpenGLRenderer::constructTexture(std::string name, Resolution resolution, TextureFormat format)
     {
         co_return co_await (constructInternalObject<OpenGLTexture>(
             _textures, _textures_names, std::move(name),
-            std::move(resolution)));
+            std::move(resolution), textureFormatToOpenGLFormat(format)));
     }
 
     asio::awaitable<bool> OpenGLRenderer::eraseTexture(std::size_t id)
@@ -463,6 +442,20 @@ namespace velora::opengl
             }
 
             _shaders.at(shader_ID)->setUniform(name, unit, _textures.at(id));
+        }
+
+        for(const auto & storage_buffer : shader_inputs.storage_buffers)
+        {
+            auto shader_storage_buffer_it = _shader_storage_buffers.find(storage_buffer);
+            if(shader_storage_buffer_it == _shader_storage_buffers.end()){
+                spdlog::warn("Rendering: Shader storage buffer not found");
+                continue;
+            }
+            if(shader_storage_buffer_it->second->enable() == false)
+            {
+                spdlog::error("Cannot enable shader storage buffer");
+                continue;
+            }
         }
     }
 
@@ -562,20 +555,6 @@ namespace velora::opengl
         }
 
         assignShaderInputs(shader_ID, shader_inputs);
-
-        if(shader_inputs.storage_buffer.has_value())
-        {
-            auto shader_storage_buffer_it = _shader_storage_buffers.find(*shader_inputs.storage_buffer);
-            if(shader_storage_buffer_it == _shader_storage_buffers.end()){
-                spdlog::warn("Rendering: Shader storage buffer not found");
-                co_return;
-            }
-            if(shader_storage_buffer_it->second->enable() == false)
-            {
-                spdlog::error("Cannot enable shader storage buffer");
-                co_return;
-            }
-        }
 
         if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 

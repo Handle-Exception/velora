@@ -9,5 +9,4 @@ add_module(NAME "VisualSystem"
 
         "${PROJECT_PREFIX}::TransformSystem"
         "${PROJECT_PREFIX}::CameraSystem"
-        "${PROJECT_PREFIX}::LightSystem"
 )

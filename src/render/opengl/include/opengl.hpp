@@ -93,7 +93,7 @@ namespace velora::opengl
                 return it->second->getTextures();
             }
 
-            asio::awaitable<std::optional<std::size_t>> constructTexture(std::string name, Resolution resolution);
+            asio::awaitable<std::optional<std::size_t>> constructTexture(std::string name, Resolution resolution, TextureFormat format);
             asio::awaitable<bool> eraseTexture(std::size_t id);
             std::optional<std::size_t> getTexture(std::string name) const;
 

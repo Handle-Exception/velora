@@ -43,6 +43,7 @@ namespace velora::opengl
         void setUniform(const std::string & name, glm::mat2 value);
         void setUniform(const std::string & name, glm::mat3 value);
         void setUniform(const std::string & name, glm::mat4 value);
+        void setUniform(const std::string & name, std::vector<glm::mat4> value);
 
         void setUniform(const std::string & name, unsigned int unit, const Texture & value);
 

@@ -14,6 +14,13 @@ struct GPULight {
     vec2 castShadows;   // unused here
 };
 
+//struct ShadowCaster
+//{
+//    mat4 lightSpaceMatrix;
+//};
+//sampler2DShadow shadowMap[254];
+
+
 layout(std430, binding = 2) buffer LightBuffer {
     GPULight lights[];
 };
@@ -27,8 +34,21 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 
+// Shadow Map
+//uniform sampler2DShadow shadowMap;
+//uniform mat4 lightSpaceMatrix;
+
 in vec2 TexCoord;
 out vec4 FragColor;
+
+//float calculateShadow(vec3 fragPosWorld)
+//{
+//    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPosWorld, 1.0);
+//    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+//    projCoords = projCoords * 0.5 + 0.5;
+//   return texture(shadowMap, projCoords); // 0 = in shadow, 1 = lit
+//}
+
 
 vec3 calculateLight(GPULight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
@@ -68,6 +88,9 @@ void main()
     vec3 lighting = vec3(0.0);
     for (int i = 0; i < lightCount; ++i)
         lighting += calculateLight(lights[i], Normal, FragPos, viewDir);
+
+    //float shadow = calculateShadow(fragPos);
+    //lighting *= shadow;
 
     FragColor = vec4(lighting * Albedo.rgb, Albedo.a);
 }

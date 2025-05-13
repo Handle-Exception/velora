@@ -8,55 +8,46 @@ namespace velora::game
                 asio::io_context & io_context,
                 IRenderer & renderer,
                 Resolution resolution,
-                game::CameraSystem & camera_system,
-                game::LightSystem & light_system)
+                game::CameraSystem & camera_system)
     {
-        auto id = co_await renderer.constructFrameBufferObject("visual_system_fbo",
+        auto fbo = co_await renderer.constructFrameBufferObject("VisualSystem::fbo",
             std::move(resolution), 
             {
-                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGB16}, // gPosition
-                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGB16}, // gNormal
-                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGBA}, // gAlbedo
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGB_16F}, // gPosition
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGB_16F}, // gNormal
+                {FBOAttachment::Type::Texture, FBOAttachment::Point::Color, TextureFormat::RGBA_16F}, // gAlbedo
                 {FBOAttachment::Type::RenderBuffer, FBOAttachment::Point::Depth, TextureFormat::Depth}
             }
         );
 
-        if(id.has_value() == false)
+        if(fbo.has_value() == false)
         {
             throw std::runtime_error("Failed to create visual system fbo");
         }
-        co_return VisualSystem(io_context, renderer, camera_system, light_system, *id);
+        co_return VisualSystem(io_context, renderer, camera_system, *fbo);
     }
 
     VisualSystem::VisualSystem(asio::io_context & io_context,
                     IRenderer & renderer,
                     game::CameraSystem & camera_system,
-                    game::LightSystem & light_system,
                     std::optional<std::size_t> fbo
         )
         :   _strand(asio::make_strand(io_context)),
             _renderer(renderer),
             _camera_system(camera_system),
-            _light_system(light_system),
             _deferred_fbo(std::move(fbo))
     {
-        const auto quad_id = _renderer.getVertexBuffer("NDC_quad_prefab");
-        if(!quad_id)
-        {
-            spdlog::error("Failed to get quad prefab vertex buffer");
-            throw std::runtime_error("Failed to get quad prefab vertex buffer");
-        }
-        _quad_vbo = *quad_id;
-
-        const auto _deferred_lighting_pass_id = _renderer.getShader("deferred_lighting_pass");
-        if(!_deferred_lighting_pass_id)
-        {
-            spdlog::error("Failed to get deferred lighting pass shader");
-            throw std::runtime_error("Failed to get deferred lighting pass shader");
-        }
-        _deferred_lighting_pass_shader = *_deferred_lighting_pass_id;
-
         _deferred_fbo_textures = _renderer.getFrameBufferObjectTextures(*_deferred_fbo);
+    }
+
+    IRenderer & VisualSystem::getRenderer() const 
+    {
+        return _renderer;
+    }
+
+    const std::vector<std::size_t> & VisualSystem::getDeferredFBOTextures() const 
+    { 
+        return _deferred_fbo_textures;
     }
 
     asio::awaitable<void> VisualSystem::run(ComponentManager& components, EntityManager& entities, float alpha)
@@ -78,20 +69,7 @@ namespace velora::game
         VisualComponent * visual_component = nullptr;
                 
         glm::mat4 model_matrix = glm::mat4(1.0f);
-        glm::vec3 position = glm::vec3(0.0f);
-        glm::vec3 scale = glm::vec3(1.0f);
-        glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
         
-        glm::vec3 prev_position = glm::vec3(0.0f);
-        glm::vec3 prev_scale = glm::vec3(1.0f);
-        glm::quat prev_rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-
-        glm::vec3 interpolated_pos;
-        glm::quat interpolated_rot;
-        glm::vec3 interpolated_scale;
-        
-        RenderMode mode;
-
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
             if(!_strand.running_in_this_thread()){
@@ -106,9 +84,6 @@ namespace velora::game
             // if not visible, skip
             if(visual_component->visible() == false) continue;
             
-            // check renderer before
-            if(_renderer.good() == false)co_return;
-
             const auto vb_id = _renderer.getVertexBuffer(visual_component->vertex_buffer_name());
             const auto sh_id = _renderer.getShader(visual_component->shader_name());
 
@@ -120,50 +95,13 @@ namespace velora::game
 
             // if also has a transform component
             // update transform matrix
-            static const uint32_t TRANSFORM_BIT = ComponentTypeManager::getTypeID<TransformComponent>();
-
-            if(mask.test(TRANSFORM_BIT))
+            if(mask.test(TransformSystem::MASK_POSITION_BIT))
             {
                 auto* transform_component = components.getComponent<TransformComponent>(entity);
                 assert(transform_component != nullptr);
 
-                prev_position = glm::vec3(transform_component->prev_position().x(), 
-                                    transform_component->prev_position().y(), 
-                                    transform_component->prev_position().z());
-                        
-                prev_scale = glm::vec3(transform_component->prev_scale().x(), 
-                                    transform_component->prev_scale().y(), 
-                                    transform_component->prev_scale().z());
-                        
-                prev_rotation = glm::quat(transform_component->prev_rotation().w(), 
-                                    transform_component->prev_rotation().x(), 
-                                    transform_component->prev_rotation().y(), 
-                                    transform_component->prev_rotation().z());
-                prev_rotation = glm::normalize(prev_rotation);
-
-
-                position = glm::vec3(transform_component->position().x(), 
-                                    transform_component->position().y(), 
-                                    transform_component->position().z());
-                        
-                scale = glm::vec3(transform_component->scale().x(), 
-                                    transform_component->scale().y(), 
-                                    transform_component->scale().z());
-                        
-                rotation = glm::quat(transform_component->rotation().w(), 
-                                    transform_component->rotation().x(), 
-                                    transform_component->rotation().y(), 
-                                    transform_component->rotation().z());
-                rotation = glm::normalize(rotation);
-
-                interpolated_pos = glm::mix(prev_position, position, alpha);
-                interpolated_rot = glm::slerp(prev_rotation, rotation, alpha);
-                interpolated_scale = glm::mix(prev_scale, scale, alpha);
-
                 // get model matrix from transform component
-                model_matrix = glm::translate(glm::mat4(1.0f), interpolated_pos)
-                                                * glm::toMat4(interpolated_rot)
-                                                * glm::scale(glm::mat4(1.0f), interpolated_scale);
+                model_matrix = calculateInterpolatedTransformMatrix(*transform_component, alpha); 
             }
             else 
             {
@@ -171,7 +109,26 @@ namespace velora::game
                 model_matrix = glm::mat4(1.0f);
             }
 
-            mode = RenderMode::Solid;
+            // save interpolated matrix in visual component
+            visual_component->mutable_model_matrix()->set_data(0, model_matrix[0][0]);
+            visual_component->mutable_model_matrix()->set_data(1, model_matrix[0][1]);
+            visual_component->mutable_model_matrix()->set_data(2, model_matrix[0][2]);
+            visual_component->mutable_model_matrix()->set_data(3, model_matrix[0][3]);
+
+            visual_component->mutable_model_matrix()->set_data(4, model_matrix[1][0]);
+            visual_component->mutable_model_matrix()->set_data(5, model_matrix[1][1]);
+            visual_component->mutable_model_matrix()->set_data(6, model_matrix[1][2]);
+            visual_component->mutable_model_matrix()->set_data(7, model_matrix[1][3]);     
+
+            visual_component->mutable_model_matrix()->set_data(8, model_matrix[2][0]);
+            visual_component->mutable_model_matrix()->set_data(9, model_matrix[2][1]);
+            visual_component->mutable_model_matrix()->set_data(10, model_matrix[2][2]);
+            visual_component->mutable_model_matrix()->set_data(11, model_matrix[2][3]);  
+
+            visual_component->mutable_model_matrix()->set_data(12, model_matrix[3][0]);
+            visual_component->mutable_model_matrix()->set_data(13, model_matrix[3][1]);
+            visual_component->mutable_model_matrix()->set_data(14, model_matrix[3][2]);
+            visual_component->mutable_model_matrix()->set_data(15, model_matrix[3][3]);
 
             // render into deferred_fbo (G Buffer)
             co_await _renderer.render(*vb_id, *sh_id, 
@@ -184,24 +141,10 @@ namespace velora::game
                                 {"uProjection", proj_matrix}
                             },
                         }, 
-                        mode,
+                        RenderMode::Solid,
                         _deferred_fbo);
         }
-
-        //render display quad using lighting pass shader on G Buffer
-        co_await _renderer.render(
-            _quad_vbo, _deferred_lighting_pass_shader,
-            ShaderInputs{
-                .in_int = {{"lightCount", (int)_light_system.getLightCount()}},
-                //.in_vec3 = {{"viewPos", view_position}},
-                .in_samplers = {
-                    {"gPosition", _deferred_fbo_textures.at(0)},
-                    {"gNormal", _deferred_fbo_textures.at(1)},
-                    {"gAlbedoSpec", _deferred_fbo_textures.at(2)}
-                },
-                .storage_buffer = _light_system.getShaderBufferID()
-            } 
-        );
+        
         co_return;
     }
 }

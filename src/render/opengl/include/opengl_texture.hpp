@@ -1,14 +1,20 @@
 #pragma once
 
+#include <format>
+#include <utility>
+
 #include <spdlog/spdlog.h>
 #include <GL/glew.h>
-#include <utility>
 
 #include "resolution.hpp"
 #include "opengl_debug.hpp"
+#include "texture.hpp"
 
 namespace velora::opengl
 {
+    GLenum textureFormatToOpenGLFormat(TextureFormat format);
+    std::pair<GLenum, GLenum> getBaseFormatAndType(GLenum format);
+
     class OpenGLTexture
     {
         public:

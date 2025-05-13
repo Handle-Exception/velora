@@ -23,7 +23,11 @@ namespace velora::opengl
 
         disable();
 
-        logOpenGLState();
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] FBO generation failed, OpenGL error : {}", check.error());
+        }
     }
     
     OpenGLFrameBufferObject::OpenGLFrameBufferObject(OpenGLFrameBufferObject && other)
@@ -74,8 +78,12 @@ namespace velora::opengl
 
         glGenFramebuffers(1, &_FBO);
 
-        logOpenGLState();
-
+        const auto check = checkOpenGLState();
+        if(!check)
+        {
+            spdlog::error("[opengl] FBO generate buffer failed, OpenGL error : {}", check.error());
+        }
+        
         spdlog::debug(std::format("OpenGL frame buffer object {} created", _FBO));
         
         return good();
@@ -174,7 +182,7 @@ namespace velora::opengl
                 // attach texture to FBO
                 glFramebufferTexture2D(GL_FRAMEBUFFER, attachment_point, GL_TEXTURE_2D, id, 0);
 
-                draw_buffers.emplace_back(attachment_point);
+                if(att.point == FBOAttachment::Point::Color)draw_buffers.emplace_back(attachment_point);
             }
             else if(att.type == FBOAttachment::Type::RenderBuffer)
             {
@@ -190,6 +198,14 @@ namespace velora::opengl
             }
         }
         
-        glDrawBuffers(draw_buffers.size(), draw_buffers.data());
+        if(draw_buffers.size() > 0 )
+        {
+            glDrawBuffers(draw_buffers.size(), draw_buffers.data());
+        }
+        else 
+        {
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+        }
     }
 }

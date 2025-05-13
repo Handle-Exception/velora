@@ -9,6 +9,7 @@
 #include "vertex_buffer.hpp"
 #include "shader_storage_buffer.hpp"
 #include "frame_buffer_object.hpp"
+#include "texture.hpp"
 
 #include "shader.hpp"
 
