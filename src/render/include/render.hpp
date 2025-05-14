@@ -4,7 +4,7 @@
 
 #include "resolution.hpp"
 
-#include "render_mode.hpp"
+#include "render_options.hpp"
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 #include "shader_storage_buffer.hpp"
@@ -50,22 +50,28 @@ namespace velora
          * @return asio::awaitable<void> 
          */
         virtual asio::awaitable<void> clearScreen(glm::vec4 color, std::optional<std::size_t> fbo = std::nullopt) = 0;
-        
+
         /**
-         * @brief Render a vertex buffer with a shader
+         * @brief Render a vertex buffer using a specified shader.
          * 
-         * @param vertex_buffer_ID ID of the vertex buffer to render
-         * @param shader_ID ID of the shader to use
-         * @param shader_inputs Inputs for the shader
+         * This function enables a frame buffer object (FBO) if provided, sets the viewport,
+         * and renders the specified vertex buffer with the given shader. It applies shader inputs,
+         * and supports rendering options such as wireframe mode and polygon offset.
+         * 
+         * @param vertex_buffer ID of the vertex buffer to render.
+         * @param shader ID of the shader to use for rendering.
+         * @param shader_inputs Inputs to be passed to the shader.
+         * @param options Options for rendering, including rendering mode and polygon offset.
+         * @param fbo Optional frame buffer object to render into. If not provided, rendering is done to the default framebuffer.
+         * 
          * @return asio::awaitable<void> 
          */
         virtual asio::awaitable<void> render(
-                std::size_t vertex_buffer_ID,
-                std::size_t shader_ID,
+                std::size_t vertex_buffer,
+                std::size_t shader,
                 ShaderInputs shader_inputs = ShaderInputs{},
-                RenderMode mode = RenderMode::Solid,
-                std::optional<std::size_t> fbo = std::nullopt,
-                std::optional<PolygonOffset> offset = std::nullopt) = 0;
+                RenderOptions options = RenderOptions{},
+                std::optional<std::size_t> fbo = std::nullopt) = 0;
         
         /**
          * @brief Present the rendered frame
@@ -131,14 +137,15 @@ namespace velora
                 co_return co_await dispatch::getImpl().clearScreen(std::move(color), std::move(fbo));
             }
 
-            inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, 
-                ShaderInputs shader_inputs, RenderMode mode,
-                std::optional<std::size_t> fbo,
-                std::optional<PolygonOffset> offset) override { 
-                co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID),
-                    std::move(shader_inputs), mode, 
-                    std::move(fbo),
-                    std::move(offset));
+            inline asio::awaitable<void> render(std::size_t vertex_buffer, std::size_t shader, 
+                ShaderInputs shader_inputs,
+                RenderOptions options,
+                std::optional<std::size_t> fbo) override { 
+                co_return co_await dispatch::getImpl().render(std::move(vertex_buffer), std::move(shader),
+                    std::move(shader_inputs),
+                    std::move(options),
+                    std::move(fbo)
+                );
             }
 
             inline asio::awaitable<void> present() override { 

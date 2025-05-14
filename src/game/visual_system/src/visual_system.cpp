@@ -179,8 +179,10 @@ namespace velora::game
                                 {"uView", view_matrix},
                                 {"uProjection", proj_matrix}
                             },
-                        }, 
-                        RenderMode::Solid,
+                        },
+                        RenderOptions{
+                            .mode = RenderMode::Solid
+                        },
                         _deferred_fbo);
         }
         

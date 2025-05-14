@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 namespace velora
 {
     enum class RenderMode
@@ -16,5 +18,12 @@ namespace velora
     {
         float factor;
         float units;
+    };
+
+
+    struct RenderOptions
+    {
+        RenderMode mode = RenderMode::Solid;
+        std::optional<PolygonOffset> polygon_offset;
     };
 }

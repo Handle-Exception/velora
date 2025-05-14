@@ -273,7 +273,9 @@ namespace velora
                         },
                         .storage_buffers = {light_system.getLightShaderBufferID()}
                     },
-                    RenderMode::Solid
+                    RenderOptions{
+                        .mode = RenderMode::Solid
+                    }
                 );
 
                 // swap buffers

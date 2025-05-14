@@ -21,7 +21,7 @@
 #include "window.hpp"
 #include "process.hpp"
 
-#include "render_mode.hpp"
+#include "render_options.hpp"
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 #include "shader.hpp"
@@ -53,12 +53,11 @@ namespace velora::opengl
             asio::awaitable<void> close();
 
             asio::awaitable<void> clearScreen(glm::vec4 color, std::optional<std::size_t> fbo);
-            asio::awaitable<void> render(std::size_t vertex_buffer_ID,
-                std::size_t shader_ID,
+            asio::awaitable<void> render(std::size_t vertex_buffer,
+                std::size_t shader,
                 ShaderInputs shader_inputs,
-                RenderMode mode,
-                std::optional<std::size_t> fbo,
-                std::optional<PolygonOffset> offset);
+                RenderOptions options,
+                std::optional<std::size_t> fbo);
                 
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);

@@ -534,12 +534,11 @@ namespace velora::opengl
     }
 
     asio::awaitable<void> OpenGLRenderer::render(
-            std::size_t vertex_buffer_ID,
-            std::size_t shader_ID,
+            std::size_t vertex_buffer,
+            std::size_t shader,
             ShaderInputs shader_inputs,
-            RenderMode mode,
-            std::optional<std::size_t> fbo,
-            std::optional<PolygonOffset> offset)
+            RenderOptions options,
+            std::optional<std::size_t> fbo)
     {
         if(good() == false)co_return;
 
@@ -567,13 +566,13 @@ namespace velora::opengl
                 (GLsizei)_viewport_resolution.getHeight());
         }
 
-        auto shader_it = _shaders.find(shader_ID);
+        auto shader_it = _shaders.find(shader);
         if(shader_it == _shaders.end()){
             spdlog::warn("Rendering: Shader not found");
             co_return;
         }
 
-        auto vertex_buffer_it = _vertex_buffers.find(vertex_buffer_ID);
+        auto vertex_buffer_it = _vertex_buffers.find(vertex_buffer);
         if(vertex_buffer_it == _vertex_buffers.end()){
             spdlog::warn("Rendering: Vertex buffer not found");
             co_return;
@@ -590,25 +589,24 @@ namespace velora::opengl
             co_return;
         }
 
-        assignShaderInputs(shader_ID, shader_inputs);
+        assignShaderInputs(shader, shader_inputs);
 
-        if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if(options.mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         
-        if(offset)
+        if(options.polygon_offset)
         {
             glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(offset->factor, offset->units);
+            glPolygonOffset(options.polygon_offset->factor, options.polygon_offset->units);
         }
 
         glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
         
-        if(offset)
+        if(options.polygon_offset)
         {
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
-        if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // restore default
-
+        if(options.mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // restore default
 
 
         if(fbo)

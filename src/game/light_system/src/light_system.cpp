@@ -321,9 +321,11 @@ namespace velora::game
                             {"uLightSpaceMatrix", light_space_matrix}
                         }
                     },
-                    RenderMode::Solid,
-                    _shadow_map_fbos.at(light_id),
-                    PolygonOffset{.factor = 1.5f, .units = 4.0f}
+                    RenderOptions{
+                        .mode = RenderMode::Solid,
+                        .polygon_offset = PolygonOffset{.factor = 1.5f, .units = 4.0f}
+                    },
+                    _shadow_map_fbos.at(light_id)
                 );
             }
 
