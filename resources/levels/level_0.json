@@ -6,7 +6,7 @@
           "transform": {
              "position": {
                 "x": 0,
-                "y": -5,
+                "y": 0,
                 "z": 1
              },
              "scale": {
@@ -32,7 +32,7 @@
         "transform": {
             "position": {
                "x": 0,
-               "y": 0,
+               "y": 16,
                "z": -10
             },
             "scale": {
@@ -53,8 +53,8 @@
             "transform": {
                 "position": {
                    "x": 0,
-                   "y": 16,
-                   "z": 0
+                   "y": 32,
+                   "z": 6
                 },
                 "scale": {
                    "x": "32.0",
@@ -123,7 +123,7 @@
           "transform": {
              "position": {
                 "x": 0,
-                "y": 0,
+                "y": 3,
                 "z": 15
              }
           },
@@ -159,7 +159,7 @@
           "transform": {
              "position": {
                 "x": 10,
-                "y": -3,
+                "y": 2,
                 "z": 0
              },
              "scale": {
@@ -203,7 +203,7 @@
           "transform": {
              "position": {
                 "x": -5,
-                "y": 1,
+                "y": 2,
                 "z": 3
              },
              "scale": {
@@ -272,6 +272,27 @@
            "vertex_buffer_name": "icosphere3_prefab",
            "shader_name": "deferred_shader",
            "color" : {"x" : 1.0, "y" : 1.0, "z" : 1.0, "w": 1.0 }
+        }
+     },
+     {
+        "name": "enemy4",
+        "transform": {
+           "position": {
+              "x": 9,
+              "y": 6,
+              "z": -1
+           },
+           "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+           }
+        },
+        "visual": {
+           "visible": true,
+           "vertex_buffer_name": "icosphere3_prefab",
+           "shader_name": "deferred_shader",
+           "color" : {"x" : 1.0, "y" : 0.5, "z" : 0.5, "w": 1.0 }
         }
      }
     ]

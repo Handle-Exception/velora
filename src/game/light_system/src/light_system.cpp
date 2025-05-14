@@ -4,6 +4,35 @@ namespace velora::game
 {
     const uint32_t LightSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<LightComponent>();
 
+    glm::mat4 loadModelMatrixField(const VisualComponent * visual_component)
+    {
+        if(visual_component == nullptr) return glm::mat4(1.0f);
+        if(!visual_component->has_model_matrix()) return glm::mat4(1.0f);
+        glm::mat4 model_matrix;
+
+        model_matrix[0][0] = visual_component->model_matrix().data(0);
+        model_matrix[0][1] = visual_component->model_matrix().data(1);
+        model_matrix[0][2] = visual_component->model_matrix().data(2);
+        model_matrix[0][3] = visual_component->model_matrix().data(3);
+
+        model_matrix[1][0] = visual_component->model_matrix().data(4);
+        model_matrix[1][1] = visual_component->model_matrix().data(5);
+        model_matrix[1][2] = visual_component->model_matrix().data(6);
+        model_matrix[1][3] = visual_component->model_matrix().data(7);
+
+        model_matrix[2][0] = visual_component->model_matrix().data(8);
+        model_matrix[2][1] = visual_component->model_matrix().data(9);
+        model_matrix[2][2] = visual_component->model_matrix().data(10);
+        model_matrix[2][3] = visual_component->model_matrix().data(11);
+
+        model_matrix[3][0] = visual_component->model_matrix().data(12);
+        model_matrix[3][1] = visual_component->model_matrix().data(13);
+        model_matrix[3][2] = visual_component->model_matrix().data(14);
+        model_matrix[3][3] = visual_component->model_matrix().data(15);
+
+        return model_matrix;
+    }
+
     asio::awaitable<LightSystem> LightSystem::asyncConstructor(asio::io_context & io_context, VisualSystem & visual_system)
     {
         IRenderer & renderer = visual_system.getRenderer();
@@ -270,25 +299,7 @@ namespace velora::game
                 if(!vb_id)continue;
 
                 // read interpolated matrix from visual component
-                model_matrix[0][0] = visual_component->model_matrix().data(0);
-                model_matrix[0][1] = visual_component->model_matrix().data(1);
-                model_matrix[0][2] = visual_component->model_matrix().data(2);
-                model_matrix[0][3] = visual_component->model_matrix().data(3);
-
-                model_matrix[1][0] = visual_component->model_matrix().data(4);
-                model_matrix[1][1] = visual_component->model_matrix().data(5);
-                model_matrix[1][2] = visual_component->model_matrix().data(6);
-                model_matrix[1][3] = visual_component->model_matrix().data(7);
-
-                model_matrix[2][0] = visual_component->model_matrix().data(8);
-                model_matrix[2][1] = visual_component->model_matrix().data(9);
-                model_matrix[2][2] = visual_component->model_matrix().data(10);
-                model_matrix[2][3] = visual_component->model_matrix().data(11);
-
-                model_matrix[3][0] = visual_component->model_matrix().data(12);
-                model_matrix[3][1] = visual_component->model_matrix().data(13);
-                model_matrix[3][2] = visual_component->model_matrix().data(14);
-                model_matrix[3][3] = visual_component->model_matrix().data(15);
+                model_matrix = loadModelMatrixField(visual_component);
 
                 // render depth information to shadow map fbo
                 co_await _renderer.render(*vb_id, _shadow_pass_shader, 

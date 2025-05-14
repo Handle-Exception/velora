@@ -24,7 +24,7 @@ namespace velora::game
         glm::vec4 color;        // w = intensity
         glm::vec4 attenuation;  // x=constant, y=linear, z=quadratic, w=unused
         glm::vec2 cutoff;       // x=inner, y=outer
-        glm::vec2 castShadows;  // vec2 to have natural padding
+        glm::vec2 castShadows;  // x=enabled, y=shadowMapIndex
     };
     #pragma pack(pop)
 
@@ -33,7 +33,7 @@ namespace velora::game
     public:
         static const uint32_t MASK_POSITION_BIT;
         static constexpr const uint16_t MAX_LIGHTS = 256;
-        static constexpr const uint16_t MAX_SHADOW_CASTERS = 32;
+        static constexpr const uint16_t MAX_SHADOW_CASTERS = 16;
 
         constexpr static const char * NAME = "LightSystem";
         constexpr static inline const char * getName() { return NAME; }
@@ -83,6 +83,5 @@ namespace velora::game
         std::vector<std::size_t> _shadow_map_textures;
         std::vector<glm::mat4> _shadow_map_light_space_matrices;
         std::size_t _shadow_casters_count;
-
     };
 }

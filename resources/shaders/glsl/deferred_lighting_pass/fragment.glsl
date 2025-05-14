@@ -98,7 +98,7 @@ void main()
         {
             int shadowIndex = int(lights[i].castShadows.y);
             shadow = calculateShadow(FragPos, shadowIndex);
-            //shadow = mix(0.2, 1.0, shadow); // 0.2 = minimum ambient in shadow
+            shadow = mix(0.2, 1.0, shadow); // 0.2 = minimum ambient in shadow
         }
 
         vec3 lightColor = calculateLight(lights[i], Normal, FragPos, viewDir);
