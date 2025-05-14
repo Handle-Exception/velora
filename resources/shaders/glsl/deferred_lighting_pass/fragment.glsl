@@ -1,5 +1,13 @@
 #version 450
 
+// Camera
+uniform vec3 viewPos;
+
+// G-buffer inputs
+layout(binding = 0) uniform sampler2D gPosition;
+layout(binding = 1) uniform sampler2D gNormal;
+layout(binding = 2) uniform sampler2D gAlbedoSpec;
+
 // Lights
 #define LIGHT_TYPE_DIRECTIONAL 1
 #define LIGHT_TYPE_POINT       2
@@ -11,44 +19,41 @@ struct GPULight {
     vec4 color;         // rgb: color, w: intensity
     vec4 attenuation;   // x: constant, y: linear, z: quadratic
     vec2 cutoff;        // x: inner cos, y: outer cos
-    vec2 castShadows;   // unused here
+    vec2 castShadows;   // x: enable, y: shadowMapIndex
 };
-
-//struct ShadowCaster
-//{
-//    mat4 lightSpaceMatrix;
-//};
-//sampler2DShadow shadowMap[254];
-
 
 layout(std430, binding = 2) buffer LightBuffer {
     GPULight lights[];
 };
 uniform int lightCount;
 
-// Camera
-uniform vec3 viewPos;
-
-// G-buffer inputs
-uniform sampler2D gPosition;
-uniform sampler2D gNormal;
-uniform sampler2D gAlbedoSpec;
-
 // Shadow Map
-//uniform sampler2DShadow shadowMap;
-//uniform mat4 lightSpaceMatrix;
+#define MAX_SHADOW_CASTERS 16
+
+layout(binding = 3) uniform sampler2DShadow shadowMaps[MAX_SHADOW_CASTERS];
+uniform mat4 lightSpaceMatrices[MAX_SHADOW_CASTERS];
+uniform int shadowCastersCount;
 
 in vec2 TexCoord;
 out vec4 FragColor;
 
-//float calculateShadow(vec3 fragPosWorld)
-//{
-//    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPosWorld, 1.0);
-//    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-//    projCoords = projCoords * 0.5 + 0.5;
-//   return texture(shadowMap, projCoords); // 0 = in shadow, 1 = lit
-//}
+float calculateShadow(vec3 fragPosWorld, int shadow_caster_id)
+{
+    vec4 fragPosLightSpace = lightSpaceMatrices[shadow_caster_id] * vec4(fragPosWorld, 1.0);
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
 
+    // Otherwise, shadows can leak outside the frustum edges.
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0)
+    {
+        return 1.0; // Not in light frustum
+    }
+
+
+    return texture(shadowMaps[shadow_caster_id], projCoords); // 0 = in shadow, 1 = lit
+}
 
 vec3 calculateLight(GPULight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
@@ -87,10 +92,18 @@ void main()
 
     vec3 lighting = vec3(0.0);
     for (int i = 0; i < lightCount; ++i)
-        lighting += calculateLight(lights[i], Normal, FragPos, viewDir);
+    {
+        float shadow = 1.0;
+        if (lights[i].castShadows.x > 0 && int(lights[i].castShadows.y) < shadowCastersCount)
+        {
+            int shadowIndex = int(lights[i].castShadows.y);
+            shadow = calculateShadow(FragPos, shadowIndex);
+            //shadow = mix(0.2, 1.0, shadow); // 0.2 = minimum ambient in shadow
+        }
 
-    //float shadow = calculateShadow(fragPos);
-    //lighting *= shadow;
+        vec3 lightColor = calculateLight(lights[i], Normal, FragPos, viewDir);
+        lighting += lightColor * shadow;
+    }
 
     FragColor = vec4(lighting * Albedo.rgb, Albedo.a);
 }

@@ -378,7 +378,7 @@ namespace velora::opengl
         glUniform1f(_uniforms.at(name).first, value);
     }
 
-    void OpenGLShader::setUniform(const std::string & name, glm::vec2 value)
+    void OpenGLShader::setUniform(const std::string & name, const glm::vec2 & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -388,7 +388,7 @@ namespace velora::opengl
         glUniform2fv(_uniforms.at(name).first, 1, glm::value_ptr(value));
     }
 
-    void OpenGLShader::setUniform(const std::string & name, glm::vec3 value)
+    void OpenGLShader::setUniform(const std::string & name, const glm::vec3 & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -398,7 +398,7 @@ namespace velora::opengl
         glUniform3fv(_uniforms.at(name).first, 1, glm::value_ptr(value));
     }
 
-    void OpenGLShader::setUniform(const std::string & name, glm::vec4 value)
+    void OpenGLShader::setUniform(const std::string & name, const glm::vec4 & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -408,7 +408,7 @@ namespace velora::opengl
         glUniform4fv(_uniforms.at(name).first, 1, glm::value_ptr(value));
     }
 
-    void OpenGLShader::setUniform(const std::string & name, glm::mat2 value)
+    void OpenGLShader::setUniform(const std::string & name, const glm::mat2 & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -418,7 +418,7 @@ namespace velora::opengl
         glUniformMatrix2fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
     }
         
-    void OpenGLShader::setUniform(const std::string & name, glm::mat3 value)
+    void OpenGLShader::setUniform(const std::string & name, const glm::mat3 & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -428,7 +428,7 @@ namespace velora::opengl
         glUniformMatrix3fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
     }
 
-    void OpenGLShader::setUniform(const std::string & name, glm::mat4 value)
+    void OpenGLShader::setUniform(const std::string & name, const glm::mat4 & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -438,7 +438,26 @@ namespace velora::opengl
         glUniformMatrix4fv(_uniforms.at(name).first, 1, GL_FALSE, glm::value_ptr(value));
     }
 
-    void OpenGLShader::setUniform(const std::string & name, unsigned int unit, const Texture & value)
+    void OpenGLShader::setUniform(const std::string & name, const std::vector<glm::mat4> & values)
+    {
+        const std::string array_name = name + "[0]";
+        if(_uniforms.contains(array_name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+
+        const auto & glsl_var = _uniforms.at(array_name).second;
+        if(values.size() >= glsl_var.size)
+        {
+            spdlog::error("Uniform {} size {} is greater than the shader uniform array size {}", name, values.size(), glsl_var.size);
+            return;
+        }
+
+        glUniformMatrix4fv(_uniforms.at(array_name).first, values.size(), GL_FALSE, glm::value_ptr(values[0]));
+    }
+
+    void OpenGLShader::setUniform(const std::string & name, unsigned int unit, const ITexture & value)
     {
         if(_uniforms.contains(name) == false)
         {
@@ -448,9 +467,45 @@ namespace velora::opengl
 
         glActiveTexture(GL_TEXTURE0 + unit);
 
-        value->enable();
+        value.enable();
 
         glUniform1i(_uniforms.at(name).first, unit);
     }
 
+    void OpenGLShader::setUniform(const std::string & name, unsigned int unit, const std::vector<ITexture*> & values)
+    {
+        const std::string array_name = name + "[0]";
+
+        if(_uniforms.contains(array_name) == false)
+        {
+            spdlog::error("Uniform {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+
+        const auto & glsl_var = _uniforms.at(array_name).second;
+        if(values.size() >= glsl_var.size)
+        {
+            spdlog::error("Uniform {} size {} is greater than the shader uniform array size {}", name, values.size(), glsl_var.size);
+            return;
+        }
+
+        std::vector<int> texture_units(values.size());
+        for (unsigned int i = 0; i < values.size(); ++i)
+        {
+            texture_units[i] = unit + i;
+            glActiveTexture(GL_TEXTURE0 + texture_units.at(i));
+            values.at(i)->enable();
+        }
+
+        GLint base_location = glGetUniformLocation(_shader_program_ID, name.c_str());
+        if (base_location == -1) {
+            spdlog::error("Uniform base {} not found in shader program {}", name, _shader_program_ID);
+            return;
+        }
+
+        glUniform1iv(base_location, static_cast<GLsizei>(values.size()), texture_units.data());
+    }
+
 }
+
+

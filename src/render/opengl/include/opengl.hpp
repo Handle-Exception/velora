@@ -57,7 +57,8 @@ namespace velora::opengl
                 std::size_t shader_ID,
                 ShaderInputs shader_inputs,
                 RenderMode mode,
-                std::optional<std::size_t> fbo);
+                std::optional<std::size_t> fbo,
+                std::optional<PolygonOffset> offset);
                 
             asio::awaitable<void> present();
             asio::awaitable<void> updateViewport(Resolution resolution);

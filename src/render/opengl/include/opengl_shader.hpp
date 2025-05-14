@@ -36,16 +36,18 @@ namespace velora::opengl
         void setUniform(const std::string & name, int value);
         void setUniform(const std::string & name, float value);
 
-        void setUniform(const std::string & name, glm::vec2 value);
-        void setUniform(const std::string & name, glm::vec3 value);
-        void setUniform(const std::string & name, glm::vec4 value);
+        void setUniform(const std::string & name, const glm::vec2 & value);
+        void setUniform(const std::string & name, const glm::vec3 & value);
+        void setUniform(const std::string & name, const glm::vec4 & value);
 
-        void setUniform(const std::string & name, glm::mat2 value);
-        void setUniform(const std::string & name, glm::mat3 value);
-        void setUniform(const std::string & name, glm::mat4 value);
-        void setUniform(const std::string & name, std::vector<glm::mat4> value);
+        void setUniform(const std::string & name, const glm::mat2 & value);
+        void setUniform(const std::string & name, const glm::mat3 & value);
+        void setUniform(const std::string & name, const glm::mat4 & value);
+        void setUniform(const std::string & name, const std::vector<glm::mat4> & values);
 
-        void setUniform(const std::string & name, unsigned int unit, const Texture & value);
+        void setUniform(const std::string & name, unsigned int unit, const ITexture & value);
+        void setUniform(const std::string & name, unsigned int unit, const std::vector<ITexture*> & values);
+
 
     protected:
         OpenGLShader();

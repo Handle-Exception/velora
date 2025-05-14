@@ -4,6 +4,55 @@ namespace velora::game
 {
     const uint32_t VisualSystem::MASK_POSITION_BIT = ComponentTypeManager::getTypeID<VisualComponent>();
 
+    void updateModelMatrixField(VisualComponent * visual_component, glm::mat4 model_matrix)
+    {
+        if(visual_component->has_model_matrix())
+        {
+            // save interpolated matrix in visual component
+            visual_component->mutable_model_matrix()->set_data(0, model_matrix[0][0]);
+            visual_component->mutable_model_matrix()->set_data(1, model_matrix[0][1]);
+            visual_component->mutable_model_matrix()->set_data(2, model_matrix[0][2]);
+            visual_component->mutable_model_matrix()->set_data(3, model_matrix[0][3]);
+
+            visual_component->mutable_model_matrix()->set_data(4, model_matrix[1][0]);
+            visual_component->mutable_model_matrix()->set_data(5, model_matrix[1][1]);
+            visual_component->mutable_model_matrix()->set_data(6, model_matrix[1][2]);
+            visual_component->mutable_model_matrix()->set_data(7, model_matrix[1][3]);     
+
+            visual_component->mutable_model_matrix()->set_data(8, model_matrix[2][0]);
+            visual_component->mutable_model_matrix()->set_data(9, model_matrix[2][1]);
+            visual_component->mutable_model_matrix()->set_data(10, model_matrix[2][2]);
+            visual_component->mutable_model_matrix()->set_data(11, model_matrix[2][3]);  
+
+            visual_component->mutable_model_matrix()->set_data(12, model_matrix[3][0]);
+            visual_component->mutable_model_matrix()->set_data(13, model_matrix[3][1]);
+            visual_component->mutable_model_matrix()->set_data(14, model_matrix[3][2]);
+            visual_component->mutable_model_matrix()->set_data(15, model_matrix[3][3]);
+        }
+        else
+        {
+            visual_component->mutable_model_matrix()->add_data( model_matrix[0][0]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[0][1]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[0][2]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[0][3]);
+
+            visual_component->mutable_model_matrix()->add_data(model_matrix[1][0]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[1][1]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[1][2]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[1][3]);     
+
+            visual_component->mutable_model_matrix()->add_data(model_matrix[2][0]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[2][1]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[2][2]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[2][3]);  
+
+            visual_component->mutable_model_matrix()->add_data(model_matrix[3][0]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[3][1]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[3][2]);
+            visual_component->mutable_model_matrix()->add_data(model_matrix[3][3]);  
+        }
+    }
+
     asio::awaitable<VisualSystem> VisualSystem::asyncConstructor(
                 asio::io_context & io_context,
                 IRenderer & renderer,
@@ -69,7 +118,7 @@ namespace velora::game
         VisualComponent * visual_component = nullptr;
                 
         glm::mat4 model_matrix = glm::mat4(1.0f);
-        
+        glm::vec4 color = glm::vec4(0.5, 0.5, 0.5, 1);
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
             if(!_strand.running_in_this_thread()){
@@ -109,32 +158,22 @@ namespace velora::game
                 model_matrix = glm::mat4(1.0f);
             }
 
-            // save interpolated matrix in visual component
-            visual_component->mutable_model_matrix()->set_data(0, model_matrix[0][0]);
-            visual_component->mutable_model_matrix()->set_data(1, model_matrix[0][1]);
-            visual_component->mutable_model_matrix()->set_data(2, model_matrix[0][2]);
-            visual_component->mutable_model_matrix()->set_data(3, model_matrix[0][3]);
+            updateModelMatrixField(visual_component, model_matrix);
 
-            visual_component->mutable_model_matrix()->set_data(4, model_matrix[1][0]);
-            visual_component->mutable_model_matrix()->set_data(5, model_matrix[1][1]);
-            visual_component->mutable_model_matrix()->set_data(6, model_matrix[1][2]);
-            visual_component->mutable_model_matrix()->set_data(7, model_matrix[1][3]);     
-
-            visual_component->mutable_model_matrix()->set_data(8, model_matrix[2][0]);
-            visual_component->mutable_model_matrix()->set_data(9, model_matrix[2][1]);
-            visual_component->mutable_model_matrix()->set_data(10, model_matrix[2][2]);
-            visual_component->mutable_model_matrix()->set_data(11, model_matrix[2][3]);  
-
-            visual_component->mutable_model_matrix()->set_data(12, model_matrix[3][0]);
-            visual_component->mutable_model_matrix()->set_data(13, model_matrix[3][1]);
-            visual_component->mutable_model_matrix()->set_data(14, model_matrix[3][2]);
-            visual_component->mutable_model_matrix()->set_data(15, model_matrix[3][3]);
+            // get color from visual component
+            if(visual_component->has_color())
+            {
+                color = glm::vec4(visual_component->color().x(), 
+                                  visual_component->color().y(), 
+                                  visual_component->color().z(), 
+                                  visual_component->color().w());
+            }
 
             // render into deferred_fbo (G Buffer)
             co_await _renderer.render(*vb_id, *sh_id, 
                         ShaderInputs{
                             .in_bool = {{"useTexture", false}},
-                            .in_vec4 = {{"uColor", glm::vec4(0.5, 0.5, 0.5, 1)}},
+                            .in_vec4 = {{"uColor", color}},
                             .in_mat4 = {
                                 {"uModel", model_matrix},
                                 {"uView", view_matrix},

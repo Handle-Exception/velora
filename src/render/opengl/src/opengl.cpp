@@ -75,7 +75,13 @@ namespace velora::opengl
             return;
         }
 
+        // Enable various OpenGL features
+        // inside renderer thread
+
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);             // Enable culling
+        glCullFace(GL_BACK);                // Cull back faces (default)
+        glFrontFace(GL_CCW);                // Counter-clockwise is front (default)
 
         try
         {
@@ -430,20 +436,12 @@ namespace velora::opengl
         {
             _shaders.at(shader_ID)->setUniform(name, val);
         }
-
-        for(unsigned int unit = 0; unit < shader_inputs.in_samplers.size(); ++unit)
+        for(const auto & [name, val] : shader_inputs.in_mat4_array)
         {
-            const auto & [name, id] = shader_inputs.in_samplers.at(unit);
-
-            if(_textures.contains(id) == false)
-            {
-                spdlog::warn(std::format("[t:{}] Texture {} does not exist", std::this_thread::get_id(), name));
-                continue;
-            }
-
-            _shaders.at(shader_ID)->setUniform(name, unit, _textures.at(id));
+            _shaders.at(shader_ID)->setUniform(name, val);
         }
-
+        
+        // SSBO
         for(const auto & storage_buffer : shader_inputs.storage_buffers)
         {
             auto shader_storage_buffer_it = _shader_storage_buffers.find(storage_buffer);
@@ -456,6 +454,43 @@ namespace velora::opengl
                 spdlog::error("Cannot enable shader storage buffer");
                 continue;
             }
+        }
+
+        // Samplers
+        unsigned int sampler_unit = 0;
+
+        for(const auto & [name, sampler] : shader_inputs.in_samplers )
+        {
+            if(_textures.contains(sampler) == false)
+            {
+                spdlog::warn(std::format("[t:{}] Texture {} does not exist", std::this_thread::get_id(), name));
+                continue;
+            }
+
+            _shaders.at(shader_ID)->setUniform(name, sampler_unit++, *_textures.at(sampler));
+        }
+
+        bool success = true;
+        std::vector<ITexture*> in_textures;
+        for(const auto & [name, samplers] : shader_inputs.in_samplers_array)
+        {
+            for(unsigned int i = 0; i < samplers.size(); ++i)
+            {
+                if(_textures.contains(samplers[i]) == false)
+                {
+                    spdlog::warn(std::format("[t:{}] Texture {} does not exist", std::this_thread::get_id(), name));
+                    success = false;
+                    continue;
+                }
+                else
+                {
+                    in_textures.emplace_back(_textures.at(samplers[i]).get());
+                }
+            }
+            if(!success)continue;
+
+            _shaders.at(shader_ID)->setUniform(name, sampler_unit, in_textures);
+            sampler_unit += in_textures.size();
         }
     }
 
@@ -503,7 +538,8 @@ namespace velora::opengl
             std::size_t shader_ID,
             ShaderInputs shader_inputs,
             RenderMode mode,
-            std::optional<std::size_t> fbo)
+            std::optional<std::size_t> fbo,
+            std::optional<PolygonOffset> offset)
     {
         if(good() == false)co_return;
 
@@ -557,10 +593,23 @@ namespace velora::opengl
         assignShaderInputs(shader_ID, shader_inputs);
 
         if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        
+        if(offset)
+        {
+            glEnable(GL_POLYGON_OFFSET_FILL);
+            glPolygonOffset(offset->factor, offset->units);
+        }
 
         glDrawElements(GL_TRIANGLES, (GLsizei)vertex_buffer_it->second->numberOfElements(), GL_UNSIGNED_INT, nullptr);
         
+        if(offset)
+        {
+            glDisable(GL_POLYGON_OFFSET_FILL);
+        }
+
         if(mode == RenderMode::Wireframe)glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // restore default
+
+
 
         if(fbo)
         {

@@ -12,21 +12,32 @@ namespace velora::game
         auto light_shader_buffer = co_await renderer.constructShaderStorageBuffer(
                 "LightSystem::ssbo::light", 2, 0, nullptr);
         
-        if(light_shader_buffer.has_value() == false)
+        if(!light_shader_buffer)
         {
+            spdlog::error("Failed to create light shader storage buffer");
             throw std::runtime_error("Failed to create light shader storage buffer");
         }
 
-        auto shadow_map_fbo = co_await renderer.constructFrameBufferObject(
-                "LightSystem::fbo::shadow_map", {512, 512},
-                {{FBOAttachment::Type::Texture, FBOAttachment::Point::Depth, TextureFormat::Depth}});
-
-        if(shadow_map_fbo.has_value() == false)
+        // create shadow map frame buffer objects
+        // for all shadow casters
+        std::vector<std::size_t> shadow_map_fbos;
+        std::optional<std::size_t> fbo_creaton_result;
+        for(unsigned int i = 0; i < MAX_SHADOW_CASTERS; ++i)
         {
-            throw std::runtime_error("Failed to create shadow map fbo");
+            fbo_creaton_result = co_await renderer.constructFrameBufferObject(
+                "LightSystem::fbo::shadow_map" + std::to_string(i), {1280, 720},
+                {{FBOAttachment::Type::Texture, FBOAttachment::Point::Depth, TextureFormat::Depth_32F}});
+            
+            if(!fbo_creaton_result)
+            {
+                spdlog::error("Failed to create shadow map fbo {}", i);
+                throw std::runtime_error("Failed to create shadow map fbo " + std::to_string(i));
+            }
+
+            shadow_map_fbos.emplace_back(*fbo_creaton_result);
         }
 
-        co_return LightSystem(io_context, renderer, visual_system, *light_shader_buffer, *shadow_map_fbo);
+        co_return LightSystem(io_context, renderer, visual_system, *light_shader_buffer, std::move(shadow_map_fbos));
     }
 
     LightSystem::LightSystem(
@@ -34,13 +45,13 @@ namespace velora::game
             IRenderer & renderer,
             VisualSystem & visual_system,
             std::size_t light_shader_buffer_id, 
-            std::size_t shadow_map_fbo
+            std::vector<std::size_t> shadow_map_fbos
     )
     :   _strand(asio::make_strand(io_context)),
         _renderer(renderer),
         _visual_system(visual_system),
         _light_shader_buffer_id(light_shader_buffer_id),
-        _shadow_map_fbo(shadow_map_fbo)
+        _shadow_map_fbos(std::move(shadow_map_fbos))
     {
         _gpu_lights.reserve(MAX_LIGHTS);
 
@@ -52,8 +63,18 @@ namespace velora::game
         }
         _shadow_pass_shader = *shadow_shader_result;
 
-        _shadow_map_textures = _renderer.getFrameBufferObjectTextures(_shadow_map_fbo);
-        assert(_shadow_map_textures.size() == 1);
+        assert(shadow_map_fbos.size() <= MAX_SHADOW_CASTERS && "Too many shadow casters! Increase MAX_SHADOW_CASTERS in light_system.hpp" );
+
+        // fetch shadow map textures from frame buffer objects
+        _shadow_map_textures.reserve(MAX_SHADOW_CASTERS);
+        for(const auto & shader_map_fbo : _shadow_map_fbos)
+        {
+            auto tex_res = _renderer.getFrameBufferObjectTextures(shader_map_fbo);
+            assert(tex_res.size() == 1 && "Shadow map fbo should only have one texture" );
+            _shadow_map_textures.emplace_back(tex_res.at(0));
+        }
+
+        _shadow_map_light_space_matrices.resize(MAX_SHADOW_CASTERS);
     }
 
     std::size_t LightSystem::getLightShaderBufferID() const 
@@ -61,32 +82,37 @@ namespace velora::game
         return _light_shader_buffer_id; 
     }
 
-    std::size_t LightSystem::getLightCount() const 
+    std::size_t LightSystem::getLightsCount() const 
     { 
         return _gpu_lights.size();
     }
 
-    std::size_t LightSystem::getShadowMapTexture() const
+    std::vector<std::size_t> LightSystem::getShadowMapTextures() const
     {
-        return _shadow_map_textures.at(0);
+        return std::vector<std::size_t>(_shadow_map_textures.begin(), _shadow_map_textures.begin() + _shadow_casters_count);
+    }
+
+    std::vector<glm::mat4> LightSystem::getShadowMapLightSpaceMatrices() const
+    {
+        return std::vector<glm::mat4>(_shadow_map_light_space_matrices.begin(), _shadow_map_light_space_matrices.begin() + _shadow_casters_count);
+    }
+
+    std::size_t LightSystem::getShadowCastersCount() const
+    {
+        return _shadow_casters_count;
     }
 
     asio::awaitable<void> LightSystem::run(const ComponentManager& components, const EntityManager& entities, float alpha)
     {
-        // clear shadow map fbo
-        //co_await _renderer.clearScreen({0.0f, 0.0f, 0.0f, 1.0f}, _shadow_map_fbo);
-
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
         
         collectLights(components, entities, alpha);
 
-        // it can run in parallel
-        co_await (
-            _renderer.updateShaderStorageBuffer(_light_shader_buffer_id, sizeof(GPULight) * _gpu_lights.size(), _gpu_lights.data())
-            //&& renderShadows(components, entities, alpha)
-        );
+        co_await renderShadows(components, entities, alpha);
+
+        co_await _renderer.updateShaderStorageBuffer(_light_shader_buffer_id, sizeof(GPULight) * _gpu_lights.size(), _gpu_lights.data());
 
         co_return;
     }
@@ -107,7 +133,7 @@ namespace velora::game
         glm::vec3 direction;
 
         GPULight gpu_light{};
-        uint16_t light_id = 0;
+        uint32_t light_id = 0;
         for (const auto& [entity, mask] : entities.getAllEntities())
         {
             if(light_id >= MAX_LIGHTS)return;
@@ -151,7 +177,7 @@ namespace velora::game
             gpu_light.color = glm::vec4(light_component->color_r(), light_component->color_g(), light_component->color_b(), light_component->intensity());
             gpu_light.attenuation = glm::vec4(light_component->constant(), light_component->linear(), light_component->quadratic(), 0.0f);
             gpu_light.cutoff = glm::vec2(light_component->inner_cutoff(), light_component->outer_cutoff());
-            gpu_light.castShadows = glm::vec2(static_cast<uint32_t>(light_component->cast_shadows()), 0);
+            gpu_light.castShadows.x = static_cast<uint32_t>(light_component->cast_shadows());
             
             _gpu_lights.emplace_back(std::move(gpu_light));
             light_id++;
@@ -171,23 +197,68 @@ namespace velora::game
         glm::mat4 light_space_matrix;
         glm::mat4 model_matrix;
 
-        for (const auto& light : _gpu_lights)
+        // for every light
+        uint32_t light_id = 0;
+        for (auto& light : _gpu_lights)
         {
+            if(light_id >= MAX_SHADOW_CASTERS)co_return;
+
             if(!_strand.running_in_this_thread()){
                 co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
             }
 
             if(light.castShadows.x == 0)continue;
+
+            // store shadow caster id 
+            light.castShadows.y = static_cast<float>(light_id);
+
+            view_matrix = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + glm::normalize(glm::vec3(light.direction)), BASE_UP_DIRECTION);
             
-            view_matrix = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position) + glm::vec3(light.direction), BASE_UP_DIRECTION);
+            if(light.direction.w == static_cast<float>(LightType::DIRECTIONAL))
+            {
+                // directional light
+                // TODO
+                projection_matrix = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, 0.1f, 100.0f);
+            }
+            else if(light.direction.w == static_cast<float>(LightType::POINT))
+            {
+                // point light
+                // TODO
+                projection_matrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+            }
+            else if(light.direction.w == static_cast<float>(LightType::SPOT))
+            {
+                // spot light
+                float outer_cutoff_cos = light.cutoff.y;
+                outer_cutoff_cos = glm::clamp(outer_cutoff_cos, -1.0f, 1.0f);
+                float fov = glm::degrees(acos(outer_cutoff_cos)) * 2.0f;
+                fov = glm::clamp(fov, 1.0f, 179.0f); // prevent extreme cases
+                float projection_near = 1.0f;
+                float projection_far = 50.0f; // matches spotlight range better
+                projection_matrix = glm::perspective(glm::radians(fov), 1280.0f / 720.0f, projection_near, projection_far);
+            }
+            else
+            {
+                // unknown light type
+                co_return;
+            }
 
             light_space_matrix = projection_matrix * view_matrix;
+            // store light space matrix
+            _shadow_map_light_space_matrices[light_id] = light_space_matrix;
+
+            // clear shadow map fbo
+            co_await _renderer.clearScreen({0.0f, 0.0f, 0.0f, 1.0f}, _shadow_map_fbos.at(light_id));
 
             // now for every light we need to render whole scene 
             // so all entities with visual component
             // using simplified shadow shader
             for(const auto & [entity, mask] : entities.getAllEntities())
             {
+                if(!_strand.running_in_this_thread()){
+                    co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
+                }
+
                 if(mask.test(VisualSystem::MASK_POSITION_BIT) == false)continue;
 
                 const VisualComponent * visual_component = components.getComponent<VisualComponent>(entity);
@@ -219,7 +290,6 @@ namespace velora::game
                 model_matrix[3][2] = visual_component->model_matrix().data(14);
                 model_matrix[3][3] = visual_component->model_matrix().data(15);
 
-                
                 // render depth information to shadow map fbo
                 co_await _renderer.render(*vb_id, _shadow_pass_shader, 
                     ShaderInputs{
@@ -229,10 +299,13 @@ namespace velora::game
                         }
                     },
                     RenderMode::Solid,
-                    _shadow_map_fbo
+                    _shadow_map_fbos.at(light_id),
+                    PolygonOffset{.factor = 1.5f, .units = 4.0f}
                 );
             }
 
-        }  
+            light_id++;
+        }
+        _shadow_casters_count = light_id;
     }
 }

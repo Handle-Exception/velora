@@ -28,13 +28,19 @@ namespace velora
         std::vector<Vertex> vertices;
     };
 
+    enum class TriangleWinding
+    {
+        Clockwise,
+        CounterClockwise
+    };
+
     const Mesh & getNormalizedDeviceCoordinatesQuadPrefab();
 
     const Mesh & getQuadPrefab();
 
     const Mesh & getCubePrefab();
 
-    const Mesh& getIcoSpherePrefab(unsigned int subdivisions = 1);
+    const Mesh& getIcoSpherePrefab(unsigned int subdivisions = 1, TriangleWinding winding = TriangleWinding::CounterClockwise, bool inward_normals = false);
 
     const Mesh& getConePrefab(unsigned int segments = 32);
 

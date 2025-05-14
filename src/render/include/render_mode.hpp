@@ -11,4 +11,10 @@ namespace velora
         ShadowTextured,
         Count
     };
+
+    struct PolygonOffset
+    {
+        float factor;
+        float units;
+    };
 }

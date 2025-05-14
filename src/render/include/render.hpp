@@ -64,7 +64,8 @@ namespace velora
                 std::size_t shader_ID,
                 ShaderInputs shader_inputs = ShaderInputs{},
                 RenderMode mode = RenderMode::Solid,
-                std::optional<std::size_t> fbo = std::nullopt) = 0;
+                std::optional<std::size_t> fbo = std::nullopt,
+                std::optional<PolygonOffset> offset = std::nullopt) = 0;
         
         /**
          * @brief Present the rendered frame
@@ -132,10 +133,12 @@ namespace velora
 
             inline asio::awaitable<void> render(std::size_t vertex_buffer_ID, std::size_t shader_ID, 
                 ShaderInputs shader_inputs, RenderMode mode,
-                std::optional<std::size_t> fbo) override { 
+                std::optional<std::size_t> fbo,
+                std::optional<PolygonOffset> offset) override { 
                 co_return co_await dispatch::getImpl().render(std::move(vertex_buffer_ID), std::move(shader_ID),
                     std::move(shader_inputs), mode, 
-                    std::move(fbo));
+                    std::move(fbo),
+                    std::move(offset));
             }
 
             inline asio::awaitable<void> present() override { 

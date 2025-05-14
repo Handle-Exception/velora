@@ -38,21 +38,32 @@ namespace velora
 
         if((co_await renderer.constructVertexBuffer("icosphere1_prefab", getIcoSpherePrefab(1))) == std::nullopt)
         {
-            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            spdlog::error("Failed to create icosphere1_prefab vertex buffer");
             success = false;
         }
 
         if((co_await renderer.constructVertexBuffer("icosphere2_prefab", getIcoSpherePrefab(2))) == std::nullopt)
         {
-            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            spdlog::error("Failed to create icosphere2_prefab vertex buffer");
             success = false;
         }
         
         if((co_await renderer.constructVertexBuffer("icosphere3_prefab", getIcoSpherePrefab(3))) == std::nullopt)
         {
-            spdlog::error("Failed to create cylinder_prefab vertex buffer");
+            spdlog::error("Failed to create icosphere3_prefab vertex buffer");
             success = false;
         }
+
+        // TODO nie mam pojęcia czemu tego nie widać od środka mimo że : 
+        // glFrontFace(GL_CCW); --> traktuj counter-clockwise jako front faces
+        // tu ustawiamy że front face to clockwise i normalne do środka :/
+        // możliwe że coś z algorytmem windingu 
+        if((co_await renderer.constructVertexBuffer("dome_prefab", getIcoSpherePrefab(3, TriangleWinding::Clockwise, true))) == std::nullopt)
+        {
+            spdlog::error("Failed to create dome_prefab vertex buffer");
+            success = false;
+        }
+
         co_return success;
     }
 

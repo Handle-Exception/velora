@@ -26,12 +26,6 @@ namespace velora::game
         glm::vec2 cutoff;       // x=inner, y=outer
         glm::vec2 castShadows;  // vec2 to have natural padding
     };
-
-    struct ShadowCaster {
-        glm::mat4 lightSpaceMatrix;
-        uint32_t shadowMap;
-    };
-
     #pragma pack(pop)
 
     class LightSystem 
@@ -39,6 +33,7 @@ namespace velora::game
     public:
         static const uint32_t MASK_POSITION_BIT;
         static constexpr const uint16_t MAX_LIGHTS = 256;
+        static constexpr const uint16_t MAX_SHADOW_CASTERS = 32;
 
         constexpr static const char * NAME = "LightSystem";
         constexpr static inline const char * getName() { return NAME; }
@@ -57,10 +52,11 @@ namespace velora::game
         asio::awaitable<void> run(const ComponentManager& components, const EntityManager& entities, float alpha);
 
         std::size_t getLightShaderBufferID() const;
+        std::size_t getLightsCount() const;
 
-        std::size_t getLightCount() const;
-
-        std::size_t getShadowMapTexture() const;
+        std::vector<std::size_t> getShadowMapTextures() const;
+        std::vector<glm::mat4> getShadowMapLightSpaceMatrices() const;
+        std::size_t getShadowCastersCount() const;
 
     protected:
         LightSystem(
@@ -68,7 +64,7 @@ namespace velora::game
             IRenderer & renderer,
             VisualSystem & visual_system,
             std::size_t light_shader_buffer_id,
-            std::size_t shadow_map_fbo);
+            std::vector<std::size_t> shadow_map_fbos);
 
         void collectLights(const ComponentManager& components, const EntityManager& entities, float alpha);
         asio::awaitable<void> renderShadows(const ComponentManager& components, const EntityManager& entities, float alpha);
@@ -81,9 +77,12 @@ namespace velora::game
         std::vector<GPULight> _gpu_lights;
         std::size_t _light_shader_buffer_id;
 
-        std::size_t _shadow_map_fbo;
         std::size_t _shadow_pass_shader;
 
+        std::vector<std::size_t> _shadow_map_fbos;
         std::vector<std::size_t> _shadow_map_textures;
+        std::vector<glm::mat4> _shadow_map_light_space_matrices;
+        std::size_t _shadow_casters_count;
+
     };
 }

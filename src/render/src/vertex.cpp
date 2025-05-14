@@ -129,41 +129,71 @@ namespace velora
 
         const float radius = 0.5f;
         const float height = 1.0f;
-        const glm::vec3 apex = {0.0f, height * 0.5f, 0.0f};
-        const glm::vec3 base_center = {0.0f, -height * 0.5f, 0.0f};
+        const float halfHeight = height * 0.5f;
+        const glm::vec3 apex = {0.0f, halfHeight, 0.0f};
+        const glm::vec3 base_center = {0.0f, -halfHeight, 0.0f};
 
-        cone.vertices.push_back({base_center, {0, -1, 0}, {0.5f, 0.5f}}); // center vertex at base
+        // Base center vertex
+        cone.vertices.push_back({base_center, {0, -1, 0}, {0.5f, 0.5f}});
         unsigned int center_index = 0;
 
-        // Base circle
-        for (unsigned int i = 0; i <= segments; ++i) {
+        std::vector<unsigned int> base_ring_indices;
+
+        // Base ring
+        for (unsigned int i = 0; i < segments; ++i) {
             float angle = (float)i / segments * glm::two_pi<float>();
             float x = cos(angle) * radius;
             float z = sin(angle) * radius;
+
+            glm::vec3 pos = {x, -halfHeight, z};
             glm::vec2 uv = {x * 0.5f + 0.5f, z * 0.5f + 0.5f};
-            cone.vertices.push_back({{x, base_center.y, z}, {0, -1, 0}, uv});
+
+            // Flat normal for the base
+            cone.vertices.push_back({pos, {0, -1, 0}, uv});
+            base_ring_indices.push_back(cone.vertices.size() - 1);
         }
 
-        // Base indices (triangle fan)
-        for (unsigned int i = 1; i <= segments; ++i) {
+        // Base indices (triangle fan, CCW from bottom view)
+        for (unsigned int i = 0; i < segments; ++i) {
+            unsigned int next = (i + 1) % segments;
             cone.indices.push_back(center_index);
-            cone.indices.push_back(i);
-            cone.indices.push_back(i % segments + 1);
+            cone.indices.push_back(base_ring_indices[i]);
+            cone.indices.push_back(base_ring_indices[next]);
         }
 
-        // Side faces
-        unsigned int apex_index = cone.vertices.size();
-        cone.vertices.push_back({apex, {0, 1, 0}, {0.5f, 1.0f}}); // top point
+        // Side vertices with smooth normals
+        unsigned int base_offset = cone.vertices.size();
 
-        for (unsigned int i = 1; i <= segments; ++i) {
-            glm::vec3 p1 = cone.vertices[i].position;
-            glm::vec3 p2 = cone.vertices[i % segments + 1].position;
-            glm::vec3 n = glm::normalize(glm::cross(p2 - apex, p1 - apex));
-            unsigned int i1 = cone.vertices.size();
-            unsigned int i2 = i1 + 1;
-            cone.vertices.push_back({p1, n, {0, 0}});
-            cone.vertices.push_back({p2, n, {1, 0}});
-            cone.indices.insert(cone.indices.end(), {i1, i2, apex_index});
+        for (unsigned int i = 0; i < segments; ++i) {
+            float angle = (float)i / segments * glm::two_pi<float>();
+            float nextAngle = (float)(i + 1) / segments * glm::two_pi<float>();
+
+            // Compute side positions
+            glm::vec3 base1 = {cos(angle) * radius, -halfHeight, sin(angle) * radius};
+            glm::vec3 base2 = {cos(nextAngle) * radius, -halfHeight, sin(nextAngle) * radius};
+
+            // Direction from base ring point to apex
+            glm::vec3 dir1 = glm::normalize(apex - base1);
+            glm::vec3 dir2 = glm::normalize(apex - base2);
+
+            // Per-vertex normal: perpendicular to the surface
+            glm::vec3 sideNormal1 = glm::normalize(glm::cross(glm::cross(dir1, {0, 1, 0}), dir1));
+            glm::vec3 sideNormal2 = glm::normalize(glm::cross(glm::cross(dir2, {0, 1, 0}), dir2));
+
+            // Apex duplicated per triangle with averaged normal
+            glm::vec3 apexNormal = glm::normalize(sideNormal1 + sideNormal2);
+
+            // Build triangle (correct CCW winding when viewed from outside)
+            unsigned int i0 = cone.vertices.size(); // base1
+            unsigned int i1 = i0 + 1;               // base2
+            unsigned int i2 = i0 + 2;               // apex
+
+            cone.vertices.push_back({base1, sideNormal1, {0, 0}});
+            cone.vertices.push_back({base2, sideNormal2, {1, 0}});
+            cone.vertices.push_back({apex, apexNormal, {0.5f, 1.0f}});
+
+            // Swap i1 and i0 to enforce CCW
+            cone.indices.insert(cone.indices.end(), {i1, i0, i2});
         }
 
         return cone;
@@ -177,12 +207,12 @@ namespace velora
         float radius = 0.5f, height = 1.0f;
         float y_top = +height * 0.5f, y_bottom = -height * 0.5f;
 
-        // Top center
+        // ---------- Top cap ----------
         unsigned int top_center_idx = cyl.vertices.size();
         cyl.vertices.push_back({{0, y_top, 0}, {0, 1, 0}, {0.5f, 0.5f}});
 
-        // Top ring
-        for (unsigned int i = 0; i <= segments; ++i) {
+        unsigned int top_ring_start = cyl.vertices.size();
+        for (unsigned int i = 0; i < segments; ++i) {
             float angle = (float)i / segments * glm::two_pi<float>();
             float x = cos(angle) * radius;
             float z = sin(angle) * radius;
@@ -190,19 +220,20 @@ namespace velora
             cyl.vertices.push_back({{x, y_top, z}, {0, 1, 0}, uv});
         }
 
-        for (unsigned int i = 1; i <= segments; ++i) {
+        for (unsigned int i = 0; i < segments; ++i) {
+            unsigned int next = (i + 1) % segments;
+            // CCW winding
             cyl.indices.insert(cyl.indices.end(), {
-                top_center_idx, top_center_idx + i, top_center_idx + (i % segments + 1)
+                top_center_idx, top_ring_start + next, top_ring_start + i
             });
         }
 
-        // Bottom center
+        // ---------- Bottom cap ----------
         unsigned int bottom_center_idx = cyl.vertices.size();
         cyl.vertices.push_back({{0, y_bottom, 0}, {0, -1, 0}, {0.5f, 0.5f}});
 
-        // Bottom ring
-        unsigned int start_idx = cyl.vertices.size();
-        for (unsigned int i = 0; i <= segments; ++i) {
+        unsigned int bottom_ring_start = cyl.vertices.size();
+        for (unsigned int i = 0; i < segments; ++i) {
             float angle = (float)i / segments * glm::two_pi<float>();
             float x = cos(angle) * radius;
             float z = sin(angle) * radius;
@@ -210,42 +241,47 @@ namespace velora
             cyl.vertices.push_back({{x, y_bottom, z}, {0, -1, 0}, uv});
         }
 
-        for (unsigned int i = 1; i <= segments; ++i) {
+        for (unsigned int i = 0; i < segments; ++i) {
+            unsigned int next = (i + 1) % segments;
+            // CCW winding when viewed from below
             cyl.indices.insert(cyl.indices.end(), {
-                bottom_center_idx, start_idx + (i % segments + 1), start_idx + i
+                bottom_center_idx, bottom_ring_start + i, bottom_ring_start + next
             });
         }
 
-        // Side walls
-        unsigned int base_idx = cyl.vertices.size();
+        // ---------- Side wall (smooth normals) ----------
+        unsigned int side_start = cyl.vertices.size();
         for (unsigned int i = 0; i <= segments; ++i) {
             float angle = (float)i / segments * glm::two_pi<float>();
             float x = cos(angle) * radius;
             float z = sin(angle) * radius;
-            glm::vec3 normal = glm::normalize(glm::vec3(x, 0, z));
-            cyl.vertices.push_back({{x, y_top, z}, normal, {float(i) / segments, 0}});
-            cyl.vertices.push_back({{x, y_bottom, z}, normal, {float(i) / segments, 1}});
+            glm::vec3 normal = glm::normalize(glm::vec3(x, 0.0f, z));
+            float u = float(i) / segments;
+
+            cyl.vertices.push_back({{x, y_top, z}, normal, {u, 0.0f}});
+            cyl.vertices.push_back({{x, y_bottom, z}, normal, {u, 1.0f}});
         }
 
         for (unsigned int i = 0; i < segments; ++i) {
-            unsigned int top1 = base_idx + i * 2;
-            unsigned int bot1 = base_idx + i * 2 + 1;
-            unsigned int top2 = base_idx + (i + 1) * 2;
-            unsigned int bot2 = base_idx + (i + 1) * 2 + 1;
+            unsigned int i0 = side_start + i * 2;
+            unsigned int i1 = i0 + 1;
+            unsigned int i2 = i0 + 2;
+            unsigned int i3 = i0 + 3;
+            // CCW winding
             cyl.indices.insert(cyl.indices.end(), {
-                top1, bot1, top2,
-                top2, bot1, bot2
+                i0, i2, i1,
+                i2, i3, i1
             });
         }
 
         return cyl;
     }
 
-    const Mesh& getIcoSpherePrefab(unsigned int subdivisions)
+    const Mesh& getIcoSpherePrefab(unsigned int subdivisions, TriangleWinding winding, bool inward_normals)
     {
         static std::vector<Mesh> cache;
-        if (cache.size() <= subdivisions)cache.resize(subdivisions + 1);
-        if (!cache[subdivisions].vertices.empty())return cache[subdivisions];
+        if (cache.size() <= subdivisions) cache.resize(subdivisions + 1);
+        if (!cache[subdivisions].vertices.empty()) return cache[subdivisions];
 
         auto& mesh = cache[subdivisions];
 
@@ -287,23 +323,40 @@ namespace velora
             std::vector<std::array<uint32_t, 3>> subdivided;
             for (const auto& tri : faces) {
                 const uint32_t a = getMiddlePoint(tri[0], tri[1]);
-                uint32_t b = getMiddlePoint(tri[1], tri[2]);
-                uint32_t c = getMiddlePoint(tri[2], tri[0]);
-                subdivided.push_back({tri[0], a, c});
-                subdivided.push_back({tri[1], b, a});
-                subdivided.push_back({tri[2], c, b});
-                subdivided.push_back({a, b, c});
+                const uint32_t b = getMiddlePoint(tri[1], tri[2]);
+                const uint32_t c = getMiddlePoint(tri[2], tri[0]);
+
+                auto addTriangle = [&](uint32_t i0, uint32_t i1, uint32_t i2) {
+                    if (winding == TriangleWinding::Clockwise) 
+                        subdivided.push_back({i0, i2, i1});
+                    else
+                        subdivided.push_back({i0, i1, i2});
+                };
+
+                addTriangle(tri[0], a, c);
+                addTriangle(tri[1], b, a);
+                addTriangle(tri[2], c, b);
+                addTriangle(a, b, c);
+
             }
             faces = std::move(subdivided);
         }
 
-        // Deduplicate vertices
+        // Deduplicate vertices and apply winding
         std::vector<uint32_t> remap(positions.size(), -1);
         for (const auto& tri : faces) {
-            for (uint32_t idx : tri) {
+            std::array<uint32_t, 3> ordered = tri;
+            if (winding == TriangleWinding::Clockwise) {
+                std::swap(ordered[1], ordered[2]);
+            }
+
+            for (int j = 0; j < 3; ++j) {
+                uint32_t idx = ordered[j];
                 if (remap[idx] == uint32_t(-1)) {
+                    glm::vec3 pos = positions[idx];
+                    glm::vec3 normal = inward_normals ? -pos : pos;
                     remap[idx] = static_cast<uint32_t>(mesh.vertices.size());
-                    mesh.vertices.push_back({positions[idx], positions[idx], {0, 0}});
+                    mesh.vertices.push_back({pos, normal, {0, 0}});
                 }
                 mesh.indices.push_back(remap[idx]);
             }
@@ -311,5 +364,4 @@ namespace velora
 
         return mesh;
     }
-
 }

@@ -259,13 +259,17 @@ namespace velora
                 // render GBuffer to screen
                 co_await renderer->render(NDC_quad, deferred_lighting_pass,
                     ShaderInputs{
-                        .in_int = {{"lightCount", (int)light_system.getLightCount()}},
-                        //.in_vec3 = {{"viewPos", view_position}},
+                        .in_int = {
+                            {"lightCount", (int)light_system.getLightsCount()},
+                            {"shadowCastersCount", (int)light_system.getShadowCastersCount()}},
+                        .in_mat4_array = {{"lightSpaceMatrices", light_system.getShadowMapLightSpaceMatrices()}},
                         .in_samplers = {
                             {"gPosition", gbuffer_textures.at(0)},
                             {"gNormal", gbuffer_textures.at(1)},
                             {"gAlbedoSpec", gbuffer_textures.at(2)}
-                            //{"shadowMap", light_system.getShadowMapTexture()}
+                        },
+                        .in_samplers_array = {
+                           {"shadowMaps", light_system.getShadowMapTextures()}
                         },
                         .storage_buffers = {light_system.getLightShaderBufferID()}
                     },
