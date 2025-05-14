@@ -1,0 +1,6 @@
+var searchData=
+[
+  ['default_5fport_0',['DEFAULT_PORT',['../namespacevelora.html#a2a35bf354b9c94033ed6463d8adb7d33',1,'velora']]],
+  ['deps_1',['deps',['../classvelora_1_1game_1_1CameraSystem.html#ae798adcb9caa62328e5b6f3fdbdd427d',1,'velora::game::CameraSystem::DEPS'],['../classvelora_1_1game_1_1HealthSystem.html#a821d11dd1c08e078d5ad629826006c99',1,'velora::game::HealthSystem::DEPS'],['../classvelora_1_1game_1_1InputSystem.html#a4b13baf8fd4a947bb8e8580c164049c0',1,'velora::game::InputSystem::DEPS'],['../classvelora_1_1game_1_1LightSystem.html#a29936e27e8b1dd7f1557e96cb8fd2ab4',1,'velora::game::LightSystem::DEPS'],['../classvelora_1_1game_1_1ScriptSystem.html#ab754d9b85c86450d40e4144df87b7521',1,'velora::game::ScriptSystem::DEPS'],['../classvelora_1_1game_1_1TerrainSystem.html#ac59ddd13e9ccb3e8cdbbd0930f70f557',1,'velora::game::TerrainSystem::DEPS'],['../classvelora_1_1game_1_1TransformSystem.html#a701e23b8e600996c3c54dfec44c39e0d',1,'velora::game::TransformSystem::DEPS'],['../classvelora_1_1game_1_1VisualSystem.html#a50522d45062c41f9aabb7349fe85765e',1,'velora::game::VisualSystem::DEPS']]],
+  ['direction_2',['direction',['../structvelora_1_1game_1_1GPULight.html#aaa79f18bedc1a1885673282c2ce235f6',1,'velora::game::GPULight']]]
+];

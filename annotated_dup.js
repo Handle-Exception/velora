@@ -1,0 +1,105 @@
+var annotated_dup =
+[
+    [ "std", null, [
+      [ "formatter< const GLchar * >", "structstd_1_1formatter_3_01const_01GLchar_01_5_01_4.html", "structstd_1_1formatter_3_01const_01GLchar_01_5_01_4" ],
+      [ "formatter< const GLubyte * >", "structstd_1_1formatter_3_01const_01GLubyte_01_5_01_4.html", "structstd_1_1formatter_3_01const_01GLubyte_01_5_01_4" ],
+      [ "formatter< GLuint >", "structstd_1_1formatter_3_01GLuint_01_4.html", "structstd_1_1formatter_3_01GLuint_01_4" ],
+      [ "formatter< velora::native::device_context >", "structstd_1_1formatter_3_01velora_1_1native_1_1device__context_01_4.html", "structstd_1_1formatter_3_01velora_1_1native_1_1device__context_01_4" ],
+      [ "formatter< velora::native::opengl_context_handle >", "structstd_1_1formatter_3_01velora_1_1native_1_1opengl__context__handle_01_4.html", "structstd_1_1formatter_3_01velora_1_1native_1_1opengl__context__handle_01_4" ],
+      [ "formatter< velora::native::window_handle >", "structstd_1_1formatter_3_01velora_1_1native_1_1window__handle_01_4.html", "structstd_1_1formatter_3_01velora_1_1native_1_1window__handle_01_4" ]
+    ] ],
+    [ "velora", "namespacevelora.html", [
+      [ "detail", "namespacevelora_1_1detail.html", [
+        [ "VertexHasher", "structvelora_1_1detail_1_1VertexHasher.html", "structvelora_1_1detail_1_1VertexHasher" ]
+      ] ],
+      [ "game", "namespacevelora_1_1game.html", [
+        [ "CameraSystem", "classvelora_1_1game_1_1CameraSystem.html", "classvelora_1_1game_1_1CameraSystem" ],
+        [ "GPULight", "structvelora_1_1game_1_1GPULight.html", "structvelora_1_1game_1_1GPULight" ],
+        [ "HealthSystem", "classvelora_1_1game_1_1HealthSystem.html", "classvelora_1_1game_1_1HealthSystem" ],
+        [ "InputEvent", "structvelora_1_1game_1_1InputEvent.html", "structvelora_1_1game_1_1InputEvent" ],
+        [ "InputSystem", "classvelora_1_1game_1_1InputSystem.html", "classvelora_1_1game_1_1InputSystem" ],
+        [ "Level", "classvelora_1_1game_1_1Level.html", "classvelora_1_1game_1_1Level" ],
+        [ "LightSystem", "classvelora_1_1game_1_1LightSystem.html", "classvelora_1_1game_1_1LightSystem" ],
+        [ "LuaInputRef", "structvelora_1_1game_1_1LuaInputRef.html", "structvelora_1_1game_1_1LuaInputRef" ],
+        [ "LuaTransformRef", "structvelora_1_1game_1_1LuaTransformRef.html", "structvelora_1_1game_1_1LuaTransformRef" ],
+        [ "ScriptSystem", "classvelora_1_1game_1_1ScriptSystem.html", "classvelora_1_1game_1_1ScriptSystem" ],
+        [ "TerrainSystem", "classvelora_1_1game_1_1TerrainSystem.html", "classvelora_1_1game_1_1TerrainSystem" ],
+        [ "TransformSystem", "classvelora_1_1game_1_1TransformSystem.html", "classvelora_1_1game_1_1TransformSystem" ],
+        [ "VisualSystem", "classvelora_1_1game_1_1VisualSystem.html", "classvelora_1_1game_1_1VisualSystem" ],
+        [ "World", "classvelora_1_1game_1_1World.html", "classvelora_1_1game_1_1World" ]
+      ] ],
+      [ "network", "namespacevelora_1_1network.html", [
+        [ "ReplicatedComponent", "structvelora_1_1network_1_1ReplicatedComponent.html", "structvelora_1_1network_1_1ReplicatedComponent" ],
+        [ "ReplicationStateComponent", "structvelora_1_1network_1_1ReplicationStateComponent.html", "structvelora_1_1network_1_1ReplicationStateComponent" ]
+      ] ],
+      [ "opengl", "namespacevelora_1_1opengl.html", [
+        [ "GLSLVariable", "structvelora_1_1opengl_1_1GLSLVariable.html", "structvelora_1_1opengl_1_1GLSLVariable" ],
+        [ "OpenGLFrameBufferObject", "classvelora_1_1opengl_1_1OpenGLFrameBufferObject.html", "classvelora_1_1opengl_1_1OpenGLFrameBufferObject" ],
+        [ "OpenGLRenderBufferObject", "classvelora_1_1opengl_1_1OpenGLRenderBufferObject.html", "classvelora_1_1opengl_1_1OpenGLRenderBufferObject" ],
+        [ "OpenGLRenderer", "classvelora_1_1opengl_1_1OpenGLRenderer.html", "classvelora_1_1opengl_1_1OpenGLRenderer" ],
+        [ "OpenGLShader", "classvelora_1_1opengl_1_1OpenGLShader.html", "classvelora_1_1opengl_1_1OpenGLShader" ],
+        [ "OpenGLShaderStorageBuffer", "classvelora_1_1opengl_1_1OpenGLShaderStorageBuffer.html", "classvelora_1_1opengl_1_1OpenGLShaderStorageBuffer" ],
+        [ "OpenGLTexture", "classvelora_1_1opengl_1_1OpenGLTexture.html", "classvelora_1_1opengl_1_1OpenGLTexture" ],
+        [ "OpenGLVertexBuffer", "classvelora_1_1opengl_1_1OpenGLVertexBuffer.html", "classvelora_1_1opengl_1_1OpenGLVertexBuffer" ]
+      ] ],
+      [ "type", "namespacevelora_1_1type.html", [
+        [ "Dispatcher", "classvelora_1_1type_1_1Dispatcher.html", "classvelora_1_1type_1_1Dispatcher" ],
+        [ "Implementation", "classvelora_1_1type_1_1Implementation.html", "classvelora_1_1type_1_1Implementation" ],
+        [ "Interface", "classvelora_1_1type_1_1Interface.html", "classvelora_1_1type_1_1Interface" ]
+      ] ],
+      [ "winapi", "namespacevelora_1_1winapi.html", [
+        [ "WinapiProcess", "classvelora_1_1winapi_1_1WinapiProcess.html", "classvelora_1_1winapi_1_1WinapiProcess" ],
+        [ "WinapiWindow", "classvelora_1_1winapi_1_1WinapiWindow.html", "classvelora_1_1winapi_1_1WinapiWindow" ]
+      ] ],
+      [ "ComponentLoaderRegistry", "classvelora_1_1ComponentLoaderRegistry.html", "classvelora_1_1ComponentLoaderRegistry" ],
+      [ "ComponentManager", "classvelora_1_1ComponentManager.html", "classvelora_1_1ComponentManager" ],
+      [ "ComponentSerializerRegistry", "classvelora_1_1ComponentSerializerRegistry.html", "classvelora_1_1ComponentSerializerRegistry" ],
+      [ "ComponentStorage", "classvelora_1_1ComponentStorage.html", "classvelora_1_1ComponentStorage" ],
+      [ "ComponentTypeManager", "classvelora_1_1ComponentTypeManager.html", null ],
+      [ "EntityManager", "classvelora_1_1EntityManager.html", "classvelora_1_1EntityManager" ],
+      [ "FBOAttachment", "structvelora_1_1FBOAttachment.html", "structvelora_1_1FBOAttachment" ],
+      [ "FixedStepLoop", "structvelora_1_1FixedStepLoop.html", "structvelora_1_1FixedStepLoop" ],
+      [ "FpsCounter", "classvelora_1_1FpsCounter.html", "classvelora_1_1FpsCounter" ],
+      [ "FrameBufferObject", "classvelora_1_1FrameBufferObject.html", "classvelora_1_1FrameBufferObject" ],
+      [ "FrameBufferObjectDispatcher", "classvelora_1_1FrameBufferObjectDispatcher.html", "classvelora_1_1FrameBufferObjectDispatcher" ],
+      [ "IComponentStorage", "classvelora_1_1IComponentStorage.html", "classvelora_1_1IComponentStorage" ],
+      [ "IFrameBufferObject", "classvelora_1_1IFrameBufferObject.html", "classvelora_1_1IFrameBufferObject" ],
+      [ "IProcess", "classvelora_1_1IProcess.html", "classvelora_1_1IProcess" ],
+      [ "IRenderBuffer", "classvelora_1_1IRenderBuffer.html", "classvelora_1_1IRenderBuffer" ],
+      [ "IRenderer", "classvelora_1_1IRenderer.html", "classvelora_1_1IRenderer" ],
+      [ "IShader", "classvelora_1_1IShader.html", "classvelora_1_1IShader" ],
+      [ "IShaderStorageBuffer", "classvelora_1_1IShaderStorageBuffer.html", "classvelora_1_1IShaderStorageBuffer" ],
+      [ "ISystem", "classvelora_1_1ISystem.html", "classvelora_1_1ISystem" ],
+      [ "ITexture", "classvelora_1_1ITexture.html", "classvelora_1_1ITexture" ],
+      [ "IVertexBuffer", "classvelora_1_1IVertexBuffer.html", "classvelora_1_1IVertexBuffer" ],
+      [ "IWindow", "classvelora_1_1IWindow.html", "classvelora_1_1IWindow" ],
+      [ "Mesh", "structvelora_1_1Mesh.html", "structvelora_1_1Mesh" ],
+      [ "PolygonOffset", "structvelora_1_1PolygonOffset.html", "structvelora_1_1PolygonOffset" ],
+      [ "PostProcessingPipeline", "classvelora_1_1PostProcessingPipeline.html", "classvelora_1_1PostProcessingPipeline" ],
+      [ "Process", "classvelora_1_1Process.html", "classvelora_1_1Process" ],
+      [ "ProcessDispatcher", "classvelora_1_1ProcessDispatcher.html", "classvelora_1_1ProcessDispatcher" ],
+      [ "RenderBuffer", "classvelora_1_1RenderBuffer.html", "classvelora_1_1RenderBuffer" ],
+      [ "RenderBufferDispatcher", "classvelora_1_1RenderBufferDispatcher.html", "classvelora_1_1RenderBufferDispatcher" ],
+      [ "Renderer", "classvelora_1_1Renderer.html", "classvelora_1_1Renderer" ],
+      [ "RendererDispatcher", "classvelora_1_1RendererDispatcher.html", "classvelora_1_1RendererDispatcher" ],
+      [ "RenderOptions", "structvelora_1_1RenderOptions.html", "structvelora_1_1RenderOptions" ],
+      [ "Resolution", "classvelora_1_1Resolution.html", "classvelora_1_1Resolution" ],
+      [ "Shader", "classvelora_1_1Shader.html", "classvelora_1_1Shader" ],
+      [ "ShaderDispatcher", "classvelora_1_1ShaderDispatcher.html", "classvelora_1_1ShaderDispatcher" ],
+      [ "ShaderInputs", "structvelora_1_1ShaderInputs.html", "structvelora_1_1ShaderInputs" ],
+      [ "ShaderStorageBuffer", "classvelora_1_1ShaderStorageBuffer.html", "classvelora_1_1ShaderStorageBuffer" ],
+      [ "ShaderStorageBufferDispatcher", "classvelora_1_1ShaderStorageBufferDispatcher.html", "classvelora_1_1ShaderStorageBufferDispatcher" ],
+      [ "System", "classvelora_1_1System.html", "classvelora_1_1System" ],
+      [ "SystemDispatcher", "classvelora_1_1SystemDispatcher.html", "classvelora_1_1SystemDispatcher" ],
+      [ "Texture", "classvelora_1_1Texture.html", "classvelora_1_1Texture" ],
+      [ "TextureDispatcher", "classvelora_1_1TextureDispatcher.html", "classvelora_1_1TextureDispatcher" ],
+      [ "use_binary_t", "structvelora_1_1use__binary__t.html", null ],
+      [ "use_json_t", "structvelora_1_1use__json__t.html", null ],
+      [ "Vertex", "structvelora_1_1Vertex.html", "structvelora_1_1Vertex" ],
+      [ "VertexBuffer", "classvelora_1_1VertexBuffer.html", "classvelora_1_1VertexBuffer" ],
+      [ "VertexBufferDispatcher", "classvelora_1_1VertexBufferDispatcher.html", "classvelora_1_1VertexBufferDispatcher" ],
+      [ "Window", "classvelora_1_1Window.html", "classvelora_1_1Window" ],
+      [ "WindowCallbacks", "structvelora_1_1WindowCallbacks.html", "structvelora_1_1WindowCallbacks" ],
+      [ "WindowDispatcher", "classvelora_1_1WindowDispatcher.html", "classvelora_1_1WindowDispatcher" ]
+    ] ]
+];

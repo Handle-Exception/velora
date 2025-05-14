@@ -1,0 +1,25 @@
+var asset_8hpp =
+[
+    [ "velora::ComponentLoaderRegistry", "classvelora_1_1ComponentLoaderRegistry.html", "classvelora_1_1ComponentLoaderRegistry" ],
+    [ "velora::ComponentSerializerRegistry", "classvelora_1_1ComponentSerializerRegistry.html", "classvelora_1_1ComponentSerializerRegistry" ],
+    [ "velora::use_json_t", "structvelora_1_1use__json__t.html", null ],
+    [ "velora::use_binary_t", "structvelora_1_1use__binary__t.html", null ],
+    [ "ComponentLoader", "asset_8hpp.html#a6721b09c293b1f0dc86015bb0480eafa", null ],
+    [ "ComponentSerializer", "asset_8hpp.html#a10d70ae098f9c8e5dbf0366e5f769109", null ],
+    [ "constructComponentLoaderRegistry", "asset_8hpp.html#af66ecd2859e2853d7700f6711476a5af", null ],
+    [ "constructComponentSerializerRegistry", "asset_8hpp.html#a26a05e2d4cd117d6edfe41017cad3ae5", null ],
+    [ "loadLevelFromFile", "asset_8hpp.html#a9be492c83c6ee26af4ddae864b23db59", null ],
+    [ "loadLevelFromFile", "asset_8hpp.html#a0d4b258c99dbf0106cff0ea0b7781488", null ],
+    [ "loadScriptsFromDir", "asset_8hpp.html#a67fd9e71d230d3557a1ffeb4008e1c7e", null ],
+    [ "loadShaderFromFile", "asset_8hpp.html#a216434a755b3ab713e867ad75ce8a850", null ],
+    [ "loadShadersFromDir", "asset_8hpp.html#a34d47ac41e98149bd18eaac52f58d243", null ],
+    [ "loadVertexBuffersPrefabs", "asset_8hpp.html#a9fee9305c75f72d6fbb5cb29b7b13142", null ],
+    [ "loadWorldFromDir", "asset_8hpp.html#a5533dee0d78c861f11501a4547f97a8e", null ],
+    [ "loadWorldFromDir", "asset_8hpp.html#a723c6994e8d993f37ef67eee37cb926f", null ],
+    [ "saveLevelToFile", "asset_8hpp.html#a5976cece9c80d41645f76cbdeca3da63", null ],
+    [ "saveLevelToFile", "asset_8hpp.html#adafb034418be088c906eeeb9d153e054", null ],
+    [ "saveWorldToDir", "asset_8hpp.html#a25fae2f46128fbdf7036a4f63f1bec7d", null ],
+    [ "saveWorldToDir", "asset_8hpp.html#a0144521b9a43bb3fbfc81e98fdb73cde", null ],
+    [ "use_binary", "asset_8hpp.html#a25a488a6318d06cba53eb58b289df69a", null ],
+    [ "use_json", "asset_8hpp.html#a535808eb242d57a9e84e49b9ccc66e7c", null ]
+];
