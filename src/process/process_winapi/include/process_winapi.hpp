@@ -36,7 +36,10 @@ namespace velora::winapi
         wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC ;
         return wcex;
     }
-
+    
+    /**
+     * @brief WinAPI `IProcess` interface implementation
+     */
     class WinapiProcess
     {
         public:

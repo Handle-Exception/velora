@@ -3,7 +3,11 @@
 #include <optional>
 
 namespace velora
-{
+{   
+    /**
+     * @brief Enum for render modes
+     * 
+     */
     enum class RenderMode
     {
         Wireframe,
@@ -14,13 +18,20 @@ namespace velora
         Count
     };
 
+    /**
+     * @brief Struct for polygon offset
+     * 
+     */
     struct PolygonOffset
     {
         float factor;
         float units;
     };
 
-
+    /**
+     * @brief Struct for render options
+     * 
+     */
     struct RenderOptions
     {
         RenderMode mode = RenderMode::Solid;

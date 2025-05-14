@@ -7,20 +7,59 @@
 
 namespace velora
 {
+    /**
+     * @brief Interface for Shader Storage Buffer Objects (SSBO)
+     * 
+     * @note This interface is used to create and manage Shader Storage Buffer Objects (SSBO).
+     * 
+     */
     class IShaderStorageBuffer : public type::Interface
     {
         public:
-        //
         virtual ~IShaderStorageBuffer() = default;
 
+        /**
+         * @brief Get the ID of the shader storage buffer.
+         * 
+         * @return The ID of the shader storage buffer.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual std::size_t ID() const = 0;
-
+        
+        /**
+         * @brief Check if the shader storage buffer is valid.
+         * 
+         * @return True if the shader storage buffer is valid, false otherwise.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual bool good() const = 0;
-        //
+
+        /**
+         * @brief Enable the shader storage buffer.
+         * 
+         * @return True if the shader storage buffer was successfully enabled, false otherwise.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual bool enable() const = 0;
-        //
+
+        /**
+         * @brief Disable the shader storage buffer.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual void disable() const = 0;
-        //
+
+        /**
+         * @brief Update the data of the shader storage buffer.
+         * 
+         * @param size The size of the data to update.
+         * @param data The data to update.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual void update(std::size_t size, const void * data) = 0;
     };
 

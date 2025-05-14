@@ -9,7 +9,10 @@ using namespace std::chrono_literals;
 
 namespace velora
 {
-
+    /**
+     * @brief Fixed Step Loop
+     * 
+     */
     struct FixedStepLoop
     {
         using clock = std::chrono::high_resolution_clock;

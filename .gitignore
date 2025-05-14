@@ -4,3 +4,5 @@ build_debug
 build_relwithdebinfo
 build_release
 install
+
+docs_output/

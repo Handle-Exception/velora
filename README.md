@@ -8,6 +8,9 @@ This project requires the following libraries:
 - [**spdlog**](https://github.com/gabime/spdlog)
 - [**GLM**](https://github.com/g-truc/glm)
 - [**Protobuf**](https://protobuf.dev/)
+- [**GLEW**](https://glew.sourceforge.net/)
+- [**LUA**](https://github.com/walterschell/Lua)
+- [**LUA API Sol2**](https://github.com/ThePhD/sol2)
 
 ## ⚙️ Configuring the project
 

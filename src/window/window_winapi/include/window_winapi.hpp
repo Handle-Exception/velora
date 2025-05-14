@@ -8,6 +8,9 @@
 
 namespace velora::winapi
 {
+    /**
+     * @brief WinAPI `IWindow` interface implementation
+     */
     class WinapiWindow
     {
         public:

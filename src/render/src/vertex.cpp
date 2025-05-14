@@ -5,6 +5,19 @@ namespace velora
     namespace detail
     {
         struct VertexHasher {
+            /**
+             * @brief Hashes a pair of uint32_t's to a uint64_t.
+             * 
+             * The hash is computed by shifting the first element of the pair
+             * 32 bits to the left and then performing a bitwise OR operation
+             * with the second element of the pair. The resulting uint64_t is
+             * then passed to std::hash<uint64_t> to produce the final hash
+             * value.
+             * 
+             * @param p The pair of uint32_t's to hash.
+             * 
+             * @return The hash value for the given pair.
+             */
             size_t operator()(const std::pair<uint32_t, uint32_t>& p) const noexcept {
                 return std::hash<uint64_t>()((uint64_t)p.first << 32 | p.second);
             }

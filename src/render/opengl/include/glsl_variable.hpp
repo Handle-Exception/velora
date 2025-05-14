@@ -3,6 +3,9 @@
 
 namespace velora::opengl
 {
+    /**
+    * @brief Struct used to store information about a GLSL variable.
+    */
     struct GLSLVariable
     {
         // maximum name length

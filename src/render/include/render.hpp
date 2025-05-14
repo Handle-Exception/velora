@@ -95,26 +95,169 @@ namespace velora
          */
         virtual Resolution getViewport() const = 0;
         
+        /**
+         * @brief Enable VSync
+         * 
+         * @return asio::awaitable<void> 
+         */
         virtual asio::awaitable<void> enableVSync() = 0;
+
+        /**
+         * @brief Disable VSync
+         * 
+         * @return asio::awaitable<void> 
+         */
         virtual asio::awaitable<void> disableVSync() = 0;
 
+        /**
+         * @brief Construct a vertex buffer object (VBO) for rendering a mesh.
+         * 
+         * @param name a unique name for the VBO
+         * @param mesh the mesh data
+         * 
+         * @return ID of the VBO, or std::nullopt if failed
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual asio::awaitable<std::optional<std::size_t>> constructVertexBuffer(std::string name, const Mesh & mesh) = 0;
+
+        /**
+         * @brief Erase a vertex buffer object (VBO) by ID.
+         * 
+         * @param id ID of the VBO to erase.
+         * 
+         * @return `true` if the VBO was successfully erased, `false` otherwise.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual asio::awaitable<bool> eraseVertexBuffer(std::size_t id) = 0;
+
+        /**
+         * @brief Get the ID of a vertex buffer object (VBO) by name.
+         * 
+         * @param name Name of the VBO.
+         * 
+         * @return ID of the VBO, or std::nullopt if not found.
+         * 
+         * @note This function must be called on the render thread strand.
+         */
         virtual std::optional<std::size_t> getVertexBuffer(std::string name) const = 0;
 
+        /**
+         * @brief Construct a new shader object with the given name and vertex code
+         * @param name Name of the shader
+         * @param vertex_code Vertex shader code
+         * @return ID of the newly created shader object, or std::nullopt if the shader could not be created
+         */
         virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code) = 0;
+
+        /**
+         * @brief Construct a new shader object with the given name and vertex and fragment code
+         * @param name Name of the shader
+         * @param vertex_code Vertex shader code
+         * @param fragment_code Fragment shader code
+         * @return ID of the newly created shader object, or std::nullopt if the shader could not be created
+         */
         virtual asio::awaitable<std::optional<std::size_t>> constructShader(std::string name, std::vector<std::string> vertex_code, std::vector<std::string> fragment_code) = 0;
+
+        /**
+         * @brief Erase a shader object by ID
+         * @param id ID of the shader object to erase
+         * @return `true` if the shader object was successfully erased, `false` otherwise
+         */
         virtual asio::awaitable<bool> eraseShader(std::size_t id) = 0;
+
+        /**
+         * @brief Get the ID of a shader object by name
+         * @param name Name of the shader object
+         * @return ID of the shader object, or std::nullopt if not found
+         */
         virtual std::optional<std::size_t> getShader(std::string name) const = 0;
         
+        /**
+         * @brief Construct a new shader storage buffer
+         *
+         * @param name        The name of the shader storage buffer
+         * @param binding_point The binding point of the shader storage buffer
+         * @param size        The size of the shader storage buffer in bytes
+         * @param data        The data to initialize the shader storage buffer with
+         *
+         * @return The id of the shader storage buffer, or std::nullopt if an error occurred
+         */
         virtual asio::awaitable<std::optional<std::size_t>> constructShaderStorageBuffer(std::string name, unsigned int binding_point, const std::size_t size, const void * data) = 0;
+
+        /**
+         * @brief Update a shader storage buffer
+         *
+         * @param id          The id of the shader storage buffer to update
+         * @param size        The size of the shader storage buffer in bytes
+         * @param data        The data to update the shader storage buffer with
+         *
+         * @return `true` if the shader storage buffer was successfully updated, `false` otherwise
+         */
         virtual asio::awaitable<bool> updateShaderStorageBuffer(std::size_t id, const std::size_t size, const void * data) = 0;
+
+        /**
+         * @brief Erase a shader storage buffer
+         *
+         * @param id The id of the shader storage buffer to erase
+         *
+         * @return `true` if the shader storage buffer was successfully erased, `false` otherwise
+         */
         virtual asio::awaitable<bool> eraseShaderStorageBuffer(std::size_t id) = 0;
+
+        /**
+         * @brief Get the id of a shader storage buffer by name
+         *
+         * @param name The name of the shader storage buffer
+         *
+         * @return The id of the shader storage buffer, or std::nullopt if not found
+         */
         virtual std::optional<std::size_t> getShaderStorageBuffer(std::string name) const = 0;
 
+        /**
+         * @brief Construct a new Frame Buffer Object (FBO) object
+         * 
+         * This method is used to create a new Frame Buffer Object (FBO) which is a collection
+         * of attachments (textures and/or render buffers) that can be used as a target for rendering.
+         * The caller must provide a valid name for the FBO, a resolution, and a list of attachments.
+         * 
+         * @param name The name of the FBO.
+         * @param resolution The resolution of the FBO.
+         * @param attachments A list of attachments for the FBO.
+         * @return An awaitable that resolves to the ID of the created FBO or an empty optional if the
+         * FBO could not be created.
+         */
         virtual asio::awaitable<std::optional<std::size_t>> constructFrameBufferObject(std::string name, Resolution resolution, std::initializer_list<FBOAttachment> attachments) = 0;
+        
+        /**
+         * @brief Erase a Frame Buffer Object (FBO) object by ID
+         * 
+         * This method is used to erase a Frame Buffer Object (FBO) object by its ID.
+         * 
+         * @param id The ID of the FBO object to erase.
+         * @return An awaitable that resolves to `true` if the FBO object was successfully erased, or `false` if it could not be erased.
+         */
         virtual asio::awaitable<bool> eraseFrameBufferObject(std::size_t id) = 0;
+        
+        /**
+         * @brief Get the ID of a Frame Buffer Object (FBO) object by name
+         * 
+         * This method is used to get the ID of a Frame Buffer Object (FBO) object by its name.
+         * 
+         * @param name The name of the FBO object to get the ID of.
+         * @return An optional size_t containing the ID of the FBO object, or an empty optional if the FBO object could not be found.
+         */
         virtual std::optional<std::size_t> getFrameBufferObject(std::string name) const = 0;
+        
+        /**
+         * @brief Get the IDs of the textures attached to a Frame Buffer Object (FBO) object
+         * 
+         * This method is used to get the IDs of the textures attached to a Frame Buffer Object (FBO) object.
+         * 
+         * @param id The ID of the FBO object to get the texture IDs of.
+         * @return A vector of size_t containing the IDs of the textures attached to the FBO object.
+         */
         virtual std::vector<std::size_t> getFrameBufferObjectTextures(std::size_t id) const = 0;
     };
 

@@ -40,6 +40,9 @@
 
 namespace velora::opengl
 {
+    /**
+     * @brief OpenGL `IRenderer` interface implementation
+     */
     class OpenGLRenderer
     {
         public:
