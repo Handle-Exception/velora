@@ -42,15 +42,7 @@ float calculateShadow(vec3 fragPosWorld, int shadow_caster_id)
     vec4 fragPosLightSpace = lightSpaceMatrices[shadow_caster_id] * vec4(fragPosWorld, 1.0);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
-
-    // Otherwise, shadows can leak outside the frustum edges.
-    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
-        projCoords.y < 0.0 || projCoords.y > 1.0 ||
-        projCoords.z < 0.0 || projCoords.z > 1.0)
-    {
-        return 1.0; // Not in light frustum
-    }
-
+    projCoords.z -= 0.005;
 
     return texture(shadowMaps[shadow_caster_id], projCoords); // 0 = in shadow, 1 = lit
 }

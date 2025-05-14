@@ -77,11 +77,9 @@ namespace velora::game
             rotation = glm::quat(transform_component->rotation().w(), transform_component->rotation().x(), transform_component->rotation().y(), transform_component->rotation().z());
             
             // calculate direction vectors
-            forward = rotation * BASE_FORWARD_DIRECTION;
-            forward = glm::normalize(forward);
+            forward = glm::normalize(rotation * BASE_FORWARD_DIRECTION);
 
-            up = rotation * BASE_UP_DIRECTION;
-            up = glm::normalize(up);
+            up = glm::normalize(rotation * BASE_UP_DIRECTION);
 
             right = glm::normalize(glm::cross(forward, up));
 

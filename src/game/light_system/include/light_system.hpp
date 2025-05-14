@@ -64,6 +64,7 @@ namespace velora::game
             IRenderer & renderer,
             VisualSystem & visual_system,
             std::size_t light_shader_buffer_id,
+            Resolution shadow_map_resolution,
             std::vector<std::size_t> shadow_map_fbos);
 
         void collectLights(const ComponentManager& components, const EntityManager& entities, float alpha);
@@ -78,7 +79,8 @@ namespace velora::game
         std::size_t _light_shader_buffer_id;
 
         std::size_t _shadow_pass_shader;
-
+        
+        Resolution _shadow_map_resolution;
         std::vector<std::size_t> _shadow_map_fbos;
         std::vector<std::size_t> _shadow_map_textures;
         std::vector<glm::mat4> _shadow_map_light_space_matrices;

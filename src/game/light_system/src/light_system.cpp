@@ -49,12 +49,13 @@ namespace velora::game
 
         // create shadow map frame buffer objects
         // for all shadow casters
+        const Resolution shadow_map_resolution{1024, 1024};
         std::vector<std::size_t> shadow_map_fbos;
         std::optional<std::size_t> fbo_creaton_result;
         for(unsigned int i = 0; i < MAX_SHADOW_CASTERS; ++i)
         {
             fbo_creaton_result = co_await renderer.constructFrameBufferObject(
-                "LightSystem::fbo::shadow_map" + std::to_string(i), {1280, 720},
+                "LightSystem::fbo::shadow_map" + std::to_string(i), shadow_map_resolution,
                 {{FBOAttachment::Type::Texture, FBOAttachment::Point::Depth, TextureFormat::Depth_32F}});
             
             if(!fbo_creaton_result)
@@ -66,20 +67,22 @@ namespace velora::game
             shadow_map_fbos.emplace_back(*fbo_creaton_result);
         }
 
-        co_return LightSystem(io_context, renderer, visual_system, *light_shader_buffer, std::move(shadow_map_fbos));
+        co_return LightSystem(io_context, renderer, visual_system, *light_shader_buffer, shadow_map_resolution, std::move(shadow_map_fbos));
     }
 
     LightSystem::LightSystem(
             asio::io_context & io_context,
             IRenderer & renderer,
             VisualSystem & visual_system,
-            std::size_t light_shader_buffer_id, 
+            std::size_t light_shader_buffer_id,
+            Resolution shadow_map_resolution,
             std::vector<std::size_t> shadow_map_fbos
     )
     :   _strand(asio::make_strand(io_context)),
         _renderer(renderer),
         _visual_system(visual_system),
         _light_shader_buffer_id(light_shader_buffer_id),
+        _shadow_map_resolution(std::move(shadow_map_resolution)),
         _shadow_map_fbos(std::move(shadow_map_fbos))
     {
         _gpu_lights.reserve(MAX_LIGHTS);
@@ -188,8 +191,15 @@ namespace velora::game
                 interpolated_rot = glm::slerp(prev_rotation, rotation, alpha);
 
                 direction = glm::normalize(interpolated_rot * BASE_FORWARD_DIRECTION);
+                if(direction == glm::vec3{0.0f, 0.0f, 0.0f}) direction = BASE_FORWARD_DIRECTION;
                 
-                gpu_light.position = glm::vec4(interpolated_pos.x, interpolated_pos.y, interpolated_pos.z, 1.0f);
+                // Move the light slightly forward along its direction
+                // This prevents self-shadowing collapse due to zero distance between camera and light projection centers
+                gpu_light.position = glm::vec4(
+                        interpolated_pos.x + (direction.x * 0.05f),
+                        interpolated_pos.y + (direction.y * 0.05f),
+                        interpolated_pos.z + (direction.z * 0.05f),
+                        1.0f);
 
                 // w component is used to determine the type of light
                 gpu_light.direction = glm::vec4(direction.x, direction.y, direction.z, 
@@ -220,6 +230,8 @@ namespace velora::game
         if(!_strand.running_in_this_thread()){
             co_await asio::dispatch(asio::bind_executor(_strand, asio::use_awaitable));
         }
+
+        const float shadow_map_aspect = (float)_shadow_map_resolution.getWidth() / (float)_shadow_map_resolution.getHeight();
 
         glm::mat4 view_matrix;
         glm::mat4 projection_matrix;
@@ -260,11 +272,11 @@ namespace velora::game
                 // spot light
                 float outer_cutoff_cos = light.cutoff.y;
                 outer_cutoff_cos = glm::clamp(outer_cutoff_cos, -1.0f, 1.0f);
-                float fov = glm::degrees(acos(outer_cutoff_cos)) * 2.0f;
-                fov = glm::clamp(fov, 1.0f, 179.0f); // prevent extreme cases
-                float projection_near = 1.0f;
-                float projection_far = 50.0f; // matches spotlight range better
-                projection_matrix = glm::perspective(glm::radians(fov), 1280.0f / 720.0f, projection_near, projection_far);
+                float fov = glm::degrees(2.0f * acos(glm::clamp(outer_cutoff_cos, -0.999f, 0.999f)));
+                fov = glm::clamp(fov, 5.0f, 179.0f);
+                const float projection_near = 0.1f;
+                const float projection_far = 1024.0f;
+                projection_matrix = glm::perspective(glm::radians(fov), shadow_map_aspect, projection_near, projection_far);
             }
             else
             {
