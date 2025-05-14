@@ -54,6 +54,12 @@ namespace velora::winapi
     {
         return _window_handle;
     }
+    
+    const Resolution & WinapiWindow::getResolution() const
+    {
+        static Resolution res(0, 0);
+        return res;
+    }
 
     bool WinapiWindow::good() const
     {

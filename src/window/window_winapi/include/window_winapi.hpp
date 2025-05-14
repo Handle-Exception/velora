@@ -26,28 +26,22 @@ namespace velora::winapi
             }
 
             bool good() const;
-            //
+
             asio::awaitable<void> show();
-            //
+
             asio::awaitable<void> hide();
-            //
+
             asio::awaitable<void> close();
             
-        //TODO
-        const Resolution & getResolution() const
-        {
-            static Resolution res(0, 0);
-            return res;
-        }
-        //
-        native::window_handle getHandle() const;
-        
-        //
-        native::device_context acquireDeviceContext();
+            const Resolution & getResolution() const;
 
-        bool releaseDeviceContext(native::device_context device_context);
+            native::window_handle getHandle() const;
 
-        IProcess & getProcess();
+            native::device_context acquireDeviceContext();
+
+            bool releaseDeviceContext(native::device_context device_context);
+
+            IProcess & getProcess();
         
         protected:
 
