@@ -1,5 +1,17 @@
 # 🚀 Velora
 
+## 📚 Documentation
+
+</br>
+
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://handle-exception.github.io/velora/)
+
+[View Doxygen API Docs](https://handle-exception.github.io/velora/)
+
+</br>
+
+---
+
 ## 📦 Dependencies
 
 This project requires the following libraries:
@@ -11,6 +23,10 @@ This project requires the following libraries:
 - [**GLEW**](https://glew.sourceforge.net/)
 - [**LUA**](https://github.com/walterschell/Lua)
 - [**LUA API Sol2**](https://github.com/ThePhD/sol2)
+
+</br>
+
+---
 
 ## ⚙️ Configuring the project
 
@@ -26,6 +42,10 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON -DCMAKE
 - `-A x64` : Sets the target architecture to 64-bit
 - `-DBUILD_TESTING=ON` : Enables tests.
 - `-DCMAKE_INSTALL_PREFIX=install` : Specifies install directory.
+
+</br>
+
+---
 
 ## 🛠️ Building the project
 
@@ -49,6 +69,10 @@ To build the project in **Release Mode**, use:
 cmake --build build --config Release
 ```
 
+</br>
+
+---
+
 ## 🛠️ Installing the Project
 
 To install project in **Debug Mode**, use:
@@ -64,6 +88,10 @@ To install project in **Release Mode**, use:
 ```sh
 cmake --build build --config Release --target install
 ```
+
+</br>
+
+---
 
 ## 🖥️ Start the executable
 
